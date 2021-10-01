@@ -3,6 +3,7 @@
 *.lo
 *.o
 *.obj
+*.bin
 
 # Vim
 *.swp
