@@ -216,7 +216,6 @@ target_link_libraries(wr-tests
 
 gtest_add_tests(TARGET wr-tests)
 
-
 # ...................................................................
 # The libraries that are build by dwarfs project
 # libdwarfs libfolly libfsst libxxhash libmetadata_thrift libthrift_light libarchive
