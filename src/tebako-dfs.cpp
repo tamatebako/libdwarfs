@@ -39,11 +39,36 @@
 #include <folly/Conv.h>
 #include <folly/experimental/symbolizer/SignalHandler.h>
 
+#include "tebako-common.h"
 #include "tebako-mfs.h"
 #include "tebako-dfs.h"
 #include "tebako-fs.h"
 
 using namespace std;
+
+
+/*
+*   C wrapper for dwarfs load_filesystem implementation  @ tebako-dfs.cpp
+*/
+extern "C" int load_fs(void)
+{
+    int ret = 0;
+    try
+    {
+        dwarfs::dwarfs_userdata userdata(std::cerr);
+
+        userdata.opts.cache_image = 0;
+        userdata.opts.cache_files = 1;
+
+        dwarfs::load_filesystem<dwarfs::prod_logger_policy>(userdata);
+    }
+    catch (...)
+    {
+        ret = -1;
+    }
+
+    return ret;
+}
 
 namespace dwarfs { 
 
@@ -66,12 +91,14 @@ namespace dwarfs {
         if (opts.image_offset_str) {
             std::string image_offset{ opts.image_offset_str };
 
-            try {
+            try 
+            {
                 fsopts.image_offset = image_offset == "auto"
                     ? filesystem_options::IMAGE_OFFSET_AUTO
                     : folly::to<off_t>(image_offset);
             }
-            catch (...) {
+            catch (...) 
+            {
                 DWARFS_THROW(runtime_error, "failed to parse offset: " + image_offset);
             }
         }

@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,52 +24,17 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include "dwarfs/error.h"
-#include "dwarfs/filesystem_v2.h"
-#include "dwarfs/fstypes.h"
-#include "dwarfs/logger.h"
-#include "dwarfs/metadata_v2.h"
-#include "dwarfs/mmap.h"
-#include "dwarfs/options.h"
-#include "dwarfs/util.h"
-
-#define FUSE_ROOT_ID  1
-
-namespace dwarfs {
-    struct options {
-        const char* progname{ nullptr };
-        int seen_mountpoint{ 0 };
-        const char* cachesize_str{ nullptr };        
-        const char* debuglevel_str{ nullptr };       
-        const char* workers_str{ nullptr };          
-        const char* mlock_str{ nullptr };            
-        const char* decompress_ratio_str{ nullptr }; 
-        const char* image_offset_str{ nullptr };     
-        int enable_nlink{ 0 };
-        int readonly{ 0 };
-        int cache_image{ 0 };
-        int cache_files{ 0 };
-        size_t cachesize{ 0 };
-        size_t workers{ 0 };
-        mlock_mode lock_mode{ mlock_mode::NONE };
-        double decompress_ratio{ 0.0 };
-        logger::level_type debuglevel{ logger::level_type::ERROR };
-    };
-
-    struct dwarfs_userdata {
-        dwarfs_userdata(std::ostream& os)
-            : lgr{ os } {}
-
-        options opts;
-        stream_logger lgr;
-        filesystem_v2 fs;
-    };
-
-    template <typename LoggerPolicy>
-    void load_filesystem(dwarfs_userdata& userdata);
+namespace {
+/*
+* Just check that we are alive ... 
+*/
+	TEST(libdwarfs, smoke) {
+		int i = 1;
+		EXPECT_EQ(1, i);
+	}
 }

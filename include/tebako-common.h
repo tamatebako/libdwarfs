@@ -27,11 +27,10 @@
  * 
  */
 
+#include <limits.h>
+
 #ifndef TEBAKO_COMMON_H_INCLUDED
 #define _TEBAKO_COMMON_H_INCLUDED
-#ifdef __cplusplus
-extern "C" {
-#endif // !__cplusplus
 #define _TEBAKO_PP_NARG(...) \
     _TEBAKO_PP_NARG_(__VA_ARGS__,_TEBAKO_PP_RSEQ_N())
 #define _TEBAKO_PP_NARG_(...) \
@@ -53,6 +52,7 @@ extern "C" {
     19,18,17,16,15,14,13,12,11,10, \
      9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
+#ifndef __cplusplus
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -62,9 +62,11 @@ extern "C" {
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
+#endif // !__cplusplus
 
 #ifdef _WIN32
 #define TEBAKO_SET_LAST_ERROR(e)  {                    \
+            errno = e;                                 \
 			if (e == ENOMEM) {                         \
 				SetLastError(ERROR_NOT_ENOUGH_MEMORY); \
                 _doserrno = ERROR_NOT_ENOUGH_MEMORY;   \
@@ -92,16 +94,24 @@ extern "C" {
 			}                                          \
 		}
 #else
-#define TEBAKO_SET_LAST_ERROR(e)      
+#define TEBAKO_SET_LAST_ERROR(e)  errno = e    
 #endif
 
 #define TEBAKO_PATH_LENGTH PATH_MAX
 #define TEBAKO_MOINT_POINT "__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_LENGTH  16
-typedef char tebako_dir_t[TEBAKO_PATH_LENGTH];
 
-void tebako_helper_set_cwd(const char* path);
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
+typedef char tebako_path_t[TEBAKO_PATH_LENGTH];
+
+void tebako_set_cwd(const char* path);
+char* const tebako_get_cwd(void);
 int is_tebako_path(const char* path);
+int load_fs(void);
+
 
 #ifdef __cplusplus
 }

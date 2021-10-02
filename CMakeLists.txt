@@ -31,7 +31,12 @@ cmake_policy(SET CMP0048 NEW)
 project(libdwarfs-wr VERSION 0.1.0)
 
 include(ExternalProject)
+include(FetchContent)
+include(GoogleTest)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
+
+find_package(PkgConfig)
+pkg_search_module(GTEST REQUIRED gtest_main)
 
 set(Boost_USE_STATIC_LIBS   ON)
 set(BOOST_LINK_STATIC       ON)
@@ -154,22 +159,24 @@ ExternalProject_Add(${DWARFS_PRJ}
 # ...................................................................
 # Executable
 
-  add_compile_options(-fdiagnostics-color=always)
-  add_link_options(-static -static-libgcc)
-  set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
-  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
+add_compile_options(-fdiagnostics-color=always)
+#add_link_options(-static -static-libgcc)
+add_link_options(-static)
+set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
-                      ${INCBIN_SOURCE_DIR}
-                      ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift 
-                      ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
+                    ${INCBIN_SOURCE_DIR}
+                    ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift 
+                    ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include
+)
 
-  add_library(
-    libdwarfs-wr STATIC 
+add_library(dwarfs-wr STATIC 
     "src/getcwd.c"
     "src/chdir.c"
-    "src/mfs.cpp"
-    "src/load-fs.cpp"
+    "src/io-helpers.c"
+    "src/tebako-mfs.cpp"
+    "src/tebako-dfs.cpp"
     "src/fs.cpp"
     "include/tebako-common.h"
     "include/tebako-io.h"
@@ -180,36 +187,54 @@ ExternalProject_Add(${DWARFS_PRJ}
     "include/tebako-windows-defines.h" 
     )
 
-  add_executable(
-    tests
-    src/main.c
-  )
+set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
+set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET dwarfs-wr PROPERTY CXX_EXTENSIONS OFF)
 
-  target_link_libraries(tests libdwarfs-wr)
+add_dependencies(dwarfs-wr ${INCBIN_PRJ} ${DWARFS_PRJ})
 
-  set_property(TARGET libdwarfs-wr PROPERTY CXX_STANDARD 17)
-  set_property(TARGET libdwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)
-  set_property(TARGET libdwarfs-wr PROPERTY CXX_EXTENSIONS OFF)
+#FetchContent_Declare(
+#  googletest
+#  PREFIX ${DEPS}
+  # Specify the commit you depend on and update it regularly.
+#  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+#)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+#set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+#FetchContent_MakeAvailable(googletest)
+ 
+add_executable(wr-tests
+    "tests/smoke.cpp"
+    "tests/load.cpp"
+)
+
+target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
+target_link_libraries(wr-tests 
+    dwarfs-wr
+    ${GTEST_LDFLAGS}
+)
+
+gtest_add_tests(TARGET wr-tests)
 
 # ...................................................................
 # The libraries that are build by dwarfs project
 # libdwarfs libfolly libfsst libxxhash libmetadata_thrift libthrift_light libarchive
 
- function(ADD_DWARFS_LIBRARY NAME PRJ APP_NM)
+function(ADD_DWARFS_LIBRARY NAME PRJ APP_NM)
    add_library(${NAME} STATIC IMPORTED)
    set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
    add_dependencies(${NAME} ${PRJ})
    target_link_libraries(${APP_NM} ${NAME})
- endfunction()
+endfunction()
 
- add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} tests)
- add_dwarfs_library(_LIBFSST ${DWARFS_PRJ} tests)
- add_dwarfs_library(_LIBFOLLY ${DWARFS_PRJ} tests)
- add_dwarfs_library(_LIBT_METADATA ${DWARFS_PRJ} tests)
- add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} tests)
- add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} tests)
- add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} tests)
- add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} tests)
+add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} wr-tests)
+add_dwarfs_library(_LIBFSST ${DWARFS_PRJ} wr-tests)
+add_dwarfs_library(_LIBFOLLY ${DWARFS_PRJ} wr-tests)
+add_dwarfs_library(_LIBT_METADATA ${DWARFS_PRJ} wr-tests)
+add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} wr-tests)
+add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-tests)
+add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-tests)
+add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-tests)
 
 # ...................................................................
 # System libraries
@@ -234,7 +259,7 @@ ExternalProject_Add(${DWARFS_PRJ}
  find_library(_LIBZ "libz.a" REQUIRED) 
  find_library(_LIBLJEMALLOC "libjemalloc.a" REQUIRED) 
  find_library(_LIBPTHREAD "libpthread.a" REQUIRED) 
- find_library(_LIBFUSE "libfuse3.a" REQUIRED) 
+# find_library(_LIBFUSE "libfuse3.a" REQUIRED) 
  find_library(_LIBDL "libdl.a" REQUIRED) 
  find_library(_LIBC "libc.a" REQUIRED)  
  find_library(_LIBM "libm.a" REQUIRED)
@@ -248,12 +273,15 @@ ExternalProject_Add(${DWARFS_PRJ}
 #  MUST be in this order otherwise link may fail
 #  -static-libgcc and gcc_eh below is all together an ugly trick to enforce static linking
 
- target_link_libraries(tests                              
-   ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}           ${_LIBFUSE}                    
+ target_link_libraries(wr-tests                              
+   ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}                               
    ${_LIBGLOG}         ${_LIBGFLAGS}       ${_LIBEVENT}        ${_LIBIBERTY}
    ${_LIBACL}          ${_LIBSSL}          ${_LIBCRYPTO}       ${_LIBLZ4}
    ${_LIBZ}            ${_LIBJEMALLOC}     ${_LIBPTHREAD}      ${_LIBDL}           
-   ${_LIBC}            ${_LIBM}            ${_LIBRT}           gcc_eh		                 
+   ${_LIBM}            ${_LIBRT}           gcc_eh		                 
    ${_LIBUNWIND}       ${_LIBLZMA}
  )
+
+# ${_LIBFUSE}
+# ${_LIBC}
 
