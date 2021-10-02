@@ -30,4 +30,4 @@
 #pragma once
 #include <incbin.h>
 
-INCBIN(fs, "/mnt/d/Projects/6.Projects/libdwarfs/out/build/WSL-GCC-Debug/packaged_filesystem/fs.bin");
+INCBIN(fs, "/mnt/d/Projects/6.Projects/libdwarfs/out/build/WSL-GCC-Debug/fs.bin");

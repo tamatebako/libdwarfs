@@ -165,7 +165,7 @@ pkg_search_module(GTEST REQUIRED gtest_main)
 # DATA_TEST_DIR folder contains raw data for filesystem tests 
   set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
 # DATA_BIN_DIR folder is used to create packaged filesystem  
-  set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR}/packaged_filesystem)
+  set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 # DATA_BIN_FILE is packaged filesystem itself
   set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
 
