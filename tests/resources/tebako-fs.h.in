@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako (libdwarfs-wr)
+ * This file is a part of tebako
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,17 +24,10 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  */
 
-#include <gtest/gtest.h>
+#pragma once
+#include <incbin.h>
 
-namespace {
-/*
-* Just check that we are alive ... 
-*/
-	TEST(libdwarfs, smoke) {
-		int i = 1;
-		EXPECT_EQ(1, i);
-	}
-}
+INCBIN(fs, "@DATA_BIN_FILE@");

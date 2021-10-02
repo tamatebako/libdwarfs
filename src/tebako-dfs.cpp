@@ -42,25 +42,59 @@
 #include "tebako-common.h"
 #include "tebako-mfs.h"
 #include "tebako-dfs.h"
-#include "tebako-fs.h"
 
-using namespace std;
-
+using namespace dwarfs;
 
 /*
 *   C wrapper for dwarfs load_filesystem implementation  @ tebako-dfs.cpp
 */
-extern "C" int load_fs(void)
+extern "C" int load_fs(const unsigned char data[], const unsigned int size)
 {
     int ret = 0;
     try
     {
-        dwarfs::dwarfs_userdata userdata(std::cerr);
+        dwarfs_userdata userdata(std::cerr);
 
         userdata.opts.cache_image = 0;
         userdata.opts.cache_files = 1;
 
-        dwarfs::load_filesystem<dwarfs::prod_logger_policy>(userdata);
+
+        try {
+            // TODO: foreground mode, stderr vs. syslog?
+
+            userdata.opts.debuglevel = userdata.opts.debuglevel_str
+                ? logger::parse_level(userdata.opts.debuglevel_str)
+                : logger::INFO;
+
+            userdata.lgr.set_threshold(userdata.opts.debuglevel);
+            userdata.lgr.set_with_context(userdata.opts.debuglevel >= logger::DEBUG);
+
+            userdata.opts.cachesize = userdata.opts.cachesize_str ? dwarfs::parse_size_with_unit(userdata.opts.cachesize_str) : (static_cast<size_t>(512) << 20);
+            userdata.opts.workers = userdata.opts.workers_str ? folly::to<size_t>(userdata.opts.workers_str) : 2;
+            userdata.opts.lock_mode =  userdata.opts.mlock_str ? parse_mlock_mode(userdata.opts.mlock_str) : mlock_mode::NONE;
+            userdata.opts.decompress_ratio = userdata.opts.decompress_ratio_str ? folly::to<double>(userdata.opts.decompress_ratio_str) : 0.8;
+        }
+        catch (runtime_error const& e) {
+            std::cerr << "error: " << e.what() << std::endl;
+            return 1;
+        }
+        catch (std::filesystem::filesystem_error const& e) {
+            std::cerr << e.what() << std::endl;
+            return 1;
+        }
+
+        if (userdata.opts.decompress_ratio < 0.0 || userdata.opts.decompress_ratio > 1.0) {
+            std::cerr << "error: decratio must be between 0.0 and 1.0" << std::endl;
+            return 1;
+        }
+
+        LOG_PROXY(debug_logger_policy, userdata.lgr);
+
+        LOG_INFO << PRJ_NAME << " version " << PRJ_VERSION_STRING;
+
+
+
+        load_filesystem<dwarfs::prod_logger_policy>(userdata, data, size);
     }
     catch (...)
     {
@@ -72,8 +106,10 @@ extern "C" int load_fs(void)
 
 namespace dwarfs { 
 
+    static const int FUSE_ROOT_ID = 1;
+
     template <typename LoggerPolicy>
-    void load_filesystem(dwarfs_userdata& userdata) {
+    void load_filesystem(dwarfs_userdata& userdata, const unsigned char data[], const unsigned int size) {
         LOG_PROXY(LoggerPolicy, userdata.lgr);
         auto ti = LOG_TIMED_INFO;
         auto& opts = userdata.opts;
@@ -104,7 +140,7 @@ namespace dwarfs {
         }
 
         userdata.fs = filesystem_v2(
-            userdata.lgr, std::make_shared<tebako::mfs>(&tebako::gfsData, tebako::gfsSize), fsopts, FUSE_ROOT_ID);
+            userdata.lgr, std::make_shared<tebako::mfs>(&data, size), fsopts, FUSE_ROOT_ID);
 
         ti << "file system initialized";
     }

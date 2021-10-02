@@ -67,7 +67,7 @@ extern "C" {
 
 	char* tebako_getcwd(char* buf, size_t size)
 	{
-		char* const cwd = tebako_get_cwd();
+		const char* cwd = tebako_get_cwd();
 		size_t len = strlen(cwd);
 		if (len) {
 			if (!buf) {
@@ -132,7 +132,7 @@ extern "C" {
 #endif 
 	char* tebako_getwd(char* buf)
 	{
-		char* const cwd = tebako_get_cwd();
+		const char* cwd = tebako_get_cwd();
 		return (cwd[0])? strcpy(buf, cwd): getwd(buf);
 	}
 #ifdef __GNUC__

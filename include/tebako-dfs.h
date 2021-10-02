@@ -38,12 +38,8 @@
 #include "dwarfs/options.h"
 #include "dwarfs/util.h"
 
-#define FUSE_ROOT_ID  1
-
 namespace dwarfs {
     struct options {
-        const char* progname{ nullptr };
-        int seen_mountpoint{ 0 };
         const char* cachesize_str{ nullptr };        
         const char* debuglevel_str{ nullptr };       
         const char* workers_str{ nullptr };          
@@ -63,7 +59,7 @@ namespace dwarfs {
 
     struct dwarfs_userdata {
         dwarfs_userdata(std::ostream& os)
-            : lgr{ os } {}
+            : lgr{ os } { }
 
         options opts;
         stream_logger lgr;
@@ -71,5 +67,5 @@ namespace dwarfs {
     };
 
     template <typename LoggerPolicy>
-    void load_filesystem(dwarfs_userdata& userdata);
+    void load_filesystem(dwarfs_userdata& userdata, const unsigned char data[], const unsigned int size);
 }
