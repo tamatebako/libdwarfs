@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,52 +24,41 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
-#pragma once
++#define RUBY_PACKER_GEN_EXPANDED_NAME(path)	\
++			ruby_packer_cwd_len = strlen(ruby_packer_cwd); \
++			memcpy(ruby_packer_expanded, ruby_packer_cwd, ruby_packer_cwd_len); \
++			memcpy_len = strlen(path); \
++			if (SQUASHFS_PATH_LEN - ruby_packer_cwd_len < memcpy_len) { memcpy_len = SQUASHFS_PATH_LEN - ruby_packer_cwd_len; } \
++			memcpy(&ruby_packer_expanded[ruby_packer_cwd_len], (path), memcpy_len); \
++			ruby_packer_expanded[ruby_packer_cwd_len + memcpy_len] = '\0'
 
-#include "dwarfs/error.h"
-#include "dwarfs/filesystem_v2.h"
-#include "dwarfs/fstypes.h"
-#include "dwarfs/logger.h"
-#include "dwarfs/metadata_v2.h"
-#include "dwarfs/mmap.h"
-#include "dwarfs/options.h"
-#include "dwarfs/util.h"
 
-#define FUSE_ROOT_ID  1
-
-namespace dwarfs {
-    struct options {
-        const char* progname{ nullptr };
-        int seen_mountpoint{ 0 };
-        const char* cachesize_str{ nullptr };        
-        const char* debuglevel_str{ nullptr };       
-        const char* workers_str{ nullptr };          
-        const char* mlock_str{ nullptr };            
-        const char* decompress_ratio_str{ nullptr }; 
-        const char* image_offset_str{ nullptr };     
-        int enable_nlink{ 0 };
-        int readonly{ 0 };
-        int cache_image{ 0 };
-        int cache_files{ 0 };
-        size_t cachesize{ 0 };
-        size_t workers{ 0 };
-        mlock_mode lock_mode{ mlock_mode::NONE };
-        double decompress_ratio{ 0.0 };
-        logger::level_type debuglevel{ logger::level_type::ERROR };
-    };
-
-    struct dwarfs_userdata {
-        dwarfs_userdata(std::ostream& os)
-            : lgr{ os } {}
-
-        options opts;
-        stream_logger lgr;
-        filesystem_v2 fs;
-    };
-
-    template <typename LoggerPolicy>
-    void load_filesystem(dwarfs_userdata& userdata);
+int tebako_stat(const char* path, struct stat* buf)
+{
+	if (ruby_packer_cwd[0] && '/' != *path) {
+		sqfs_path ruby_packer_expanded;
+		size_t ruby_packer_cwd_len;
+		size_t memcpy_len;
+		RUBY_PACKER_GEN_EXPANDED_NAME(path);
+		RUBY_PACKER_CONSIDER_MKDIR_WORKDIR_RETURN(
+			ruby_packer_expanded,
+			ruby_packer_dos_return(squash_stat(ruby_packer_fs, ruby_packer_expanded, buf)),
+			stat(mkdir_workdir_expanded, buf)
+		);
+	}
+	else if (ruby_packer_is_path(path)) {
+		RUBY_PACKER_CONSIDER_MKDIR_WORKDIR_RETURN(
+			path,
+			ruby_packer_dos_return(squash_stat(ruby_packer_fs, path, buf)),
+			stat(mkdir_workdir_expanded, buf)
+			);
+		
+	}
+	else {
+		return stat(path, buf);
+		
+	}
 }

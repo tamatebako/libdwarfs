@@ -30,5 +30,5 @@
 #include <incbin.h>
 
 namespace tebako {
-	INCBIN(fs, "/mnt/c/maxirmx/Projects/libdwarfs/src/fs.bin");
+	INCBIN(fs, "/mnt/d/Projects/6.Projects/libdwarfs/src/fs.bin");
 }

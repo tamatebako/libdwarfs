@@ -29,6 +29,7 @@
 
 #include <stddef.h>
 #include <tebako-io.h>
+#include <tebako-common.h>
 
 int main(int argc, char argv[])
 {

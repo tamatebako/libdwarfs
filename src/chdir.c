@@ -29,7 +29,6 @@
 
 #include <string.h>
 #include <errno.h>
-#include <limits.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -40,25 +39,30 @@
 #ifdef __cplusplus
 extern "C" {
 #endif // !__cplusplus
-		int is_tebako_path(const char* path)
-	{
-		if (strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
-#ifdef _WIN32
-		 || strncmp(path, "\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
-		 || strncmp(path + 1, ":/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-		 || strncmp(path + 1, ":\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-		 || strncmp(path, "//?/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
-		 || strncmp(path, "\\\\?\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
-		 || (( strncmp(path, "\\\\?\\", 4) == 0 || strncmp(path, "//?/", 4) == 0) &&
-			 ( strncmp(path + 5, ":/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0 ||
-			   strncmp(path + 5, ":\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-			 )
-#endif
-	    ) 
-			return 1;
-		 return 0;
-	}
 
+/*
+*	https://pubs.opengroup.org/onlinepubs/9699919799/
+* 
+*	DESCRIPTION
+*	The chdir() function shall cause the directory named by the pathname pointed to by the path argument to become the current working directory; that is, the starting point for path searches for pathnames not beginning with '/'.
+*
+*	RETURN VALUE
+*	Upon successful completion, 0 shall be returned. Otherwise, -1 shall be returned, the current working directory shall remain unchanged, and errno shall be set to indicate the error.
+*
+*	ERRORS
+*	The chdir() function shall fail if:
+*
+*		[EACCES] Search permission is denied for any component of the pathname.
+*		[ELOOP]  A loop exists in symbolic links encountered during resolution of the path argument.
+*		[ENAMETOOLONG] The length of a component of a pathname is longer than {NAME_MAX}.
+*		[ENOENT] A component of path does not name an existing directory or path is an empty string.
+*		[ENOTDIR] A component of the pathname names an existing file that is neither a directory nor a symbolic link to a directory.
+*
+*	The chdir() function may fail if:
+*
+*		[ELOOP] More than {SYMLOOP_MAX} symbolic links were encountered during resolution of the path argument.
+*		[ENAMETOOLONG] The length of a pathname exceeds {PATH_MAX}, or pathname resolution of a symbolic link produced an intermediate result with a length that exceeds {PATH_MAX}.
+*/
 	int tebako_chdir(const char* path)
 	{
 		int ret = -1;
@@ -73,7 +77,7 @@ extern "C" {
 			}
 			else if (S_ISDIR(st.st_mode)) 
 			{
-				tebako_helper_set_cwd(path);
+				tebako_set_cwd(path);
 				ret = 0;	
 			}
 			else 
@@ -84,7 +88,7 @@ extern "C" {
 		else 
 		{
 			ret = chdir(path);
-			if (ret == 0) tebako_helper_set_cwd(NULL);
+			if (ret == 0) tebako_set_cwd(NULL);
 		}
 		return ret;
 	}
