@@ -35,9 +35,6 @@ include(FetchContent)
 include(GoogleTest)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 
-find_package(PkgConfig)
-pkg_search_module(GTEST REQUIRED gtest_main)
-
 set(Boost_USE_STATIC_LIBS   ON)
 set(BOOST_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
@@ -51,39 +48,11 @@ set(DEPS_LIB_DIR ${DEPS}/lib)
 set(DEPS_BIN_DIR ${DEPS}/bin)
 set(DEPS_SBIN_DIR ${DEPS}/sbin)
 
-# Project resources that are used during CMake configuration stage
-set(DATA_RES_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/resources)
-
-if (NOT ${SETUP_MODE})
-# ...................................................................
-# Filesystem locations
-
-# DATA_SRC_DIR folder is used to collect all files that need to be packaged
-  set(DATA_SRC_DIR  ${CMAKE_CURRENT_BINARY_DIR}/source_filesystem)
-# DATA_PRE_DIR folder is used to build gems  that need to be packaged
-  set(DATA_PRE_DIR  ${CMAKE_CURRENT_BINARY_DIR}/prepare_filesystem)
-# DATA_BIN_DIR folder is used to create packaged filesystem  
-  set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR}/packaged_filesystem)
-# DATA_BIN_FILE is packaged filesystem itself
-  set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
-
-# This is a mount point for packaged filesystem at the target computer
-# TODO: this is supposed to become obsolete when fuse dependency is eliminated
-#       otherwise it shall be reconsidered 
-  if ("-${MOUNTPOINT}" STREQUAL "-")
-    set(FS_MOUNT_POINT "/home/tebako")
-  else()
-    set(FS_MOUNT_POINT ${MOUNTPOINT})
-  endif()
-  
-endif(NOT ${SETUP_MODE})
-
 # ...................................................................
 # External projects
 
 def_ext_prj_g(DWARFS "78401c3")
 def_ext_prj_g(INCBIN "348e36b")
-
 
 message("Collecting packages:")
 message("incbin   - " @${INCBIN_TAG}         " at " ${INCBIN_SOURCE_DIR}) 
@@ -139,25 +108,7 @@ ExternalProject_Add(${DWARFS_PRJ}
 )
 
 # ...................................................................
-# Packaged filesystem
-
-#  add_custom_target(_PACKAGED_FILESYSTEM  
-#     COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_SRC_DIR}/share   ${DATA_SRC_DIR}/include  ${DATA_SRC_DIR}/lib/*.a ${DATA_SRC_DIR}/lib/pkgconfig
-#                                       ${DATA_SRC_DIR}/bin/b*  ${DATA_SRC_DIR}/bin/erb  ${DATA_SRC_DIR}/bin/gem ${DATA_SRC_DIR}/bin/irb 
-#                                       ${DATA_SRC_DIR}/bin/ra* ${DATA_SRC_DIR}/bin/rdoc ${DATA_SRC_DIR}/bin/ri  ${DATA_SRC_DIR}/bin/y2racc
-#     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_SRC_DIR}
-#     DEPENDS ${DWARFS_PRJ} _SOURCE_FILESYSTEM
-#     BYPRODUCTS ${DATA_BIN_FILE}
-#  )
-
-#  configure_file(
-#    ${DATA_RES_DIR}/tebako-fs.cpp.in 
-#    ${CMAKE_CURRENT_SOURCE_DIR}/src/tebako-fs.cpp
-#    @ONLY
-#  )
-
-# ...................................................................
-# Executable
+# Library
 
 add_compile_options(-fdiagnostics-color=always)
 #add_link_options(-static -static-libgcc)
@@ -189,7 +140,14 @@ set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET dwarfs-wr PROPERTY CXX_EXTENSIONS OFF)
 
-add_dependencies(dwarfs-wr ${INCBIN_PRJ} ${DWARFS_PRJ})
+add_dependencies(dwarfs-wr ${DWARFS_PRJ})
+
+# ...................................................................
+# Tests
+
+find_package(PkgConfig)
+pkg_search_module(GTEST REQUIRED gtest_main)
+
 
 #FetchContent_Declare(
 #  googletest
@@ -200,12 +158,35 @@ add_dependencies(dwarfs-wr ${INCBIN_PRJ} ${DWARFS_PRJ})
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 #FetchContent_MakeAvailable(googletest)
+
+# ...................................................................
+# Filesystem locations
+
+# DATA_TEST_DIR folder contains raw data for filesystem tests 
+  set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
+# DATA_BIN_DIR folder is used to create packaged filesystem  
+  set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR}/packaged_filesystem)
+# DATA_BIN_FILE is packaged filesystem itself
+  set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
+
+# ...................................................................
+# Packaged filesystem
+
+add_custom_target(PACKAGED_FILESYSTEM  
+   COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+   DEPENDS ${DWARFS_PRJ} 
+   BYPRODUCTS ${DATA_BIN_FILE}
+)
+
+configure_file(
+   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs.h.in 
+   ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.h
+   @ONLY
+)
  
-add_executable(wr-tests
-    
+add_executable(wr-tests 
     "tests/load.cpp"
-#    "tests/fs.cpp"
-#    "tests/tebako-fs.h"
+    "tests/tebako-fs.h"
 )
 
 target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
@@ -213,6 +194,8 @@ target_link_libraries(wr-tests
     dwarfs-wr
     ${GTEST_LDFLAGS}
 )
+
+add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
 
 gtest_add_tests(TARGET wr-tests)
 

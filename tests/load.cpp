@@ -30,6 +30,8 @@
 #include <limits.h>
 #include <gtest/gtest.h>
 #include <tebako-common.h>
+#include "tebako-fs.h"
+
 
 namespace {
 	/*
@@ -47,6 +49,14 @@ namespace {
 		const unsigned char data[] = "This is broken filesystem image";
 		int ret = load_fs(data, sizeof(data)/sizeof(data[0]));
 		EXPECT_EQ(-1, ret);
+	}
+
+	/*
+	* load_fs success ...
+	*/
+	TEST(libdwarfs, load_valid_filesystem) {
+		int ret = load_fs(gfsData, gfsSize);
+		EXPECT_EQ(0, ret);
 	}
 
 }

@@ -28,9 +28,6 @@
  */
 
 #pragma once
-
 #include <incbin.h>
 
-namespace tebako {
-	INCBIN_EXTERN(fs);
-}
+INCBIN(fs, "/mnt/d/Projects/6.Projects/libdwarfs/out/build/WSL-GCC-Debug/packaged_filesystem/fs.bin");
