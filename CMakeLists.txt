@@ -172,7 +172,7 @@ pkg_search_module(GTEST REQUIRED gtest_main)
 # ...................................................................
 # Packaged filesystem
 
-add_custom_target(PACKAGED_FILESYSTEM  
+add_custom_target(PACKAGED_FILESYSTEM ALL
    COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
    DEPENDS ${DWARFS_PRJ} 
    BYPRODUCTS ${DATA_BIN_FILE}
