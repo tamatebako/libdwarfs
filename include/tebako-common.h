@@ -108,10 +108,9 @@ extern "C" {
 typedef char tebako_path_t[TEBAKO_PATH_LENGTH];
 
 void tebako_set_cwd(const char* path);
-char* const tebako_get_cwd(void);
+const char* tebako_get_cwd(void);
 int is_tebako_path(const char* path);
-int load_fs(void);
-
+int load_fs(const unsigned char* data, const unsigned int size);
 
 #ifdef __cplusplus
 }

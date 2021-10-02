@@ -38,8 +38,6 @@
 #include "dwarfs/options.h"
 #include "dwarfs/util.h"
 
-#define FUSE_ROOT_ID  1
-
 namespace dwarfs {
     struct options {
         const char* progname{ nullptr };
@@ -62,8 +60,11 @@ namespace dwarfs {
     };
 
     struct dwarfs_userdata {
-        dwarfs_userdata(std::ostream& os)
-            : lgr{ os } {}
+        dwarfs_userdata(std::ostream& os, const unsigned char* dt, const unsigned int sz)
+            : lgr{ os }, data{ dt }, size{ sz } { }
+
+        const unsigned char* data;
+        const unsigned int size;
 
         options opts;
         stream_logger lgr;

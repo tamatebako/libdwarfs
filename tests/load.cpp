@@ -32,10 +32,21 @@
 #include <tebako-common.h>
 
 namespace {
+	/*
+	* Just check that we are alive ...
+	*/
+	TEST(libdwarfs, smoke) {
+		int i = 1;
+		EXPECT_EQ(1, i);
+	}
 
-TEST(load, dummy) {
-	int ret = load_fs();
-	EXPECT_EQ(0, ret);
-}
+	/*
+	* load_fs failure ...
+	*/
+	TEST(libdwarfs, load_invalid_filesystem) {
+		const unsigned char data[] = "This is broken filesystem image";
+		int ret = load_fs(data, sizeof(data)/sizeof(data[0]));
+		EXPECT_EQ(-1, ret);
+	}
 
 }

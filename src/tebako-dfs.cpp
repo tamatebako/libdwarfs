@@ -42,20 +42,18 @@
 #include "tebako-common.h"
 #include "tebako-mfs.h"
 #include "tebako-dfs.h"
-#include "tebako-fs.h"
 
 using namespace std;
-
 
 /*
 *   C wrapper for dwarfs load_filesystem implementation  @ tebako-dfs.cpp
 */
-extern "C" int load_fs(void)
+extern "C" int load_fs(const unsigned char* data, const unsigned int size)
 {
     int ret = 0;
     try
     {
-        dwarfs::dwarfs_userdata userdata(std::cerr);
+        dwarfs::dwarfs_userdata userdata(std::cerr, data, size);
 
         userdata.opts.cache_image = 0;
         userdata.opts.cache_files = 1;
@@ -71,6 +69,8 @@ extern "C" int load_fs(void)
 }
 
 namespace dwarfs { 
+
+    static const int FUSE_ROOT_ID = 1;
 
     template <typename LoggerPolicy>
     void load_filesystem(dwarfs_userdata& userdata) {
@@ -104,7 +104,7 @@ namespace dwarfs {
         }
 
         userdata.fs = filesystem_v2(
-            userdata.lgr, std::make_shared<tebako::mfs>(&tebako::gfsData, tebako::gfsSize), fsopts, FUSE_ROOT_ID);
+            userdata.lgr, std::make_shared<tebako::mfs>(&userdata.data, userdata.size), fsopts, FUSE_ROOT_ID);
 
         ti << "file system initialized";
     }

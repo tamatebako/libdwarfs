@@ -177,12 +177,10 @@ add_library(dwarfs-wr STATIC
     "src/io-helpers.c"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
-    "src/fs.cpp"
     "include/tebako-common.h"
     "include/tebako-io.h"
     "include/tebako-mfs.h"
     "include/tebako-dfs.h"
-    "include/tebako-fs.h"
     "include/tebako-unix-defines.h"
     "include/tebako-windows-defines.h" 
     )
@@ -204,8 +202,10 @@ add_dependencies(dwarfs-wr ${INCBIN_PRJ} ${DWARFS_PRJ})
 #FetchContent_MakeAvailable(googletest)
  
 add_executable(wr-tests
-    "tests/smoke.cpp"
+    
     "tests/load.cpp"
+#    "tests/fs.cpp"
+#    "tests/tebako-fs.h"
 )
 
 target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})

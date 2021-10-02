@@ -46,7 +46,7 @@ extern "C" {
 /*
 	 Gets current working directory 
 */
-	char* const tebako_get_cwd(void)
+	const char* tebako_get_cwd(void)
 	{
 		return tebako_cwd;
 	}
