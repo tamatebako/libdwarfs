@@ -33,12 +33,12 @@ project(libdwarfs-wr VERSION 0.1.0)
 include(ExternalProject)
 include(FetchContent)
 include(GoogleTest)
+include(CTest)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 
-option(WITH_TESTS "build with tests" ON)
+enable_testing()
+
 option(SYSTEM_GTESTS "prefer system gtest" ON)
-
-
 
 set(Boost_USE_STATIC_LIBS   ON)
 set(BOOST_LINK_STATIC       ON)
