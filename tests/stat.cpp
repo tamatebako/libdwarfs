@@ -25,7 +25,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **/
+ */
+
+
+/*  
+*  Unit tests for 'tebako_stat' function and underlying 'dwarfs_stat'
+*/
 
 #include <gtest/gtest.h>
 
@@ -34,75 +39,68 @@
 
 #include "tebako-fs.h"
 
- /** 
- *  - Unit tests for 'load_fs/drop_fs' functions
- *  - Unit tests for tebako_xxx functions for the case when dwarfs is not loaded
- *    (placed here since all other test units contain fixture that loads dwarfs)
- **/
-
 namespace {
-	TEST(LoadTests, smoke) {
-		int i = 1;
-		EXPECT_EQ(1, i);
-	}
-
-	TEST(LoadTests, tebako_load_invalid_filesystem) {
-		const unsigned char data[] = "This is broken filesystem image";
-		int ret = load_fs(	&data[0], 
-							sizeof(data)/sizeof(data[0]),
-							"debug" /*debuglevel*/,
-							NULL	/* cachesize*/,
-							NULL	/* workers */,
-							NULL	/* mlock */,
-							NULL	/* decompress_ratio*/,
-							NULL    /* image_offset */
+	class StatTests : public testing::Test {
+	protected:
+		static void SetUpTestSuite() {
+			load_fs(&gfsData[0],
+				gfsSize,
+				"debug" /*debuglevel*/,
+				NULL	/* cachesize*/,
+				NULL	/* workers */,
+				NULL	/* mlock */,
+				NULL	/* decompress_ratio*/,
+				NULL    /* image_offset */
 			);
-		EXPECT_EQ(-1, ret);
-		drop_fs();
-	}
 
-	TEST(LoadTests, tebako_load_invalid_parameter) {
-		int ret = load_fs(&gfsData[0],
-			gfsSize,
-			"invalid parameter" /*debuglevel*/,
-			NULL	/* cachesize*/,
-			NULL	/* workers */,
-			NULL	/* mlock */,
-			NULL	/* decompress_ratio*/,
-			NULL    /* image_offset */
-		);
+		}
 
-		EXPECT_EQ(1, ret);
-		drop_fs();
-	}
+		static void TearDownTestSuite() {
+			drop_fs();
+		}
+	};
 
-	TEST(LoadTests, tebako_load_valid_filesystem) {
-		int ret = load_fs(	&gfsData[0], 
-							gfsSize,
-							"debug" /*debuglevel*/,
-							NULL	/* cachesize*/,
-							NULL	/* workers */,
-							NULL	/* mlock */,
-							NULL	/* decompress_ratio*/,
-							NULL    /* image_offset */
-		);
-
-		EXPECT_EQ(0, ret);
-		drop_fs();
-	}
-
-	TEST(LoadTests, tebako_stat_not_loaded_filesystem) {
+	TEST_F(StatTests, tebako_stat_absolute_path) {
 		struct stat buf;
 		int ret = tebako_stat("/__tebako_memfs__/file.txt", &buf);
-		EXPECT_EQ(-1, ret);
-		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(0, ret);
 	}
 
-	TEST(LoadTests, tebako_access_not_loaded_filesystem) {
+	TEST_F(StatTests, tebako_stat_absolute_path_no_file) {
 		struct stat buf;
-		int ret = tebako_access("/__tebako_memfs__/file.txt", W_OK);
-		EXPECT_EQ(-1, ret);
+		int ret = tebako_stat("/__tebako_memfs__/no_file.txt", &buf);
 		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(-1, ret);
 	}
 
+	TEST_F(StatTests, tebako_stat_relative_path) {
+		struct stat buf;
+		int ret = tebako_chdir("/__tebako_memfs__/");
+		EXPECT_EQ(0, ret);
+		ret = tebako_stat("directory-1/file-in-directory-1.txt", &buf);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(StatTests, tebako_stat_relative_path_no_file) {
+		struct stat buf;
+		int ret = tebako_chdir("/__tebako_memfs__/directory-2");
+		EXPECT_EQ(0, ret);
+		ret = tebako_stat("no_file.txt", &buf);
+		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(-1, ret);
+	}
+
+	TEST_F(StatTests, tebako_stat_absolute_path_pass_through) {
+		struct stat buf;
+		int ret = tebako_stat("/usr/bin/bash", &buf);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(StatTests, tebako_stat_relative_path_pass_through) {
+		struct stat buf;
+		int ret = tebako_chdir("/usr/bin");
+		EXPECT_EQ(0, ret);
+		ret = tebako_stat("sh", &buf);
+		EXPECT_EQ(0, ret);
+	}
 }

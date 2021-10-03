@@ -63,3 +63,7 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      run: make test
+   

@@ -27,38 +27,39 @@
  *
  */
 
-+#define RUBY_PACKER_GEN_EXPANDED_NAME(path)	\
-+			ruby_packer_cwd_len = strlen(ruby_packer_cwd); \
-+			memcpy(ruby_packer_expanded, ruby_packer_cwd, ruby_packer_cwd_len); \
-+			memcpy_len = strlen(path); \
-+			if (SQUASHFS_PATH_LEN - ruby_packer_cwd_len < memcpy_len) { memcpy_len = SQUASHFS_PATH_LEN - ruby_packer_cwd_len; } \
-+			memcpy(&ruby_packer_expanded[ruby_packer_cwd_len], (path), memcpy_len); \
-+			ruby_packer_expanded[ruby_packer_cwd_len + memcpy_len] = '\0'
+#include <tebako-common.h>
+#include <tebako-io.h>
+#include <tebako-dfs.h>
 
 
-int tebako_stat(const char* path, struct stat* buf)
+/*
+* int access(const char* path, int amode);
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+* 
+* The access() function shall check the file named by the pathname pointed to by the path argument for accessibility according to the bit pattern contained in amode. 
+* The checks for accessibility (including directory permissions checked during pathname resolution) shall be performed using THE REAL USER ID in place of the effective user ID 
+* and THE REAL GROUP ID in place of the effective group ID.
+*/
+
+int tebako_access(const char* path, int amode)
 {
-	if (ruby_packer_cwd[0] && '/' != *path) {
-		sqfs_path ruby_packer_expanded;
-		size_t ruby_packer_cwd_len;
-		size_t memcpy_len;
-		RUBY_PACKER_GEN_EXPANDED_NAME(path);
-		RUBY_PACKER_CONSIDER_MKDIR_WORKDIR_RETURN(
-			ruby_packer_expanded,
-			ruby_packer_dos_return(squash_stat(ruby_packer_fs, ruby_packer_expanded, buf)),
-			stat(mkdir_workdir_expanded, buf)
-		);
+	const char* p_path = NULL;
+	tebako_path_t t_path;
+	if (is_tebako_cwd() && path[0] != '/') {
+		p_path = tebako_expand_path(t_path, path);
 	}
-	else if (ruby_packer_is_path(path)) {
-		RUBY_PACKER_CONSIDER_MKDIR_WORKDIR_RETURN(
-			path,
-			ruby_packer_dos_return(squash_stat(ruby_packer_fs, path, buf)),
-			stat(mkdir_workdir_expanded, buf)
-			);
-		
+	else if (is_tebako_path(path)) {
+		p_path = path;
+	}
+
+	if (p_path) {
+		uid_t uid = getuid();
+		gid_t gid = getgid();
+		return dwarfs_access(p_path, amode, uid, gid);
 	}
 	else {
-		return stat(path, buf);
-		
+		return access(path, amode);
+
 	}
 }
+

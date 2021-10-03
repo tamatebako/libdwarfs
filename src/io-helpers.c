@@ -28,8 +28,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <unistd.h>
 
 #include <tebako-common.h>
@@ -45,24 +43,22 @@ extern "C" {
 
 /*
 	 Gets current working directory 
+     TODO: [thread safe ?]
 */
-	const char* tebako_get_cwd(void)
-	{
-		return tebako_cwd;
+	const char* tebako_get_cwd(tebako_path_t cwd) {
+		return strcpy(cwd, tebako_cwd);
 	}
 
 /*
 	 Sets current working directory to path and removes all extra trailing slashes
-*/ 
-	void tebako_set_cwd(const char* path)
-	{
-		if (!path)
-		{
+     TODO: [thread safe ?]
+*/
+	void tebako_set_cwd(const char* path) {
+		if (!path) {
 			tebako_cwd[0] = '\0';
 		}
-		else
-		{
-			size_t len = min(strlen(path), TEBAKO_PATH_LENGTH - 1);
+		else {
+			size_t len = min(strlen(path), TEBAKO_PATH_LENGTH);
 			memcpy(tebako_cwd, path, len);
 			while (tebako_cwd[len - 1] == '/') { len--; }
 			tebako_cwd[len] = '/';
@@ -70,8 +66,10 @@ extern "C" {
 		}
 	}
 
-	int is_tebako_path(const char* path)
-	{
+/*
+	Checks if a path is withing tebako memfs
+*/
+	int is_tebako_path(const char* path) {
 		return (strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 #ifdef _WIN32
 			|| strncmp(path, "\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
@@ -86,6 +84,30 @@ extern "C" {
 #endif
 			) ? -1 : 0;
 	}
+
+/*
+	Checks if the current cwd path is withing tebako memfs
+	 TODO: [thread safe ?]
+*/
+	int is_tebako_cwd(void) {
+		return 	(tebako_cwd[0] == '\0') ? 0 : -1;
+	}
+
+
+/*
+	 Expands a path withing tebako memfs
+	 TODO: [thread safe ?]
+*/
+	const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
+		size_t cwd_len = strlen(tebako_cwd);
+		memcpy(expanded_path, tebako_cwd, cwd_len);
+
+		size_t path_len = min(strlen(path), TEBAKO_PATH_LENGTH - cwd_len);
+		memcpy(expanded_path + cwd_len, path, path_len);
+		expanded_path[cwd_len + path_len] = '\0';
+		return expanded_path;
+	}
+
 
 #ifdef __cplusplus
 }

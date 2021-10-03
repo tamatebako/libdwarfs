@@ -3,7 +3,6 @@
 *.lo
 *.o
 *.obj
-*.bin
 
 # Vim
 *.swp
@@ -39,6 +38,9 @@ out
 deps
 
 # Generated files
+tests/tebako-fs.cpp
+include/version.h
+*.bin
 
 # VS files
 .vs

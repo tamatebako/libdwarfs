@@ -27,8 +27,11 @@
  *
  */
 
-#ifndef TEBAKO_IO_H_INCLUDED
-#define _TEBAKO_IO_H_INCLUDED
+#pragma once
+
+#include <stddef.h>
+#include <sys/stat.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif // !__cplusplus
@@ -36,7 +39,8 @@ extern "C" {
 	char* tebako_getwd(char* buf);
 	int   tebako_chdir(const char* path);
 	int   tebako_stat(const char* path, struct stat* buf);
+	int   tebako_lstat(const char* path, struct stat* buf);
+	int   tebako_access(const char* path, int amode);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-#endif // !TEBAKO_IO_H_INCLUDED

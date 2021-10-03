@@ -27,91 +27,32 @@
  *
  */
 
-#include <string.h>
-#include <unistd.h>
-
+#include <stddef.h>
+#include <sys/stat.h>
 #include <tebako-common.h>
 #include <tebako-io.h>
+#include <tebako-dfs.h>
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif // !__cplusplus
-/*	
-*   getcwd()
-*   https://pubs.opengroup.org/onlinepubs/9699919799/
-*/
-
-	char* tebako_getcwd(char* buf, size_t size)
-	{
-		char _cwd[TEBAKO_PATH_LENGTH];
-		const char* cwd = tebako_get_cwd(_cwd);
-		size_t len = strlen(cwd);
-		if (len) {
-			if (!buf) {
-				if (!size) {
-					buf = strdup(cwd);
-					if (!buf) {
-						TEBAKO_SET_LAST_ERROR(ENOMEM);
-					}
-				}
-				else {
-					if (len > size-1) {
-						TEBAKO_SET_LAST_ERROR(ERANGE);
-						buf = NULL;
-					}
-					else {
-						buf = malloc(size);
-						if (!buf) {
-							TEBAKO_SET_LAST_ERROR(ENOMEM);
-						}
-						else {
-							strcpy(buf, cwd);
-						}
-					}
-				}
-			}
-			else {
-				if (!size) {
-					TEBAKO_SET_LAST_ERROR(EINVAL);
-					buf = NULL;
-				} 
-				else if (len > size-1)
-				{
-					TEBAKO_SET_LAST_ERROR(ERANGE);
-					buf = NULL;
-				}
-				else
-				    strcpy(buf, cwd);
-			}
-			return buf;
-		}
-		else
-   		  return getcwd(buf, size);
-	}
 /*
-*   getwd()
-*	LEGACY, DEPRECATED
-*	https://pubs.opengroup.org/onlinepubs/009695299/functions/getwd.html
+* stat()
+* lstat()
+* fstat()
+* https://pubs.opengroup.org/onlinepubs/9699919799/
 */
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif 
-	char* tebako_getwd(char* buf)
-	{
-		if (is_tebako_cwd()) {
-			tebako_get_cwd(buf);
-			return buf;
-		} 
-		else {
-			return getwd(buf);
-		}
-	}
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif 
 
-#ifdef __cplusplus
+int tebako_stat(const char* path, struct stat* buf)
+{
+	const char* p_path = NULL;
+	tebako_path_t t_path;
+	if (is_tebako_cwd() && path[0] != '/') {
+		p_path = tebako_expand_path(t_path, path);
+	}
+	else if (is_tebako_path(path)) {
+		p_path = path;
+	}
+
+	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
 }
-#endif // !__cplusplus
+
+
