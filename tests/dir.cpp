@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,10 +24,58 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
-#pragma once
-#include <incbin.h>
+#include <limits.h>
+#include <sys/stat.h>
+#include <errno.h>
 
-INCBIN(fs, "@DATA_BIN_FILE@");
+
+#include <gtest/gtest.h>
+
+#include <tebako-dfs.h>
+#include <tebako-io.h>
+
+#include "tebako-fs.h"
+
+namespace {
+	class DirTests : public testing::Test {
+	protected:
+		static void SetUpTestSuite() {
+			load_fs(&gfsData[0],
+				gfsSize,
+				"debug" /*debuglevel*/,
+				NULL	/* cachesize*/,
+				NULL	/* workers */,
+				NULL	/* mlock */,
+				NULL	/* decompress_ratio*/,
+				NULL    /* image_offset */
+			);
+
+		}
+
+		static void TearDownTestSuite() {
+			drop_fs();
+		}
+	};
+
+	TEST_F(DirTests, smoke) {
+		int ret = 0;
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(DirTests, stat_tebako_absolute_path) {
+		struct stat buf;
+		int ret = tebako_stat("/__tebako_memfs__/file.txt", &buf);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(DirTests, stat_tebako_absolute_path_no_file) {
+		struct stat buf;
+		int ret = tebako_stat("/__tebako_memfs__/no_file.txt", &buf);
+		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(-1, ret);
+	}
+
+}

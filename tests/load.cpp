@@ -28,8 +28,12 @@
  */
 
 #include <limits.h>
+
 #include <gtest/gtest.h>
-#include <tebako-common.h>
+
+#include <tebako-dfs.h>
+#include <tebako-io.h>
+
 #include "tebako-fs.h"
 
 
@@ -37,7 +41,7 @@ namespace {
 	/*
 	* Just check that we are alive ...
 	*/
-	TEST(libdwarfs, smoke) {
+	TEST(LoadTests, smoke) {
 		int i = 1;
 		EXPECT_EQ(1, i);
 	}
@@ -45,18 +49,55 @@ namespace {
 	/*
 	* load_fs failure ...
 	*/
-	TEST(libdwarfs, load_invalid_filesystem) {
+	TEST(LoadTests, load_invalid_filesystem) {
 		const unsigned char data[] = "This is broken filesystem image";
-		int ret = load_fs(data, sizeof(data)/sizeof(data[0]));
+		int ret = load_fs(	&data[0], 
+							sizeof(data)/sizeof(data[0]),
+							"debug" /*debuglevel*/,
+							NULL	/* cachesize*/,
+							NULL	/* workers */,
+							NULL	/* mlock */,
+							NULL	/* decompress_ratio*/,
+							NULL    /* image_offset */
+			);
 		EXPECT_EQ(-1, ret);
+		drop_fs();
+	}
+
+	/*
+	* load_fs invalid parameter ...
+	*/
+	TEST(LoadTests, load_invalid_parameter) {
+		int ret = load_fs(&gfsData[0],
+			gfsSize,
+			"invalid parameter" /*debuglevel*/,
+			NULL	/* cachesize*/,
+			NULL	/* workers */,
+			NULL	/* mlock */,
+			NULL	/* decompress_ratio*/,
+			NULL    /* image_offset */
+		);
+
+		EXPECT_EQ(1, ret);
+		drop_fs();
 	}
 
 	/*
 	* load_fs success ...
 	*/
-	TEST(libdwarfs, load_valid_filesystem) {
-		int ret = load_fs(gfsData, gfsSize);
+	TEST(LoadTests, load_valid_filesystem) {
+		int ret = load_fs(	&gfsData[0], 
+							gfsSize,
+							"debug" /*debuglevel*/,
+							NULL	/* cachesize*/,
+							NULL	/* workers */,
+							NULL	/* mlock */,
+							NULL	/* decompress_ratio*/,
+							NULL    /* image_offset */
+		);
+
 		EXPECT_EQ(0, ret);
+		drop_fs();
 	}
 
 }

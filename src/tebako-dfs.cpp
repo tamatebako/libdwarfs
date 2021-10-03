@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,81 +38,51 @@
 
 #include <folly/Conv.h>
 #include <folly/experimental/symbolizer/SignalHandler.h>
+#include "dwarfs/error.h"
+#include "dwarfs/filesystem_v2.h"
+#include "dwarfs/fstypes.h"
+#include "dwarfs/logger.h"
+#include "dwarfs/metadata_v2.h"
+#include "dwarfs/mmap.h"
+#include "dwarfs/options.h"
+#include "dwarfs/util.h"
+
 
 #include "tebako-common.h"
 #include "tebako-mfs.h"
 #include "tebako-dfs.h"
 
-using namespace dwarfs;
+namespace dwarfs {
+    struct options {
+        int enable_nlink{ 0 };
+        int readonly{ 0 };
+        int cache_image{ 0 };
+        int cache_files{ 0 };
+        size_t cachesize{ 0 };
+        size_t workers{ 0 };
+        mlock_mode lock_mode{ mlock_mode::NONE };
+        double decompress_ratio{ 0.0 };
+        logger::level_type debuglevel{ logger::level_type::ERROR };
+        off_t image_offset{ 0 };
+    };
 
-/*
-*   C wrapper for dwarfs load_filesystem implementation  @ tebako-dfs.cpp
-*/
-extern "C" int load_fs(const unsigned char data[], const unsigned int size)
-{
-    int ret = 0;
-    try
-    {
-        dwarfs_userdata userdata(std::cerr);
+    struct dwarfs_userdata {
+        dwarfs_userdata(std::ostream& os, const void* dt, const unsigned int sz)
+            : lgr{ os }, data{ dt }, size{ sz } { }
 
-        userdata.opts.cache_image = 0;
-        userdata.opts.cache_files = 1;
+        const void* data;
+        const unsigned int size;
 
-
-        try {
-            // TODO: foreground mode, stderr vs. syslog?
-
-            userdata.opts.debuglevel = userdata.opts.debuglevel_str
-                ? logger::parse_level(userdata.opts.debuglevel_str)
-                : logger::INFO;
-
-            userdata.lgr.set_threshold(userdata.opts.debuglevel);
-            userdata.lgr.set_with_context(userdata.opts.debuglevel >= logger::DEBUG);
-
-            userdata.opts.cachesize = userdata.opts.cachesize_str ? dwarfs::parse_size_with_unit(userdata.opts.cachesize_str) : (static_cast<size_t>(512) << 20);
-            userdata.opts.workers = userdata.opts.workers_str ? folly::to<size_t>(userdata.opts.workers_str) : 2;
-            userdata.opts.lock_mode =  userdata.opts.mlock_str ? parse_mlock_mode(userdata.opts.mlock_str) : mlock_mode::NONE;
-            userdata.opts.decompress_ratio = userdata.opts.decompress_ratio_str ? folly::to<double>(userdata.opts.decompress_ratio_str) : 0.8;
-        }
-        catch (runtime_error const& e) {
-            std::cerr << "error: " << e.what() << std::endl;
-            return 1;
-        }
-        catch (std::filesystem::filesystem_error const& e) {
-            std::cerr << e.what() << std::endl;
-            return 1;
-        }
-
-        if (userdata.opts.decompress_ratio < 0.0 || userdata.opts.decompress_ratio > 1.0) {
-            std::cerr << "error: decratio must be between 0.0 and 1.0" << std::endl;
-            return 1;
-        }
-
-        LOG_PROXY(debug_logger_policy, userdata.lgr);
-
-        LOG_INFO << PRJ_NAME << " version " << PRJ_VERSION_STRING;
-
-
-
-        load_filesystem<dwarfs::prod_logger_policy>(userdata, data, size);
-    }
-    catch (...)
-    {
-        ret = -1;
-    }
-
-    return ret;
-}
-
-namespace dwarfs { 
-
-    static const int FUSE_ROOT_ID = 1;
+        options opts;
+        stream_logger lgr;
+        filesystem_v2 fs;
+    };
 
     template <typename LoggerPolicy>
-    void load_filesystem(dwarfs_userdata& userdata, const unsigned char data[], const unsigned int size) {
-        LOG_PROXY(LoggerPolicy, userdata.lgr);
+    static void load_filesystem(dwarfs_userdata* userdata) {
+        LOG_PROXY(LoggerPolicy, userdata->lgr);
         auto ti = LOG_TIMED_INFO;
-        auto& opts = userdata.opts;
+        auto& opts = userdata->opts;
 
         filesystem_options fsopts;
         fsopts.lock_mode = opts.lock_mode;
@@ -123,27 +93,122 @@ namespace dwarfs {
         fsopts.block_cache.init_workers = false;
         fsopts.metadata.enable_nlink = bool(opts.enable_nlink);
         fsopts.metadata.readonly = bool(opts.readonly);
+        fsopts.image_offset = opts.image_offset;
 
-        if (opts.image_offset_str) {
-            std::string image_offset{ opts.image_offset_str };
 
-            try 
-            {
-                fsopts.image_offset = image_offset == "auto"
-                    ? filesystem_options::IMAGE_OFFSET_AUTO
-                    : folly::to<off_t>(image_offset);
-            }
-            catch (...) 
-            {
-                DWARFS_THROW(runtime_error, "failed to parse offset: " + image_offset);
-            }
-        }
-
-        userdata.fs = filesystem_v2(
-            userdata.lgr, std::make_shared<tebako::mfs>(&data, size), fsopts, FUSE_ROOT_ID);
+        userdata->fs = filesystem_v2(
+            userdata->lgr, std::make_shared<tebako::mfs>(userdata->data, userdata->size), fsopts);
 
         ti << "file system initialized";
     }
+}
 
-} // namespace dwarfs
+
+
+using namespace dwarfs;
+
+static dwarfs_userdata* usd = NULL;
+
+extern "C" void drop_fs(void) {
+    if (usd) {
+        delete usd;
+    }
+    usd = NULL;
+}
+
+/*
+*   C wrapper for dwarfs load_filesystem implementation  @ tebako-dfs.cpp
+*/
+extern "C" int load_fs( const void* data, 
+                        const unsigned int size,
+                        const char* debuglevel,
+                        const char* cachesize,
+                        const char* workers,
+                        const char* mlock,
+                        const char* decompress_ratio,
+                        const char* image_offset)
+{
+    try  {
+        drop_fs();
+        usd = new dwarfs_userdata(std::cerr, data, size);
+
+        usd->opts.cache_image = 0;
+        usd->opts.cache_files = 1;
+
+
+        try {
+            usd->opts.debuglevel = debuglevel ? logger::parse_level(debuglevel): logger::INFO;
+
+            usd->lgr.set_threshold(usd->opts.debuglevel);
+            usd->lgr.set_with_context(usd->opts.debuglevel >= logger::DEBUG);
+
+            usd->opts.cachesize = cachesize ? dwarfs::parse_size_with_unit(cachesize) : (static_cast<size_t>(512) << 20);
+            usd->opts.workers = workers ? folly::to<size_t>(workers) : 2;
+            usd->opts.lock_mode =  mlock ? parse_mlock_mode(mlock) : mlock_mode::NONE;
+            usd->opts.decompress_ratio = decompress_ratio ? folly::to<double>(decompress_ratio) : 0.8;
+        }
+        catch (runtime_error const& e) {
+            std::cerr << "error: " << e.what() << std::endl;
+            return 1;
+        }
+        catch (std::filesystem::filesystem_error const& e) {
+            std::cerr << e.what() << std::endl;
+            return 1;
+        }
+
+        if (usd->opts.decompress_ratio < 0.0 || usd->opts.decompress_ratio > 1.0) {
+            std::cerr << "error: decratio must be between 0.0 and 1.0" << std::endl;
+            return 1;
+        }
+
+        if (image_offset) {
+            std::string img_offset{ image_offset };
+            try {
+                usd->opts.image_offset = (img_offset == "auto") ? filesystem_options::IMAGE_OFFSET_AUTO : folly::to<off_t>(img_offset);
+            }
+            catch (...)  {
+                std::cerr << "error: failed to parse offset: " + img_offset << std::endl;
+                return 1;
+            }
+        }
+
+        LOG_PROXY(debug_logger_policy, usd->lgr);
+        LOG_INFO << PRJ_NAME << " version " << PRJ_VERSION_STRING;
+
+        (usd->opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(usd) :  load_filesystem<prod_logger_policy>(usd);
+    }
+
+    catch (...) {
+        return -1;
+    }
+
+    return 0;
+}
+
+extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
+    int err = ENOENT;
+    int ret = -1;
+    try {
+        auto inode = usd->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
+        if (inode) {
+            err = usd->fs.getattr(*inode, buf);
+            if (err == 0) {
+                ret = 0;
+            }
+        }
+    }
+    catch (dwarfs::system_error const& e) {
+        err = e.get_errno();
+    }
+    catch (std::exception const& e) {
+        err = EIO;
+    }
+
+    if(ret) {
+        TEBAKO_SET_LAST_ERROR(err);
+    }
+
+    return ret;
+}
+
 

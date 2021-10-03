@@ -29,43 +29,24 @@
 
 #pragma once
 
-#include "dwarfs/error.h"
-#include "dwarfs/filesystem_v2.h"
-#include "dwarfs/fstypes.h"
-#include "dwarfs/logger.h"
-#include "dwarfs/metadata_v2.h"
-#include "dwarfs/mmap.h"
-#include "dwarfs/options.h"
-#include "dwarfs/util.h"
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+    int load_fs(const void* data,
+        const unsigned int size,
+        const char* debuglevel,
+        const char* cachesize,
+        const char* workers,
+        const char* mlock,
+        const char* decompress_ratio,
+        const char* image_offset
+    );
 
-namespace dwarfs {
-    struct options {
-        const char* cachesize_str{ nullptr };        
-        const char* debuglevel_str{ nullptr };       
-        const char* workers_str{ nullptr };          
-        const char* mlock_str{ nullptr };            
-        const char* decompress_ratio_str{ nullptr }; 
-        const char* image_offset_str{ nullptr };     
-        int enable_nlink{ 0 };
-        int readonly{ 0 };
-        int cache_image{ 0 };
-        int cache_files{ 0 };
-        size_t cachesize{ 0 };
-        size_t workers{ 0 };
-        mlock_mode lock_mode{ mlock_mode::NONE };
-        double decompress_ratio{ 0.0 };
-        logger::level_type debuglevel{ logger::level_type::ERROR };
-    };
+    void drop_fs(void);
 
-    struct dwarfs_userdata {
-        dwarfs_userdata(std::ostream& os)
-            : lgr{ os } { }
-
-        options opts;
-        stream_logger lgr;
-        filesystem_v2 fs;
-    };
-
-    template <typename LoggerPolicy>
-    void load_filesystem(dwarfs_userdata& userdata, const unsigned char data[], const unsigned int size);
+    struct stat;
+    int dwarfs_stat(const char* path, struct stat* buf);
+#ifdef __cplusplus
 }
+#endif // __cplusplus
+

@@ -27,38 +27,33 @@
  *
  */
 
-+#define RUBY_PACKER_GEN_EXPANDED_NAME(path)	\
-+			ruby_packer_cwd_len = strlen(ruby_packer_cwd); \
-+			memcpy(ruby_packer_expanded, ruby_packer_cwd, ruby_packer_cwd_len); \
-+			memcpy_len = strlen(path); \
-+			if (SQUASHFS_PATH_LEN - ruby_packer_cwd_len < memcpy_len) { memcpy_len = SQUASHFS_PATH_LEN - ruby_packer_cwd_len; } \
-+			memcpy(&ruby_packer_expanded[ruby_packer_cwd_len], (path), memcpy_len); \
-+			ruby_packer_expanded[ruby_packer_cwd_len + memcpy_len] = '\0'
+#include <stddef.h>
+#include <sys/stat.h>
+#include <tebako-common.h>
+#include <tebako-io.h>
+#include <tebako-dfs.h>
 
+
+
+/*
+* stat()
+* lstat()
+* fstat()
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*/
 
 int tebako_stat(const char* path, struct stat* buf)
 {
-	if (ruby_packer_cwd[0] && '/' != *path) {
-		sqfs_path ruby_packer_expanded;
-		size_t ruby_packer_cwd_len;
-		size_t memcpy_len;
-		RUBY_PACKER_GEN_EXPANDED_NAME(path);
-		RUBY_PACKER_CONSIDER_MKDIR_WORKDIR_RETURN(
-			ruby_packer_expanded,
-			ruby_packer_dos_return(squash_stat(ruby_packer_fs, ruby_packer_expanded, buf)),
-			stat(mkdir_workdir_expanded, buf)
-		);
+	const char* p_path = NULL;
+	tebako_path_t t_path;
+	if (is_tebako_cwd() && path[0] != '/') {
+		p_path = tebako_expand_path(t_path, path);
 	}
-	else if (ruby_packer_is_path(path)) {
-		RUBY_PACKER_CONSIDER_MKDIR_WORKDIR_RETURN(
-			path,
-			ruby_packer_dos_return(squash_stat(ruby_packer_fs, path, buf)),
-			stat(mkdir_workdir_expanded, buf)
-			);
-		
+	else if (is_tebako_path(path)) {
+		p_path = path;
 	}
-	else {
-		return stat(path, buf);
-		
-	}
+
+	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
 }
+
+

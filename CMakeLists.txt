@@ -35,6 +35,11 @@ include(FetchContent)
 include(GoogleTest)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 
+option(WITH_TESTS "build with tests" ON)
+option(SYSTEM_GTESTS "prefer system gtest" ON)
+
+
+
 set(Boost_USE_STATIC_LIBS   ON)
 set(BOOST_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
@@ -125,15 +130,14 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 add_library(dwarfs-wr STATIC 
     "src/getcwd.c"
     "src/chdir.c"
+    "src/stat.c"
     "src/io-helpers.c"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
     "include/tebako-common.h"
     "include/tebako-io.h"
     "include/tebako-mfs.h"
-    "include/tebako-dfs.h"
-    "include/tebako-unix-defines.h"
-    "include/tebako-windows-defines.h" 
+    "include/tebako-defines.h" 
     )
 
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
@@ -179,13 +183,15 @@ add_custom_target(PACKAGED_FILESYSTEM ALL
 )
 
 configure_file(
-   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs.h.in 
-   ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.h
+   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs.cpp.in 
+   ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
    @ONLY
 )
  
 add_executable(wr-tests 
     "tests/load.cpp"
+    "tests/dir.cpp"
+    "tests/tebako-fs.cpp"
     "tests/tebako-fs.h"
 )
 
@@ -242,7 +248,6 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-tests)
  find_library(_LIBZ "libz.a" REQUIRED) 
  find_library(_LIBLJEMALLOC "libjemalloc.a" REQUIRED) 
  find_library(_LIBPTHREAD "libpthread.a" REQUIRED) 
-# find_library(_LIBFUSE "libfuse3.a" REQUIRED) 
  find_library(_LIBDL "libdl.a" REQUIRED) 
  find_library(_LIBC "libc.a" REQUIRED)  
  find_library(_LIBM "libm.a" REQUIRED)
@@ -265,6 +270,5 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-tests)
    ${_LIBUNWIND}       ${_LIBLZMA}
  )
 
-# ${_LIBFUSE}
 # ${_LIBC}
 

@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako (libdwarfs-wr)
+ * This file is a part of tebako
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,21 +24,9 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  */
 
-#pragma once
+#include <incbin.h>
 
-#include <stddef.h>
-#include <sys/stat.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif // !__cplusplus
-	char* tebako_getcwd(char* buf, size_t size);
-	char* tebako_getwd(char* buf);
-	int   tebako_chdir(const char* path);
-	int   tebako_stat(const char* path, struct stat* buf);
-#ifdef __cplusplus
-}
-#endif // __cplusplus
+INCBIN(fs, "@DATA_BIN_FILE@");
