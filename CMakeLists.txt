@@ -190,7 +190,7 @@ configure_file(
  
 add_executable(wr-tests 
     "tests/load.cpp"
-    "tests/dir.cpp"
+    "tests/stat.cpp"
     "tests/tebako-fs.cpp"
     "tests/tebako-fs.h"
 )

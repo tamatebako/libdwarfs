@@ -27,8 +27,6 @@
  *
  */
 
-#include <limits.h>
-
 #include <gtest/gtest.h>
 
 #include <tebako-dfs.h>
@@ -38,9 +36,6 @@
 
 
 namespace {
-	/*
-	* Just check that we are alive ...
-	*/
 	TEST(LoadTests, smoke) {
 		int i = 1;
 		EXPECT_EQ(1, i);
@@ -64,9 +59,6 @@ namespace {
 		drop_fs();
 	}
 
-	/*
-	* load_fs invalid parameter ...
-	*/
 	TEST(LoadTests, load_invalid_parameter) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
@@ -82,9 +74,6 @@ namespace {
 		drop_fs();
 	}
 
-	/*
-	* load_fs success ...
-	*/
 	TEST(LoadTests, load_valid_filesystem) {
 		int ret = load_fs(	&gfsData[0], 
 							gfsSize,

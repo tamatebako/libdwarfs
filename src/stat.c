@@ -34,7 +34,6 @@
 #include <tebako-dfs.h>
 
 
-
 /*
 * stat()
 * lstat()
