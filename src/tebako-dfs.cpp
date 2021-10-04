@@ -107,6 +107,7 @@ namespace dwarfs {
 
 using namespace dwarfs;
 
+// [TODO] thread safe ???
 static dwarfs_userdata* usd = NULL;
 
 extern "C" void drop_fs(void) {
@@ -188,27 +189,48 @@ extern "C" int load_fs( const void* data,
 extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
     int err = ENOENT;
     int ret = -1;
-    try {
-        auto inode = usd->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
-        if (inode) {
-            err = usd->fs.getattr(*inode, buf);
-            if (err == 0) {
+    if (usd) {
+        try {
+            auto inode = usd->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
+            if (inode &&
+                (err = usd->fs.getattr(*inode, buf)) == 0) {
                 ret = 0;
             }
         }
+        catch (dwarfs::system_error const& e) {
+            err = e.get_errno();
+        }
+        catch (...) {
+            err = EIO;
+        }
     }
-    catch (dwarfs::system_error const& e) {
-        err = e.get_errno();
-    }
-    catch (std::exception const& e) {
-        err = EIO;
-    }
-
-    if(ret) {
+    if (ret) {
         TEBAKO_SET_LAST_ERROR(err);
     }
-
     return ret;
 }
 
+extern "C" int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) {
+    int err = ENOENT;
+    int ret = -1;
+    if (usd) {
+        try {
+            auto inode = usd->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
+            if ( inode &&
+                (err = usd->fs.access(*inode, amode, uid, gid)) == 0) { 
+                ret = 0; 
+            }
+        }    
+        catch (dwarfs::system_error const& e) {
+            err = e.get_errno();
+        }
+        catch (...) {
+            err = EIO;
+        }
+    }
+    if (ret) {
+        TEBAKO_SET_LAST_ERROR(err);
+    }
+    return ret;
+}
 

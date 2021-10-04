@@ -25,7 +25,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- */
+ **/
 
 #include <gtest/gtest.h>
 
@@ -34,6 +34,11 @@
 
 #include "tebako-fs.h"
 
+ /** 
+ *  - Unit tests for 'load_fs/drop_fs' functions
+ *  - Unit tests for tebako_xxx functions for the case when dwarfs is not loaded
+ *    (placed here since all other test units contain fixture that loads dwarfs)
+ **/
 
 namespace {
 	TEST(LoadTests, smoke) {
@@ -41,10 +46,7 @@ namespace {
 		EXPECT_EQ(1, i);
 	}
 
-	/*
-	* load_fs failure ...
-	*/
-	TEST(LoadTests, load_invalid_filesystem) {
+	TEST(LoadTests, tebako_load_invalid_filesystem) {
 		const unsigned char data[] = "This is broken filesystem image";
 		int ret = load_fs(	&data[0], 
 							sizeof(data)/sizeof(data[0]),
@@ -59,7 +61,7 @@ namespace {
 		drop_fs();
 	}
 
-	TEST(LoadTests, load_invalid_parameter) {
+	TEST(LoadTests, tebako_load_invalid_parameter) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
 			"invalid parameter" /*debuglevel*/,
@@ -74,7 +76,7 @@ namespace {
 		drop_fs();
 	}
 
-	TEST(LoadTests, load_valid_filesystem) {
+	TEST(LoadTests, tebako_load_valid_filesystem) {
 		int ret = load_fs(	&gfsData[0], 
 							gfsSize,
 							"debug" /*debuglevel*/,
@@ -87,6 +89,20 @@ namespace {
 
 		EXPECT_EQ(0, ret);
 		drop_fs();
+	}
+
+	TEST(LoadTests, tebako_stat_not_loaded_filesystem) {
+		struct stat buf;
+		int ret = tebako_stat("/__tebako_memfs__/file.txt", &buf);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(ENOENT, errno);
+	}
+
+	TEST(LoadTests, tebako_access_not_loaded_filesystem) {
+		struct stat buf;
+		int ret = tebako_access("/__tebako_memfs__/file.txt", W_OK);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(ENOENT, errno);
 	}
 
 }

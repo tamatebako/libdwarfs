@@ -39,6 +39,8 @@ extern "C" {
 	char* tebako_getwd(char* buf);
 	int   tebako_chdir(const char* path);
 	int   tebako_stat(const char* path, struct stat* buf);
+	int   tebako_lstat(const char* path, struct stat* buf);
+	int   tebako_access(const char* path, int amode);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -24,7 +24,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required (VERSION 3.20)
-# Version 3.20 for cmake_path
+
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
@@ -115,7 +115,14 @@ ExternalProject_Add(${DWARFS_PRJ}
 # ...................................................................
 # Library
 
+configure_file(
+   ${CMAKE_CURRENT_SOURCE_DIR}/resources/version.h.in 
+   ${CMAKE_CURRENT_SOURCE_DIR}/include/version.h
+   @ONLY
+)
+
 add_compile_options(-fdiagnostics-color=always)
+#[TODO]
 #add_link_options(-static -static-libgcc)
 add_link_options(-static)
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
@@ -131,6 +138,7 @@ add_library(dwarfs-wr STATIC
     "src/getcwd.c"
     "src/chdir.c"
     "src/stat.c"
+    "src/access.c"
     "src/io-helpers.c"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
@@ -138,6 +146,7 @@ add_library(dwarfs-wr STATIC
     "include/tebako-io.h"
     "include/tebako-mfs.h"
     "include/tebako-defines.h" 
+    "include/version.h"
     )
 
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
@@ -191,9 +200,10 @@ configure_file(
 add_executable(wr-tests 
     "tests/load.cpp"
     "tests/stat.cpp"
+    "tests/access.cpp"
     "tests/tebako-fs.cpp"
     "tests/tebako-fs.h"
-)
+ )
 
 target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
 target_link_libraries(wr-tests 

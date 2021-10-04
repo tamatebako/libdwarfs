@@ -33,9 +33,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-
-#define PRJ_NAME "tebako"
-#define PRJ_VERSION_STRING "100500"
+#include <version.h>
 
 #define _TEBAKO_PP_NARG(...) \
     _TEBAKO_PP_NARG_(__VA_ARGS__,_TEBAKO_PP_RSEQ_N())

@@ -27,21 +27,21 @@
  *
  */
 
-#include <stddef.h>
-#include <sys/stat.h>
 #include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-dfs.h>
 
 
 /*
-* stat()
-* lstat()
-* fstat()
+* int access(const char* path, int amode);
 * https://pubs.opengroup.org/onlinepubs/9699919799/
+* 
+* The access() function shall check the file named by the pathname pointed to by the path argument for accessibility according to the bit pattern contained in amode. 
+* The checks for accessibility (including directory permissions checked during pathname resolution) shall be performed using THE REAL USER ID in place of the effective user ID 
+* and THE REAL GROUP ID in place of the effective group ID.
 */
 
-int tebako_stat(const char* path, struct stat* buf)
+int tebako_access(const char* path, int amode)
 {
 	const char* p_path = NULL;
 	tebako_path_t t_path;
@@ -52,7 +52,14 @@ int tebako_stat(const char* path, struct stat* buf)
 		p_path = path;
 	}
 
-	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
-}
+	if (p_path) {
+		uid_t uid = getuid();
+		gid_t gid = getgid();
+		return dwarfs_access(p_path, amode, uid, gid);
+	}
+	else {
+		return access(path, amode);
 
+	}
+}
 

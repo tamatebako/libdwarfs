@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,36 +24,35 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
-#pragma once
-
 #include <stddef.h>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <tebako-common.h>
+#include <tebako-io.h>
+#include <tebako-dfs.h>
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-    int load_fs(const void* data,
-        const unsigned int size,
-        const char* debuglevel,
-        const char* cachesize,
-        const char* workers,
-        const char* mlock,
-        const char* decompress_ratio,
-        const char* image_offset
-    );
+/*
+* stat()
+* lstat()
+* fstat()
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*/
 
-    void drop_fs(void);
+int tebako_stat(const char* path, struct stat* buf)
+{
+	const char* p_path = NULL;
+	tebako_path_t t_path;
+	if (is_tebako_cwd() && path[0] != '/') {
+		p_path = tebako_expand_path(t_path, path);
+	}
+	else if (is_tebako_path(path)) {
+		p_path = path;
+	}
 
-    struct stat;
-    int dwarfs_stat(const char* path, struct stat* buf);
-    int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid);
-
-#ifdef __cplusplus
+	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
 }
-#endif // __cplusplus
+
 
