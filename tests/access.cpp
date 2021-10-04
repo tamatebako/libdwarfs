@@ -96,4 +96,9 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+	TEST_F(AccessTests, tebako_access_absolute_path_no_access) {
+		int ret = tebako_access("/__tebako_memfs__/restricted-do-not-touch.txt", W_OK);
+		EXPECT_EQ(EACCES, errno);
+		EXPECT_EQ(-1, ret);
+	}
 }
