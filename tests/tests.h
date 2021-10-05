@@ -11,7 +11,7 @@
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *    documentation and/or other matrials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -27,40 +27,19 @@
  *
  */
 
-#include <tebako-common.h>
-#include <tebako-io.h>
+#pragma once	
+
+#include <gtest/gtest.h>
+
 #include <tebako-dfs.h>
+#include <tebako-io.h>
 
- /*
- * int access(const char* path, int amode);
- * https://pubs.opengroup.org/onlinepubs/9699919799/
- *
- * The access() function shall check the file named by the pathname pointed to by the path argument for accessibility according to the bit pattern contained in amode.
- * The checks for accessibility (including directory permissions checked during pathname resolution) shall be performed using THE REAL USER ID in place of the effective user ID
- * and THE REAL GROUP ID in place of the effective group ID.
- */
+#include "tebako-fs.h"
 
-int tebako_access(const char* path, int amode)
-{
-	const char* p_path = NULL;
-	tebako_path_t t_path;
-	if (is_tebako_cwd() && path[0] != '/') {
-		p_path = tebako_expand_path(t_path, path);
-	}
-	else if (is_tebako_path(path)) {
-		p_path = path;
-	}
-
-	if (p_path) {
-		uid_t uid = getuid();
-		gid_t gid = getgid();
-		return dwarfs_access(p_path, amode, uid, gid);
-	}
-	else {
-		return access(path, amode);
-
-	}
-}
-
-
-
+/* 
+* defines below are copied from tebako_common.h
+* They are copied because !!! the client code should not include tebaco_common.h !!!
+*/
+#define TEBAKO_MOINT_POINT "__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_LENGTH  16
+#define TEBAKIZE_PATH(P) "/" TEBAKO_MOINT_POINT "/" P

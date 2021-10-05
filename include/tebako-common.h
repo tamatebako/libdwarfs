@@ -29,9 +29,13 @@
 
 #pragma once
 
+#include <stddef.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include <version.h>
 
@@ -101,10 +105,10 @@
 #define TEBAKO_SET_LAST_ERROR(e)  errno = e    
 #endif
 
-#define TEBAKO_PATH_LENGTH PATH_MAX
+#define TEBAKO_PATH_LENGTH ((size_t) PATH_MAX)
 #define TEBAKO_MOINT_POINT "__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_LENGTH  16
-
+ 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus

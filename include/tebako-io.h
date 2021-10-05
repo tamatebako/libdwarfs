@@ -38,6 +38,7 @@ extern "C" {
 	char* tebako_getcwd(char* buf, size_t size);
 	char* tebako_getwd(char* buf);
 	int   tebako_chdir(const char* path);
+	int   tebako_mkdir(const char* path, mode_t mode);
 	int   tebako_stat(const char* path, struct stat* buf);
 	int   tebako_lstat(const char* path, struct stat* buf);
 	int   tebako_access(const char* path, int amode);

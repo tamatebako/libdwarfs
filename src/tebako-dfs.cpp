@@ -37,7 +37,8 @@
 #include <filesystem>
 
 #include <folly/Conv.h>
-#include <folly/experimental/symbolizer/SignalHandler.h>
+#include <folly/Synchronized.h>
+
 #include "dwarfs/error.h"
 #include "dwarfs/filesystem_v2.h"
 #include "dwarfs/fstypes.h"
@@ -107,19 +108,24 @@ namespace dwarfs {
 
 using namespace dwarfs;
 
-// [TODO] thread safe ???
-static dwarfs_userdata* usd = NULL;
+// dwarFS user data including fs pointer
+// RW lock implemented using folly tooling
+// github.com/facebook/folly/blob/master/folly/docs/Synchronized
 
+static folly::Synchronized<dwarfs_userdata*> usd{ NULL };
+
+// Drop previously loaded dwarFS image
 extern "C" void drop_fs(void) {
-    if (usd) {
-        delete usd;
+    auto locked = usd.wlock();
+    if (*locked) {
+        delete *locked;
     }
-    usd = NULL;
+    *locked = NULL;
 }
 
-/*
-*   C wrapper for dwarfs load_filesystem implementation  @ tebako-dfs.cpp
-*/
+
+// Loads dwarFS image
+// ["C" wrapper for load_filesystem]
 extern "C" int load_fs( const void* data, 
                         const unsigned int size,
                         const char* debuglevel,
@@ -131,22 +137,26 @@ extern "C" int load_fs( const void* data,
 {
     try  {
         drop_fs();
-        usd = new dwarfs_userdata(std::cerr, data, size);
 
-        usd->opts.cache_image = 0;
-        usd->opts.cache_files = 1;
+        auto locked = usd.wlock();
+        *locked = new dwarfs_userdata(std::cerr, data, size);
+        auto p = *locked;
+        auto opts = p->opts;
+
+        opts.cache_image = 0;
+        opts.cache_files = 1;
 
 
         try {
-            usd->opts.debuglevel = debuglevel ? logger::parse_level(debuglevel): logger::INFO;
+            p->opts.debuglevel = debuglevel ? logger::parse_level(debuglevel): logger::INFO;
 
-            usd->lgr.set_threshold(usd->opts.debuglevel);
-            usd->lgr.set_with_context(usd->opts.debuglevel >= logger::DEBUG);
+            p->lgr.set_threshold(opts.debuglevel);
+            p->lgr.set_with_context(opts.debuglevel >= logger::DEBUG);
 
-            usd->opts.cachesize = cachesize ? dwarfs::parse_size_with_unit(cachesize) : (static_cast<size_t>(512) << 20);
-            usd->opts.workers = workers ? folly::to<size_t>(workers) : 2;
-            usd->opts.lock_mode =  mlock ? parse_mlock_mode(mlock) : mlock_mode::NONE;
-            usd->opts.decompress_ratio = decompress_ratio ? folly::to<double>(decompress_ratio) : 0.8;
+            opts.cachesize = cachesize ? dwarfs::parse_size_with_unit(cachesize) : (static_cast<size_t>(512) << 20);
+            opts.workers = workers ? folly::to<size_t>(workers) : 2;
+            opts.lock_mode =  mlock ? parse_mlock_mode(mlock) : mlock_mode::NONE;
+            opts.decompress_ratio = decompress_ratio ? folly::to<double>(decompress_ratio) : 0.8;
         }
         catch (runtime_error const& e) {
             std::cerr << "error: " << e.what() << std::endl;
@@ -157,7 +167,7 @@ extern "C" int load_fs( const void* data,
             return 1;
         }
 
-        if (usd->opts.decompress_ratio < 0.0 || usd->opts.decompress_ratio > 1.0) {
+        if (opts.decompress_ratio < 0.0 || opts.decompress_ratio > 1.0) {
             std::cerr << "error: decratio must be between 0.0 and 1.0" << std::endl;
             return 1;
         }
@@ -165,7 +175,7 @@ extern "C" int load_fs( const void* data,
         if (image_offset) {
             std::string img_offset{ image_offset };
             try {
-                usd->opts.image_offset = (img_offset == "auto") ? filesystem_options::IMAGE_OFFSET_AUTO : folly::to<off_t>(img_offset);
+                opts.image_offset = (img_offset == "auto") ? filesystem_options::IMAGE_OFFSET_AUTO : folly::to<off_t>(img_offset);
             }
             catch (...)  {
                 std::cerr << "error: failed to parse offset: " + img_offset << std::endl;
@@ -173,10 +183,10 @@ extern "C" int load_fs( const void* data,
             }
         }
 
-        LOG_PROXY(debug_logger_policy, usd->lgr);
+        LOG_PROXY(debug_logger_policy, p->lgr);
         LOG_INFO << PRJ_NAME << " version " << PRJ_VERSION_STRING;
 
-        (usd->opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(usd) :  load_filesystem<prod_logger_policy>(usd);
+        (opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(p) :  load_filesystem<prod_logger_policy>(p);
     }
 
     catch (...) {
@@ -186,14 +196,18 @@ extern "C" int load_fs( const void* data,
     return 0;
 }
 
+// stat function implementation  for dwarFS object
+// [TODO: lambda w access ??]
 extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
     int err = ENOENT;
     int ret = -1;
-    if (usd) {
+    auto locked = usd.rlock();
+    auto p = *locked;
+    if (p) {
         try {
-            auto inode = usd->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
+            auto inode = p->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
             if (inode &&
-                (err = usd->fs.getattr(*inode, buf)) == 0) {
+                (err = p->fs.getattr(*inode, buf)) == 0) {
                 ret = 0;
             }
         }
@@ -210,17 +224,21 @@ extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
     return ret;
 }
 
+// access function implementation  for dwarFS object
+// [TODO: lambda ??]
 extern "C" int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) {
     int err = ENOENT;
     int ret = -1;
-    if (usd) {
+    auto locked = usd.rlock();
+    auto p = *locked;
+    if (p) {
         try {
-            auto inode = usd->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
+            auto inode = p->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
             if ( inode &&
-                (err = usd->fs.access(*inode, amode, uid, gid)) == 0) { 
+                (err = p->fs.access(*inode, amode, uid, gid)) == 0) { 
                 ret = 0; 
             }
-        }    
+        }
         catch (dwarfs::system_error const& e) {
             err = e.get_errno();
         }

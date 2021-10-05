@@ -27,9 +27,6 @@
  *
  */
 
-#include <string.h>
-#include <unistd.h>
-
 #include <tebako-common.h>
 #include <tebako-io.h>
 
@@ -42,8 +39,7 @@ extern "C" {
 *   https://pubs.opengroup.org/onlinepubs/9699919799/
 */
 
-	char* tebako_getcwd(char* buf, size_t size)
-	{
+	char* tebako_getcwd(char* buf, size_t size) {
 		char _cwd[TEBAKO_PATH_LENGTH];
 		const char* cwd = tebako_get_cwd(_cwd);
 		size_t len = strlen(cwd);
@@ -98,8 +94,7 @@ extern "C" {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif 
-	char* tebako_getwd(char* buf)
-	{
+	char* tebako_getwd(char* buf) {
 		if (is_tebako_cwd()) {
 			tebako_get_cwd(buf);
 			return buf;
