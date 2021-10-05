@@ -139,7 +139,8 @@ add_library(dwarfs-wr STATIC
     "src/chdir.c"
     "src/stat.c"
     "src/access.c"
-    "src/io-helpers.c"
+    "src/mkdir.c"
+    "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
     "include/tebako-common.h"
@@ -158,19 +159,18 @@ add_dependencies(dwarfs-wr ${DWARFS_PRJ})
 # ...................................................................
 # Tests
 
-find_package(PkgConfig)
-pkg_search_module(GTEST REQUIRED gtest_main)
-
+find_package(PkgConfig REQUIRED)
+pkg_search_module(GTEST gtest_main)
 
 #FetchContent_Declare(
-#  googletest
-#  PREFIX ${DEPS}
-  # Specify the commit you depend on and update it regularly.
-#  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+#   googletest
+# Specify the commit you depend on and update it regularly.
+#   URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
 #)
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 #FetchContent_MakeAvailable(googletest)
+
 
 # ...................................................................
 # Filesystem locations
@@ -198,12 +198,13 @@ configure_file(
 )
  
 add_executable(wr-tests 
-    "tests/load.cpp"
-    "tests/stat.cpp"
-    "tests/access.cpp"
-    "tests/tebako-fs.cpp"
-    "tests/tebako-fs.h"
- )
+  "tests/load.cpp"
+  "tests/stat.cpp"
+  "tests/access.cpp"
+  "tests/dir.cpp"
+  "tests/tebako-fs.cpp"
+  "tests/tebako-fs.h"
+  "tests/tests.h")
 
 target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
 target_link_libraries(wr-tests 

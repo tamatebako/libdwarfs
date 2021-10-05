@@ -27,12 +27,7 @@
  *
  */
 
-#include <gtest/gtest.h>
-
-#include <tebako-dfs.h>
-#include <tebako-io.h>
-
-#include "tebako-fs.h"
+#include "tests.h"
 
  /*
  *  Unit tests for 'tebako_access' function and underlying 'dwarfs_access'
@@ -60,24 +55,24 @@ namespace {
 	};
 
 	TEST_F(AccessTests, tebako_access_absolute_path) {
-		int ret = tebako_access("/__tebako_memfs__/file.txt", F_OK);
+		int ret = tebako_access(TEBAKIZE_PATH("file.txt"), F_OK);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(AccessTests, tebako_access_absolute_path_no_file) {
-		int ret = tebako_access("/__tebako_memfs__/no-directory/file.txt", W_OK);
+		int ret = tebako_access(TEBAKIZE_PATH("no-directory/file.txt"), W_OK);
 		EXPECT_EQ(ENOENT, errno);
 		EXPECT_EQ(-1, ret);
 	}
 
 	TEST_F(AccessTests, tebako_access_relative_path) {
-		int ret = tebako_chdir("/__tebako_memfs__/directory-2");
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		ret = tebako_access("file-in-directory-2.txt", R_OK);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(AccessTests, tebako_access_relative_path_no_file) {
-		int ret = tebako_chdir("/__tebako_memfs__/directory-2");
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
 		ret = tebako_access("no-file-in-directory-2.txt", R_OK);
 		EXPECT_EQ(ENOENT, errno);
@@ -97,7 +92,7 @@ namespace {
 	}
 
 	TEST_F(AccessTests, tebako_access_absolute_path_no_access) {
-		int ret = tebako_access("/__tebako_memfs__/restricted-do-not-touch.txt", W_OK);
+		int ret = tebako_access(TEBAKIZE_PATH("restricted-do-not-touch.txt"), W_OK);
 		EXPECT_EQ(EACCES, errno);
 		EXPECT_EQ(-1, ret);
 	}

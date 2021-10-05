@@ -46,12 +46,21 @@ extern "C" {
 */
 	int tebako_chdir(const char* path)	{
 		int ret = -1;
-		if (is_tebako_path(path)) {			
+		const char* p_path = NULL;
+		tebako_path_t t_path;
+		if (is_tebako_cwd() && path[0] != '/') {
+			p_path = tebako_expand_path(t_path, path);
+		}
+		else if (is_tebako_path(path)) {
+			p_path = path;
+		}
+
+		if (p_path) {
 			struct stat st;
-			ret = tebako_stat(path, &st);
+			ret = tebako_stat(p_path, &st);
 			if (ret == 0) 	{
 				if (S_ISDIR(st.st_mode)) {
-					tebako_set_cwd(path);
+					tebako_set_cwd(p_path);
 				}
 				else {
 					ret = -1;

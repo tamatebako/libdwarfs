@@ -27,12 +27,7 @@
  *
  **/
 
-#include <gtest/gtest.h>
-
-#include <tebako-dfs.h>
-#include <tebako-io.h>
-
-#include "tebako-fs.h"
+#include "tests.h"
 
  /** 
  *  - Unit tests for 'load_fs/drop_fs' functions
@@ -93,14 +88,14 @@ namespace {
 
 	TEST(LoadTests, tebako_stat_not_loaded_filesystem) {
 		struct stat buf;
-		int ret = tebako_stat("/__tebako_memfs__/file.txt", &buf);
+		int ret = tebako_stat(TEBAKIZE_PATH("file.txt"), &buf);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOENT, errno);
 	}
 
 	TEST(LoadTests, tebako_access_not_loaded_filesystem) {
 		struct stat buf;
-		int ret = tebako_access("/__tebako_memfs__/file.txt", W_OK);
+		int ret = tebako_access(TEBAKIZE_PATH("file.txt"), W_OK);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOENT, errno);
 	}

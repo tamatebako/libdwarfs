@@ -27,17 +27,12 @@
  *
  */
 
+#include "tests.h"
 
 /*  
 *  Unit tests for 'tebako_stat' function and underlying 'dwarfs_stat'
 */
 
-#include <gtest/gtest.h>
-
-#include <tebako-dfs.h>
-#include <tebako-io.h>
-
-#include "tebako-fs.h"
 
 namespace {
 	class StatTests : public testing::Test {
@@ -62,20 +57,20 @@ namespace {
 
 	TEST_F(StatTests, tebako_stat_absolute_path) {
 		struct stat buf;
-		int ret = tebako_stat("/__tebako_memfs__/file.txt", &buf);
+		int ret = tebako_stat(TEBAKIZE_PATH("file.txt"), &buf);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(StatTests, tebako_stat_absolute_path_no_file) {
 		struct stat buf;
-		int ret = tebako_stat("/__tebako_memfs__/no_file.txt", &buf);
+		int ret = tebako_stat(TEBAKIZE_PATH("no_file.txt"), &buf);
 		EXPECT_EQ(ENOENT, errno);
 		EXPECT_EQ(-1, ret);
 	}
 
 	TEST_F(StatTests, tebako_stat_relative_path) {
 		struct stat buf;
-		int ret = tebako_chdir("/__tebako_memfs__/");
+		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
 		ret = tebako_stat("directory-1/file-in-directory-1.txt", &buf);
 		EXPECT_EQ(0, ret);
@@ -83,7 +78,7 @@ namespace {
 
 	TEST_F(StatTests, tebako_stat_relative_path_no_file) {
 		struct stat buf;
-		int ret = tebako_chdir("/__tebako_memfs__/directory-2");
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
 		ret = tebako_stat("no_file.txt", &buf);
 		EXPECT_EQ(ENOENT, errno);
