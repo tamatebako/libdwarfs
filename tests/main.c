@@ -28,6 +28,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <tebako-defines.h>
 #include <tebako-io.h>
 #include "tebako-fs.h"
@@ -50,20 +51,30 @@ int main(int argc, char** argv)
 		NULL    /* image_offset */
 	);
 
+	printf("Load file system. ret=%i\n", ret);
+
 	if (ret == 0) {
 		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
 
+		printf("stat. ret=%i\n", ret);
+
 		/* Just test define, comiple and link 
-		*  No matter what happens
 		*/
 		access(TEBAKIZE_PATH("file.txt"), F_OK);
-		chdir(TEBAKIZE_PATH("directory-1"));
+		printf("access. ret=%i\n", ret);
+		ret=chdir(TEBAKIZE_PATH("directory-1"));
+		printf("chdir. ret=%i\n", ret);
 		r = getcwd(NULL, 0); free(r);
+		printf("getcwd\n");
 		r = getwd(p);
+		printf("getwd\n");
 		mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
+		printf("mkdir\n");
 
 		drop_fs();
+		printf("drop_fs\n");
 	}
 
+	printf("Exiting. ret=%i\n", ret);
 	return ret;
 }
