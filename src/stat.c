@@ -27,6 +27,7 @@
  *
  */
 
+#include <stdio.h>
 #include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-dfs.h>
@@ -53,6 +54,7 @@ extern "C" {
 			p_path = path;
 		}
 
+		printf("tebako_stat: %s --> %s\n", path, p_path);
 		return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
 	}
 
