@@ -67,9 +67,8 @@ jobs:
     - name: Unit tests
       run: make test
 
-    - name: Pure "C" compile, link, run, ldd
-      run: |
-        ./wr-bin
+    - name: Running pure "C" program, calling all C API redefines 
+      run:  ./wr-bin
 
     - name: Running ldd to check that wr-bin has been linked statically 
       run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'

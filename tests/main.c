@@ -55,13 +55,13 @@ int main(int argc, char** argv)
 	printf("Load file system. ret=%i\n", ret);
 
 	if (ret == 0) {
-		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
+		ret = stat("/__tebako_memfs__/file.txt", &buf);
 
 		printf("stat. ret=%i, errno=%i\n", ret, errno);
 
 		/* Just test define, comiple and link 
 		*/
-		access(TEBAKIZE_PATH("file.txt"), F_OK);
+		access("/__tebako_memfs__/file.txt", F_OK);
 		printf("access. ret=%i\n", ret);
 		ret=chdir(TEBAKIZE_PATH("directory-1"));
 		printf("chdir. ret=%i\n", ret);
