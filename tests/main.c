@@ -29,6 +29,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <tebako-defines.h>
 #include <tebako-io.h>
 #include "tebako-fs.h"
@@ -56,7 +57,7 @@ int main(int argc, char** argv)
 	if (ret == 0) {
 		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
 
-		printf("stat. ret=%i\n", ret);
+		printf("stat. ret=%i, errno=%i\n", ret, errno);
 
 		/* Just test define, comiple and link 
 		*/
