@@ -205,6 +205,7 @@ extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
     auto p = *locked;
     if (p) {
         try {
+            std::cerr << "dwarfs_stat -- path -- " << path << " --  lookup -- " << (path + TEBAKO_MOUNT_POINT_LENGTH + 2) << std::endl;
             auto inode = p->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
             if (inode &&
                 (err = p->fs.getattr(*inode, buf)) == 0) {

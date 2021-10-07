@@ -27,6 +27,7 @@
  *
  */
 
+#include <stdio.h>
 #include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-dfs.h>
@@ -38,16 +39,25 @@
  * https://pubs.opengroup.org/onlinepubs/9699919799/
  */
 
-int tebako_stat(const char* path, struct stat* buf)
-{
-	const char* p_path = NULL;
-	tebako_path_t t_path;
-	if (is_tebako_cwd() && path[0] != '/') {
-		p_path = tebako_expand_path(t_path, path);
-	}
-	else if (is_tebako_path(path)) {
-		p_path = path;
+#ifdef __cplusplus
+extern "C" {
+#endif // !__cplusplus
+
+	int tebako_stat(const char* path, struct stat* buf)
+	{
+		const char* p_path = NULL;
+		tebako_path_t t_path;
+		if (is_tebako_cwd() && path[0] != '/') {
+			p_path = tebako_expand_path(t_path, path);
+		}
+		else if (is_tebako_path(path)) {
+			p_path = path;
+		}
+
+		printf("tebako_stat: %s --> %s\n", path, p_path);
+		return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
 	}
 
-	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
+#ifdef __cplusplus
 }
+#endif // !__cplusplus

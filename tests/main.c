@@ -27,11 +27,55 @@
  * 
  */
 
-#include <stddef.h>
+#include <tebako-defines.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 #include <tebako-io.h>
-#include <tebako-common.h>
+#include "tebako-fs.h"
+#include "tests-defines.h"
 
-int main(int argc, char argv[])
+
+int main(int argc, char** argv)
 {
-	return argc && argv;
+	struct stat buf;
+	char p[PATH_MAX];
+	char* r;
+
+	int ret = load_fs(&gfsData[0],
+		gfsSize,
+		"debug" /*debuglevel*/,
+		NULL	/* cachesize*/,
+		NULL	/* workers */,
+		NULL	/* mlock */,
+		NULL	/* decompress_ratio*/,
+		NULL    /* image_offset */
+	);
+
+	printf("Load file system. ret=%i\n", ret);
+
+	if (ret == 0) {
+		ret = stat("/__tebako_memfs__/file.txt", &buf);
+
+		printf("stat. ret=%i, errno=%i\n", ret, errno);
+
+		/* Just test define, comiple and link 
+		*/
+		access("/__tebako_memfs__/file.txt", F_OK);
+		printf("access. ret=%i\n", ret);
+		ret=chdir(TEBAKIZE_PATH("directory-1"));
+		printf("chdir. ret=%i\n", ret);
+		r = getcwd(NULL, 0); free(r);
+		printf("getcwd\n");
+		r = getwd(p);
+		printf("getwd\n");
+		mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
+		printf("mkdir\n");
+
+		drop_fs();
+		printf("drop_fs\n");
+	}
+
+	printf("Exiting. ret=%i\n", ret);
+	return ret;
 }

@@ -64,6 +64,14 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
 
-    - name: Test
+    - name: Unit tests
       run: make test
+
+    - name: Running pure "C" program, calling all C API redefines 
+      run:  ./wr-bin
+
+    - name: Running ldd to check that wr-bin has been linked statically 
+      run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
+      
+     
    

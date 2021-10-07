@@ -11,7 +11,7 @@
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *    documentation and/or other matrials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -27,34 +27,12 @@
  *
  */
 
-#pragma once
+#pragma once	
 
-#include <stddef.h>
-#include <unistd.h>
-#include <sys/stat.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif // !__cplusplus
-    int load_fs(const void* data,
-        const unsigned int size,
-        const char* debuglevel,
-        const char* cachesize,
-        const char* workers,
-        const char* mlock,
-        const char* decompress_ratio,
-        const char* image_offset
-    );
-
-    void drop_fs(void);
-
-	char* tebako_getcwd(char* buf, size_t size);
-	char* tebako_getwd(char* buf);
-	int   tebako_chdir(const char* path);
-	int   tebako_mkdir(const char* path, mode_t mode);
-	int   tebako_stat(const char* path, struct stat* buf);
-	int   tebako_lstat(const char* path, struct stat* buf);
-	int   tebako_access(const char* path, int amode);
-#ifdef __cplusplus
-}
-#endif // __cplusplus
+/* 
+* defines below are copied from tebako_common.h
+* They are copied because !!! the client code should not include tebaco_common.h !!!
+*/
+#define TEBAKO_MOINT_POINT "__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_LENGTH  16
+#define TEBAKIZE_PATH(P) "/" TEBAKO_MOINT_POINT "/" P
