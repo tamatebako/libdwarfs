@@ -69,7 +69,7 @@ jobs:
 
     - name: Pure "C" compile, link, run, ldd
       run: |
-        wr-bin
+        ./wr-bin
         ldd wr-bin
       
      
