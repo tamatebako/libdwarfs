@@ -30,7 +30,6 @@
 #include <tebako-defines.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 #include <tebako-io.h>
 #include "tebako-fs.h"
 #include "tests-defines.h"
@@ -41,6 +40,8 @@ int main(int argc, char** argv)
 	struct stat buf;
 	char p[PATH_MAX];
 	char* r;
+	const int true = -1, false = 0;
+	int rOK = false; 
 
 	int ret = load_fs(&gfsData[0],
 		gfsSize,
@@ -52,30 +53,47 @@ int main(int argc, char** argv)
 		NULL    /* image_offset */
 	);
 
-	printf("Load file system. ret=%i\n", ret);
+	printf("A call to load_fs returned %i\n", ret);
 
 	if (ret == 0) {
-		ret = stat("/__tebako_memfs__/file.txt", &buf);
+		rOK = true;
 
-		printf("stat. ret=%i, errno=%i\n", ret, errno);
-
-		/* Just test define, comiple and link 
+		/* 
+		* Positive cases only, just to check tha define and link works correctly
+		* The real unit tests are done by gtest (wr-tests) 
 		*/
-		access("/__tebako_memfs__/file.txt", F_OK);
-		printf("access. ret=%i\n", ret);
-		ret=chdir(TEBAKIZE_PATH("directory-1"));
-		printf("chdir. ret=%i\n", ret);
-		r = getcwd(NULL, 0); free(r);
-		printf("getcwd\n");
+
+		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
+		printf("A call to 'stat' returned %i\n", ret);
+		rOK &= (ret == 0);
+
+		ret = access(TEBAKIZE_PATH("file.txt"), F_OK);
+		printf("A call to 'access' returned %i\n", ret);
+		rOK &= (ret == 0);
+
+		ret = chdir(TEBAKIZE_PATH("directory-1"));
+		printf("A call to 'chdir' returned %i\n", ret);
+		rOK &= (ret == 0);
+
+		r = getcwd(NULL, 0); 
+		printf("A call to 'getcwd' returned %p\n", r);
+		rOK &= (r != NULL);
+		free(r);
+
 		r = getwd(p);
-		printf("getwd\n");
-		mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
-		printf("mkdir\n");
+		printf("A call to 'getwd' returned %p\n", r);
+		rOK &= (r != NULL);
+
+		ret = mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
+		printf("A call to 'mkdir' returned %i\n", ret);
+		rOK &= (ret == -1);
 
 		drop_fs();
-		printf("drop_fs\n");
+		printf("Filesystem dropped\n");
+		
+		ret = rOK ? 0 : -1;
 	}
 
-	printf("Exiting. ret=%i\n", ret);
+	printf("Exiting. Return code=%i\n", ret);
 	return ret;
 }
