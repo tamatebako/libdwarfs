@@ -35,11 +35,5 @@
 #include <tebako-io.h>
 
 #include "tebako-fs.h"
+#include "tests-defines.h"
 
-/* 
-* defines below are copied from tebako_common.h
-* They are copied because !!! the client code should not include tebaco_common.h !!!
-*/
-#define TEBAKO_MOINT_POINT "__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_LENGTH  16
-#define TEBAKIZE_PATH(P) "/" TEBAKO_MOINT_POINT "/" P

@@ -92,6 +92,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 		r2 = tebako_getcwd(NULL, PATH_MAX);
 		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-2/"));
+		free(r2);
 	}
 
 	TEST_F(DirTests, tebako_getcwd_no_buffer_no_size) {
@@ -101,6 +102,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 		r2 = tebako_getcwd(NULL, 0);
 		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-1/"));
+		free(r2);
 	}
 
 	TEST_F(DirTests, tebako_getcwd_buffer_no_size) {

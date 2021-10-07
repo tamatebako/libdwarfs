@@ -37,22 +37,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-    int load_fs(const void* data,
-        const unsigned int size,
-        const char* debuglevel,
-        const char* cachesize,
-        const char* workers,
-        const char* mlock,
-        const char* decompress_ratio,
-        const char* image_offset
-    );
-
-    void drop_fs(void);
-
-    struct stat;
     int dwarfs_stat(const char* path, struct stat* buf);
     int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid);
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus

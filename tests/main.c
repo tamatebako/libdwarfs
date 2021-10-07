@@ -27,11 +27,43 @@
  * 
  */
 
-#include <stddef.h>
+#include <stdlib.h>
+#include <tebako-defines.h>
 #include <tebako-io.h>
-#include <tebako-common.h>
+#include "tebako-fs.h"
+#include "tests-defines.h"
 
-int main(int argc, char argv[])
+
+int main(int argc, char** argv)
 {
-	return argc && argv;
+	struct stat buf;
+	char p[PATH_MAX];
+	char* r;
+
+	int ret = load_fs(&gfsData[0],
+		gfsSize,
+		"debug" /*debuglevel*/,
+		NULL	/* cachesize*/,
+		NULL	/* workers */,
+		NULL	/* mlock */,
+		NULL	/* decompress_ratio*/,
+		NULL    /* image_offset */
+	);
+
+	if (ret == 0) {
+		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
+
+		/* Just test define, comiple and link 
+		*  No matter what happens
+		*/
+		access(TEBAKIZE_PATH("file.txt"), F_OK);
+		chdir(TEBAKIZE_PATH("directory-1"));
+		r = getcwd(NULL, 0); free(r);
+		r = getwd(p);
+		mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
+
+		drop_fs();
+	}
+
+	return ret;
 }

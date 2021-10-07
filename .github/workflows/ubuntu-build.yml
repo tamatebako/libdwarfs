@@ -64,6 +64,13 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
 
-    - name: Test
+    - name: Unit tests
       run: make test
+
+    - name: Pure "C" compile, link, run, ldd
+      run: |
+        wr-bin
+        ldd wr-bin
+      
+     
    

@@ -196,29 +196,6 @@ configure_file(
    ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
    @ONLY
 )
- 
-add_executable(wr-tests 
-  "tests/load.cpp"
-  "tests/stat.cpp"
-  "tests/access.cpp"
-  "tests/dir.cpp"
-  "tests/tebako-fs.cpp"
-  "tests/tebako-fs.h"
-  "tests/tests.h")
-
-target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
-target_link_libraries(wr-tests 
-    dwarfs-wr
-    ${GTEST_LDFLAGS}
-)
-
-add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
-
-gtest_add_tests(TARGET wr-tests)
-
-# ...................................................................
-# The libraries that are build by dwarfs project
-# libdwarfs libfolly libfsst libxxhash libmetadata_thrift libthrift_light libarchive
 
 function(ADD_DWARFS_LIBRARY NAME PRJ APP_NM)
    add_library(${NAME} STATIC IMPORTED)
@@ -227,14 +204,6 @@ function(ADD_DWARFS_LIBRARY NAME PRJ APP_NM)
    target_link_libraries(${APP_NM} ${NAME})
 endfunction()
 
-add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} wr-tests)
-add_dwarfs_library(_LIBFSST ${DWARFS_PRJ} wr-tests)
-add_dwarfs_library(_LIBFOLLY ${DWARFS_PRJ} wr-tests)
-add_dwarfs_library(_LIBT_METADATA ${DWARFS_PRJ} wr-tests)
-add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} wr-tests)
-add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-tests)
-add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-tests)
-add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-tests)
 
 # ...................................................................
 # System libraries
@@ -245,7 +214,7 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-tests)
 # used to locate static libraries on UNIX-like systems.
 #
 
- find_package(Boost 1.67 REQUIRED COMPONENTS context regex thread atomic date_time filesystem program_options system)
+ find_package(Boost 1.67 REQUIRED COMPONENTS context regex thread atomic date_time filesystem)
 
  find_library(_LIBGLOG "libglog.a" REQUIRED)
  find_library(_LIBFMT "libfmt.a" REQUIRED)
@@ -266,6 +235,82 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-tests)
  find_library(_LIBSSL "libssl.a" REQUIRED)
  find_library(_LIBUNWIND "libunwind.a" REQUIRED)
  find_library(_LIBIBERTY "libiberty.a" REQUIRED)
+
+
+ # ...................................................................
+ # The very special test
+ # We check that (1) it is possible to compile, build and run program with pure C startup
+ #               (2) it is statically linked
+
+add_executable(wr-bin
+  "tests/main.c"
+  "tests/tebako-fs.cpp"
+  "tests/tebako-fs.h"
+  "tests/tests.h"
+)
+ 
+target_link_libraries(wr-bin  dwarfs-wr)
+add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
+
+# ...................................................................
+# The libraries that are build by dwarfs project
+# libdwarfs libfolly libfsst libxxhash libmetadata_thrift libthrift_light libarchive
+
+add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} wr-bin)
+add_dwarfs_library(_LIBFSST ${DWARFS_PRJ} wr-bin)
+add_dwarfs_library(_LIBFOLLY ${DWARFS_PRJ} wr-bin)
+add_dwarfs_library(_LIBT_METADATA ${DWARFS_PRJ} wr-bin)
+add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} wr-bin)
+add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-bin)
+add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-bin)
+add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
+
+# ...................................................................
+#  IMPORTANT !!!
+#  MUST be in this order otherwise link may fail
+#  -static-libgcc and gcc_eh below is all together an ugly trick to enforce static linking
+
+ target_link_libraries(wr-bin                              
+   ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}                               
+   ${_LIBGLOG}         ${_LIBGFLAGS}       ${_LIBEVENT}        ${_LIBIBERTY}
+   ${_LIBACL}          ${_LIBSSL}          ${_LIBCRYPTO}       ${_LIBLZ4}
+   ${_LIBZ}            ${_LIBJEMALLOC}     ${_LIBPTHREAD}      ${_LIBDL}           
+   ${_LIBM}            ${_LIBRT}           gcc_eh		                 
+   ${_LIBUNWIND}       ${_LIBLZMA}
+ )
+
+
+# ...................................................................
+# Google test
+
+add_executable(wr-tests 
+  "tests/load.cpp"
+  "tests/stat.cpp"
+  "tests/access.cpp"
+  "tests/dir.cpp"
+  "tests/tebako-fs.cpp"
+  "tests/tebako-fs.h"
+  "tests/tests.h"
+ )
+
+target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
+target_link_libraries(wr-tests 
+    dwarfs-wr
+    ${GTEST_LDFLAGS}
+)
+
+add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
+
+gtest_add_tests(TARGET wr-tests)
+
+target_link_libraries(wr-tests _LIBDWARFS)
+target_link_libraries(wr-tests _LIBFSST)
+target_link_libraries(wr-tests _LIBFOLLY)
+target_link_libraries(wr-tests _LIBT_METADATA)
+target_link_libraries(wr-tests _LIBT_LIGHT)
+target_link_libraries(wr-tests _LIBXXHASH)
+target_link_libraries(wr-tests _LIBZSTD)
+target_link_libraries(wr-tests _LIBARCHIVE)
 
 # ...................................................................
 #  IMPORTANT !!!
