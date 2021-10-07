@@ -38,7 +38,7 @@
  #define getcwd(...)	tebako_getcwd(__VA_ARGS__)
  #define getwd(...)	tebako_getwd(__VA_ARGS__)
  #define chdir(...)	tebako_chdir(__VA_ARGS__)
- #define stat(...)	tebako_stat(__VA_ARGS__)
+ #define stat(a1,a2)	tebako_stat(a1,a2)
  #define fstat(...)	tebako_fstat(__VA_ARGS__)
  #define lstat(...)	tebako_lstat(__VA_ARGS__)
  #define open(...)	tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
