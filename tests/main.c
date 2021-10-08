@@ -42,6 +42,8 @@ int main(int argc, char** argv)
 	char* r;
 	const int true = -1, false = 0;
 	int rOK = false; 
+	int fh;
+	char readbuf[32];
 
 	int ret = load_fs(&gfsData[0],
 		gfsSize,
@@ -53,40 +55,79 @@ int main(int argc, char** argv)
 		NULL    /* image_offset */
 	);
 
-	printf("A call to load_fs returned %i\n", ret);
+	printf("A call to load_fs returned %i (0 expected)\n", ret);
 
 	if (ret == 0) {
 		rOK = true;
 
-		/* 
+		/*
 		* Positive cases only, just to check tha define and link works correctly
-		* The real unit tests are done by gtest (wr-tests) 
+		* The real unit tests are done by gtest (wr-tests)
 		*/
 
 		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
-		printf("A call to 'stat' returned %i\n", ret);
+		printf("A call to 'stat' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
 		ret = access(TEBAKIZE_PATH("file.txt"), F_OK);
-		printf("A call to 'access' returned %i\n", ret);
+		printf("A call to 'access' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
 		ret = chdir(TEBAKIZE_PATH("directory-1"));
-		printf("A call to 'chdir' returned %i\n", ret);
+		printf("A call to 'chdir' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
-		r = getcwd(NULL, 0); 
-		printf("A call to 'getcwd' returned %p\n", r);
+		r = getcwd(NULL, 0);
+		printf("A call to 'getcwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
 		free(r);
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif 
 		r = getwd(p);
-		printf("A call to 'getwd' returned %p\n", r);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif 
+		printf("A call to 'getwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
 
 		ret = mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
-		printf("A call to 'mkdir' returned %i\n", ret);
+		printf("A call to 'mkdir' returned %i (-1 expected)\n", ret);
 		rOK &= (ret == -1);
+
+		fh = open(TEBAKIZE_PATH("file.txt"), O_RDONLY);
+		printf("A call to 'open' returned %i (non negative file handle expected)\n", fh);
+		rOK &= (fh >= 0);
+
+		ret = lseek(fh, 2, SEEK_SET);
+		printf("A call to 'lseek' returned %i (2 expected)", ret);
+		rOK &= (ret == 2);
+
+		ret = read(fh, readbuf, 2); readbuf[2] = '\0';
+		printf("A call to 'read' returned %i (2 expected); Read buffer: '%s' ('st' expected)\n", ret, readbuf);
+		rOK &= (ret == 2);
+		rOK &= (strcmp(readbuf, "st") == 0);
+		if (fh >= 0) ret = close(fh);
+		printf("A call to 'close' returned %i (0 expected)\n", ret);
+		rOK &= (ret == 0);
+
+		ret = unlink("/tmp/some-tebako-test-file.txt");
+		printf("A call to 'unlink' returned %i (-1 supposed but 0 is also possible)\n", ret);
+		// ret is not checked intensionally !!!
+
+		ret = open("/tmp/some-tebako-test-file.txt", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+		printf("A call to 'open' with 3 arguments returned %i (non negative file handle expected)\n", ret);
+		rOK &= (ret >= 0);
+
+		ret = close(ret);
+		printf("A call to 'close' returned %i (0 expected)\n", ret);
+		rOK &= (ret == 0);
+
+		ret = unlink("/tmp/some-tebako-test-file.txt");
+		printf("A call to 'unlink' returned %i (0 expected)\n", ret);
+		rOK &= (ret == 0);
 
 		drop_fs();
 		printf("Filesystem dropped\n");
@@ -94,6 +135,6 @@ int main(int argc, char** argv)
 		ret = rOK ? 0 : -1;
 	}
 
-	printf("Exiting. Return code=%i\n", ret);
+	printf("Exiting. Return code: %i\n", ret);
 	return ret;
 }

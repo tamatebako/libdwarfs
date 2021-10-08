@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako (libdwarfs-wr)
+ * This file is a part of tebako (dwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,35 +27,25 @@
  *
  */
 
-#include <stdio.h>
-#include <tebako-common.h>
-#include <tebako-io.h>
-#include <tebako-dfs.h>
+#pragma once
 
- /*
- * stat()
- * lstat()
- * fstat()
- * https://pubs.opengroup.org/onlinepubs/9699919799/
- */
+#include "tebako-pch.h"
+
 
 #ifdef __cplusplus
 extern "C" {
-#endif // !__cplusplus
+#endif // __cplusplus
 
-	int tebako_stat(const char* path, struct stat* buf)
-	{
-		const char* p_path = NULL;
-		tebako_path_t t_path;
-		if (is_tebako_cwd() && path[0] != '/') {
-			p_path = tebako_expand_path(t_path, path);
-		}
-		else if (is_tebako_path(path)) {
-			p_path = path;
-		}
-		return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
-	}
+#define DWARFS_INVALID_FD  -2  
+
+    int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid);
+    int dwarfs_stat(const char* path, struct stat* buf);
+    int dwarfs_open(const char* path, int mode);
+    off_t dwarfs_lseek(int vfd, off_t offset, int whence);
+    ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte);
+    ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset);
+    int dwarfs_close(int vfd);
 
 #ifdef __cplusplus
 }
-#endif // !__cplusplus
+#endif // __cplusplu

@@ -27,11 +27,13 @@
  *
  */
 
+ /*
+ *  Tebako filesystem interface functions
+ *  This file shall be included into sources we want to "hack"
+ */
+
 #pragma once
 
-#include <stddef.h>
-#include <unistd.h>
-#include <sys/stat.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,13 +50,16 @@ extern "C" {
 
     void drop_fs(void);
 
-	char* tebako_getcwd(char* buf, size_t size);
-	char* tebako_getwd(char* buf);
-	int   tebako_chdir(const char* path);
-	int   tebako_mkdir(const char* path, mode_t mode);
-	int   tebako_stat(const char* path, struct stat* buf);
-	int   tebako_lstat(const char* path, struct stat* buf);
-	int   tebako_access(const char* path, int amode);
+    char* tebako_getcwd(char* buf, size_t size);
+    char* tebako_getwd(char* buf);
+    int   tebako_chdir(const char* path);
+    int   tebako_mkdir(const char* path, mode_t mode);
+    int   tebako_stat(const char* path, struct stat* buf);
+    int   tebako_access(const char* path, int amode);
+    int   tebako_open(int nargs, const char* path, int flags, ...);
+    off_t tebako_lseek(int vfd, off_t offset, int whence);
+    ssize_t tebako_read(int vfd, void* buf, size_t nbyte);
+    int   tebako_close(int vfd);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

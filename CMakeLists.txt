@@ -135,20 +135,24 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 add_library(dwarfs-wr STATIC 
-    "src/getcwd.c"
-    "src/chdir.c"
-    "src/stat.c"
-    "src/access.c"
-    "src/mkdir.c"
+    "src/dir-ctl.c"
+    
+    
+    "src/file-ctl.c"
+    
+    "src/file-io.c"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
+    "src/tebako-fd.cpp"
+    "include/tebako-pch.h"
     "include/tebako-common.h"
     "include/tebako-io.h"
+    "include/tebako-io-inner.h"
     "include/tebako-mfs.h"
     "include/tebako-defines.h" 
     "include/version.h"
-    )
+     )
 
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -288,6 +292,7 @@ add_executable(wr-tests
   "tests/stat.cpp"
   "tests/access.cpp"
   "tests/dir.cpp"
+  "tests/file-io.cpp"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
@@ -299,7 +304,7 @@ target_link_libraries(wr-tests
     ${GTEST_LDFLAGS}
 )
 
-add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
+add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM wr-bin) 
 
 gtest_add_tests(TARGET wr-tests)
 

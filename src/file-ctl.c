@@ -29,27 +29,51 @@
 
 #include <tebako-common.h>
 #include <tebako-io.h>
+#include <tebako-io-inner.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif // !__cplusplus
 
-/*
-* mkdir()
-* https://pubs.opengroup.org/onlinepubs/9699919799/
-* 
-*/
+ /*
+ * int access(const char* path, int amode);
+ * https://pubs.opengroup.org/onlinepubs/9699919799/
+ *
+ * The access() function shall check the file named by the pathname pointed to by the path argument for accessibility according to the bit pattern contained in amode.
+ * The checks for accessibility (including directory permissions checked during pathname resolution) shall be performed using THE REAL USER ID in place of the effective user ID
+ * and THE REAL GROUP ID in place of the effective group ID.
+ */
 
-int tebako_mkdir(const char* path, mode_t mode)	{
-	int ret = -1;
-	if ((is_tebako_cwd() && path[0] != '/') || is_tebako_path(path)) {
-		TEBAKO_SET_LAST_ERROR(EACCES);
+int tebako_access(const char* path, int amode)
+{
+	tebako_path_t t_path;
+	const char* p_path = to_tebako_path(t_path, path);
+
+	if (p_path) {
+		uid_t uid = getuid();
+		gid_t gid = getgid();
+		return dwarfs_access(p_path, amode, uid, gid);
 	}
 	else {
-		ret = mkdir(path, mode);
+		return access(path, amode);
+
 	}
-	return ret;
 }
+
+/*
+ * stat()
+ * lstat()
+ * fstat()
+ * https://pubs.opengroup.org/onlinepubs/9699919799/
+ */
+
+int tebako_stat(const char* path, struct stat* buf)
+{
+	tebako_path_t t_path;
+	const char* p_path = to_tebako_path(t_path, path);
+	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
+}
+
 #ifdef __cplusplus
 }
 #endif // !__cplusplus

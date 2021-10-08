@@ -24,58 +24,34 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  */
 
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
-
-#include <tebako-common.h>
-#include <tebako-io.h>
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif // !__cplusplus
-
 /*
-* chdir()
-* https://pubs.opengroup.org/onlinepubs/9699919799/
-* 
+* This a set of standard "C" headers used through libdwarfs-wr source files
 */
-	int tebako_chdir(const char* path)	{
-		int ret = -1;
-		const char* p_path = NULL;
-		tebako_path_t t_path;
-		if (is_tebako_cwd() && path[0] != '/') {
-			p_path = tebako_expand_path(t_path, path);
-		}
-		else if (is_tebako_path(path)) {
-			p_path = path;
-		}
 
-		if (p_path) {
-			struct stat st;
-			ret = tebako_stat(p_path, &st);
-			if (ret == 0) 	{
-				if (S_ISDIR(st.st_mode)) {
-					tebako_set_cwd(p_path);
-				}
-				else {
-					ret = -1;
-					TEBAKO_SET_LAST_ERROR(ENOTDIR);
-				}			
-			}
-		}
-		else {
-			ret = chdir(path);
-			if (ret == 0) {
-				tebako_set_cwd(NULL);
-			}
-		}
-		return ret;
-	}
-#ifdef __cplusplus
-}
-#endif // !__cplusplus
+#pragma once
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <stdarg.h>
+#include <errno.h>
+
+#ifdef _WIN32
+ #include <direct.h>
+ #include <Shlwapi.h>
+#else
+ #include <sys/param.h>
+ #include <sys/uio.h>
+ #include <unistd.h>
+ #include <ftw.h>
+ #include <dirent.h>
+ #include <dlfcn.h>
+#endif
+

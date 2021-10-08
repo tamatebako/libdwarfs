@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,19 +27,57 @@
  * 
  */
 
+ /*
+ *  dwarFS filesystem data types
+ */
+
+
 #pragma once
 
-#include <stddef.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include <array>
+#include <iostream>
+#include <stdexcept>
 
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-    int dwarfs_stat(const char* path, struct stat* buf);
-    int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid);
-#ifdef __cplusplus
+#include <folly/Conv.h>
+#include <folly/Synchronized.h>
+
+#include "dwarfs/error.h"
+#include "dwarfs/filesystem_v2.h"
+#include "dwarfs/fstypes.h"
+#include "dwarfs/logger.h"
+#include "dwarfs/metadata_v2.h"
+#include "dwarfs/mmap.h"
+#include "dwarfs/options.h"
+#include "dwarfs/util.h"
+
+namespace dwarfs {
+    struct options {
+        int enable_nlink{ 0 };
+        int readonly{ 0 };
+        int cache_image{ 0 };
+        int cache_files{ 0 };
+        size_t cachesize{ 0 };
+        size_t workers{ 0 };
+        mlock_mode lock_mode{ mlock_mode::NONE };
+        double decompress_ratio{ 0.0 };
+        logger::level_type debuglevel{ logger::level_type::ERROR };
+        off_t image_offset{ 0 };
+    };
+
+    struct dwarfs_userdata {
+        dwarfs_userdata(std::ostream& os, const void* dt, const unsigned int sz)
+            : lgr{ os }, data{ dt }, size{ sz } { }
+
+        const void* data;
+        const unsigned int size;
+
+        dwarfs::options opts;
+        stream_logger lgr;
+        filesystem_v2 fs;
+    };
 }
-#endif // __cplusplus
-
