@@ -191,14 +191,8 @@ extern "C" int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) 
 
 extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
-           { [](filesystem_v2* fs, inode_view inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
-           path, buf);
-}
-
-extern "C" int dwarfs_find(const char* path) {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&)>
-    { [](filesystem_v2*, inode_view inode) -> int { return inode.inode_num(); } },
-        path);
+    { [](filesystem_v2* fs, inode_view inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
+        path, buf);
 }
 
 

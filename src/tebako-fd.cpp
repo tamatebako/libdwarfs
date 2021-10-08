@@ -31,165 +31,83 @@
 #include "tebako-io-inner.h"
 #include <tebako-dfs.h>
 
-class tebako_fd {
-public:
-	dwarfs::inode_view node;
+using namespace std;
+
+struct tebako_fd {
+	uint32_t inode_num;
 	struct stat st;
 	uint64_t pos;
-	std::string filename;
+	string filename;
+	// [TODO] void* does not look good enough
 	void* payload;
+
+	tebako_fd(const char* p) : filename(p), pos(0), payload(NULL) {	}
+	~tebako_fd() { if (payload) free(payload); payload = NULL; }
 };
 
-class tebako_fdtable : public std::map<int, std::shared_ptr<tebako_fd>> {
-public:
-	int something;
-};
+typedef map<int, shared_ptr<tebako_fd>> tebako_fdtable;
 
 static folly::Synchronized<tebako_fdtable*> fdtable{ new tebako_fdtable };
 
 
-
-int dwarfs_open(const char *path, int flags,  ...)
+int dwarfs_open(const char *path, int flags)
 {
-	return -1; //  squash_open_inner(fs, path, 1);
-}
-
-
-/* int dwarfs_open_inner(sqfs* fs, const char* path, short follow_link)
-{
-	sqfs_err error;
-	struct squash_file *file = calloc(1, sizeof(struct squash_file));
-	short found;
-	int fd;
-	size_t nr;
-	int *handle;
-
-	// try locating the file and fetching its stat
-	if (NULL == file)
-	{
-		errno = ENOMEM;
-		return -1;
+	int ret = -1;
+	if (flags & (O_RDWR | O_WRONLY | O_TRUNC)) {
+		//	[EROFS] The named file resides on a read - only file system and either O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set in the oflag argument.
+		TEBAKO_SET_LAST_ERROR(EROFS);
 	}
-	error = sqfs_inode_get(fs, &file->node, sqfs_inode_root(fs));
-	if (SQFS_OK != error)
-	{
-		goto failure;
-	}
-	error = sqfs_lookup_path_inner(fs, &file->node, path, &found, follow_link);
-	if (SQFS_OK != error)
-	{
-		goto failure;
-	}
-	file->filename = strdup(path);
-
-	if (!found)
-	{
-		errno = ENOENT;
-		goto failure;
-	}
-	error = sqfs_stat(fs, &file->node, &file->st);
-	if (SQFS_OK != error)
-	{
-		goto failure;
-	}
-	file->fs = fs;
-	file->pos = 0;
-
-	// get a dummy fd from the system
-	fd = dup(0);
-	if (-1 == fd) {
-		goto failure;
-	}
-	// make sure that our global fd table is large enough
-	nr = fd + 1;
-
-	MUTEX_LOCK(&squash_global_mutex);
-	if (squash_global_fdtable.nr < nr)
-	{
-		// we secretly extend the requested size
-		// in order to minimize the number of realloc calls
-		nr *= 10;
-		squash_global_fdtable.fds = realloc(squash_global_fdtable.fds,
-						    nr * sizeof(struct squash_file *));
-		if (NULL == squash_global_fdtable.fds)
-		{
-			errno = ENOMEM;
-			goto failure;
+	else {
+		try {
+			auto fd = make_shared<tebako_fd>(path);
+			if (dwarfs_stat(path, &fd->st) == 0) {
+				// get a dummy fd from the system
+				ret = dup(0);
+				if (ret == -1) {
+					// [EMFILE]  All file descriptors available to the process are currently open.
+					TEBAKO_SET_LAST_ERROR(EMFILE);        
+				}
+				else {
+					int* handle = (int*)malloc(sizeof(int));
+					if (handle == NULL) {
+						TEBAKO_SET_LAST_ERROR(ENOMEM);
+					}
+					else {
+						// construct a handle (mainly) for win32
+						*handle = ret;
+						(**fdtable.wlock())[ret] = fd;
+					}
+				}
+			}
+			else {
+			//	[ENOENT] O_CREAT is not set and a component of path does not name an existing file, or O_CREAT is set and a component of the path prefix of path does not name an existing file, or path points to an empty string.
+			//	[EROFS] The named file resides on a read - only file system and either O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set in the oflag argument.
+				TEBAKO_SET_LAST_ERROR((flags & O_CREAT) ? EROFS : ENOENT);
+			}
 		}
-		memset(squash_global_fdtable.fds + squash_global_fdtable.nr,
-		       0,
-		       (nr - squash_global_fdtable.nr) * sizeof(struct squash_file *));
-		squash_global_fdtable.nr = nr;
+		catch (bad_alloc&) {
+			TEBAKO_SET_LAST_ERROR(ENOMEM);
+		}
 	}
-	MUTEX_UNLOCK(&squash_global_mutex);
-
-	// construct a handle (mainly) for win32
-	handle = (int *)malloc(sizeof(int));
-	if (NULL == handle) {
-		errno = ENOMEM;
-		goto failure;
-	}
-	*handle = fd;
-	file->payload = (void *)handle;
-
-	// insert the fd into the global fd table
-	file->fd = fd;
-	MUTEX_LOCK(&squash_global_mutex);
-	squash_global_fdtable.fds[fd] = file;
-        if (squash_global_fdtable.end < fd + 1) {
-        	squash_global_fdtable.end = fd + 1;
-        }
-	MUTEX_UNLOCK(&squash_global_mutex);
-	return fd;
-
-failure:
-	if (!errno) {
-		errno = ENOENT;
-	}
-	free(file);
-	return -1;
+	return ret;
 }
-
 
 
 int dwarfs_close(int vfd)
 {
-	int ret;
-	struct squash_file *file;
-
-        if (!SQUASH_VALID_VFD(vfd)) {
-                errno = EBADF;
-                return -1;
-        }
-        ret = close(vfd);
-	if (-1 == ret) {
-		return -1;
+	// We do not set errno in this function since ::close will be called in case of error either here or in tebako_close
+	int ret = -1;
+	if ((**fdtable.wlock()).erase(vfd) > 0) {
+		ret = close(vfd);
 	}
-        MUTEX_LOCK(&squash_global_mutex);
-        if (S_ISDIR(squash_global_fdtable.fds[vfd]->st.st_mode)) {
-                SQUASH_DIR *dir = (SQUASH_DIR *) (squash_global_fdtable.fds[vfd]->payload);
-                free(dir);
-        } else {
-                int *handle = (int *) (squash_global_fdtable.fds[vfd]->payload);
-                free(handle);
-        }
-
-        file = squash_global_fdtable.fds[vfd];
-        free(file->filename);
-        free(file);
-
-        squash_global_fdtable.fds[vfd] = NULL;
-        if (vfd + 1 == squash_global_fdtable.end) {
-                while (vfd >= 0 && NULL == squash_global_fdtable.fds[vfd]) {
-                        vfd -= 1;
-                }
-                squash_global_fdtable.end = vfd + 1;
-        } else {
-                assert(squash_global_fdtable.end > vfd + 1);
-        }
-        MUTEX_UNLOCK(&squash_global_mutex);
-        return 0;
+	else {
+		ret = DWARFS_INVALID_FD;
+	}
+	return ret ;
 }
+
+
+/*
 
 ssize_t dwarfs_read(int vfd, void *buf, sqfs_off_t nbyte)
 {

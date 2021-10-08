@@ -54,6 +54,7 @@ extern "C" {
     int   tebako_lstat(const char* path, struct stat* buf);
     int   tebako_access(const char* path, int amode);
     int   tebako_open(int nargs, const char* path, int flags, ...);
+    int   tebako_close(int vfd);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

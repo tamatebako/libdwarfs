@@ -95,9 +95,12 @@ int main(int argc, char** argv)
 		printf("A call to 'mkdir' returned %i (-1 expected)\n", ret);
 		rOK &= (ret == -1);
 
-		ret = open(TEBAKIZE_PATH("file.txt"), O_RDWR);
-		printf("A call to 'open' returned %i (-1 expected)\n", ret);
-		rOK &= (ret == -1);
+		ret = open(TEBAKIZE_PATH("file.txt"), O_RDONLY);
+		printf("A call to 'open' returned %i (non negative file handle expected)\n", ret);
+		rOK &= (ret >= 0);
+
+		ret = close(ret);
+		printf("A call to 'close' returned %i (0 expected)\n", ret);
 
 		drop_fs();
 		printf("Filesystem dropped\n");

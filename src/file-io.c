@@ -33,6 +33,7 @@
 
  /*
  * int tebako_open(int nargs, const char* pathname, int flags, ...)
+ * int tebako_close(int vfd)
  * https://pubs.opengroup.org/onlinepubs/9699919799/
  *
  */
@@ -50,12 +51,7 @@ int tebako_open(int nargs, const char* path, int flags, ...)
 	}
 
 	if (p_path) {
-		if (flags & O_RDWR || flags & O_WRONLY) {
-			TEBAKO_SET_LAST_ERROR(EROFS);
-		}
-		else {
-			ret = dwarfs_find(p_path);
-		}
+		ret = dwarfs_open(p_path, flags);
 	}
 	else {
 		if (nargs == 2) {
@@ -69,6 +65,15 @@ int tebako_open(int nargs, const char* path, int flags, ...)
 			va_end(args);
 			ret = open(path, flags, mode);
 		}
+	}
+	return ret;
+}
+
+int tebako_close(int vfd)
+{
+	int ret = dwarfs_close(vfd);
+	if (ret == DWARFS_INVALID_FD) {
+		ret = close(vfd);
 	}
 	return ret;
 }

@@ -56,22 +56,52 @@ namespace {
 		}
 	};
 
-	TEST_F(FileIOTests, tebako_open_wr) {
+	TEST_F(FileIOTests, tebako_open_rdwr) {
 		int ret = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDWR);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EROFS, errno);
 	}
 
-	TEST_F(FileIOTests, tebako_absolute_path_pass_through) {
-		int ret = tebako_open(2, "/bin/sh", O_RDONLY);
-		EXPECT_LT(0, ret);
+	TEST_F(FileIOTests, tebako_open_wronly) {
+		int ret = tebako_chdir(TEBAKIZE_PATH(""));
+		EXPECT_EQ(0, ret);
+		ret = tebako_open(2, "file.txt", O_WRONLY);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EROFS, errno);
 	}
 
-	TEST_F(FileIOTests, tebako_relative_path_pass_through) {
-		int ret = chdir("/bin");
+	TEST_F(FileIOTests, tebako_open_create) {
+		int ret = tebako_open(2, TEBAKIZE_PATH("no-file.txt"), O_RDONLY|O_CREAT);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EROFS, errno);
+	}
+
+	TEST_F(FileIOTests, tebako_open_truncate) {
+		int ret = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDONLY|O_TRUNC);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EROFS, errno);
+	}
+
+	TEST_F(FileIOTests, tebako_open_no_file) {
+		int ret = tebako_open(2, TEBAKIZE_PATH("no-file.txt"), O_RDONLY);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(ENOENT, errno);
+	}
+
+	TEST_F(FileIOTests, tebako_fio_absolute_path_pass_through) {
+		int ret = tebako_open(2, "/bin/sh", O_RDONLY);
+		EXPECT_LT(0, ret);
+		ret = tebako_close(ret);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileIOTests, tebako_fio_relative_path_pass_through) {
+		int ret = tebako_chdir("/bin");
 		EXPECT_EQ(0, ret);
 		ret = tebako_open(2, "sh", O_RDONLY);
 		EXPECT_LT(0, ret);
+		ret = tebako_close(ret);
+		EXPECT_EQ(0, ret);
 	}
 
 }

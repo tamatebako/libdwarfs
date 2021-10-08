@@ -67,6 +67,7 @@ namespace {
 
 	TEST_F(AccessTests, tebako_access_relative_path) {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
+		EXPECT_EQ(0, ret);
 		ret = tebako_access("file-in-directory-2.txt", R_OK);
 		EXPECT_EQ(0, ret);
 	}

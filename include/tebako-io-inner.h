@@ -35,9 +35,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-    int dwarfs_stat(const char* path, struct stat* buf);
+
+#define DWARFS_INVALID_FD  -2  
+
     int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid);
-    int dwarfs_find(const char* path);
+    int dwarfs_stat(const char* path, struct stat* buf);
+    int dwarfs_open(const char* path, int mode);
+    int dwarfs_close(int vfd);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplu
