@@ -30,7 +30,6 @@
 #include <tebako-common.h>
 #include <tebako-io.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif // !__cplusplus
@@ -90,22 +89,22 @@ extern "C" {
 *	LEGACY, DEPRECATED
 *	https://pubs.opengroup.org/onlinepubs/009695299/functions/getwd.html
 */
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif 
 	char* tebako_getwd(char* buf) {
 		if (is_tebako_cwd()) {
 			tebako_get_cwd(buf);
 			return buf;
 		} 
 		else {
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif 
 			return getwd(buf);
-		}
-	}
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif 
+		}
+	}
 
 #ifdef __cplusplus
 }

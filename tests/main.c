@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 		NULL    /* image_offset */
 	);
 
-	printf("A call to load_fs returned %i\n", ret);
+	printf("A call to load_fs returned %i (0 expected)\n", ret);
 
 	if (ret == 0) {
 		rOK = true;
@@ -64,28 +64,39 @@ int main(int argc, char** argv)
 		*/
 
 		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
-		printf("A call to 'stat' returned %i\n", ret);
+		printf("A call to 'stat' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
 		ret = access(TEBAKIZE_PATH("file.txt"), F_OK);
-		printf("A call to 'access' returned %i\n", ret);
+		printf("A call to 'access' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
 		ret = chdir(TEBAKIZE_PATH("directory-1"));
-		printf("A call to 'chdir' returned %i\n", ret);
+		printf("A call to 'chdir' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
 		r = getcwd(NULL, 0); 
-		printf("A call to 'getcwd' returned %p\n", r);
+		printf("A call to 'getcwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
 		free(r);
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif 
 		r = getwd(p);
-		printf("A call to 'getwd' returned %p\n", r);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif 
+		printf("A call to 'getwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
 
 		ret = mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
-		printf("A call to 'mkdir' returned %i\n", ret);
+		printf("A call to 'mkdir' returned %i (-1 expected)\n", ret);
+		rOK &= (ret == -1);
+
+		ret = open(TEBAKIZE_PATH("file.txt"), O_RDWR);
+		printf("A call to 'open' returned %i (-1 expected)\n", ret);
 		rOK &= (ret == -1);
 
 		drop_fs();

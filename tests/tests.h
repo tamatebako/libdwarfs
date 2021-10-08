@@ -31,7 +31,6 @@
 
 #include <gtest/gtest.h>
 
-#include <tebako-dfs.h>
 #include <tebako-io.h>
 
 #include "tebako-fs.h"

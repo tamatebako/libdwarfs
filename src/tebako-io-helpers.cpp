@@ -31,7 +31,7 @@
 #include <folly/Synchronized.h>
 
 
-//	Current working direcory (within tebako memfs)
+//  Current working direcory (within tebako memfs)
 //  RW lock implemented with folly tooling
 //  github.com/facebook/folly/blob/master/folly/docs/Synchronized
  
@@ -65,7 +65,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 		}
 	}
 
-//	Checks if a path is withing tebako memfs
+//  Checks if a path is withing tebako memfs
 //  [TODO: Canonical ?]
 	extern "C" int is_tebako_path(const char* path) {
 		return (strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
@@ -90,7 +90,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 		return 	(p->d[0] == '\0') ? 0 : -1;
 	}
 
-//	 Expands a path withing tebako memfs
+//  Expands a path withing tebako memfs
 //  [TODO: Canonical ?]
 	extern "C" const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
 		size_t cwd_len;

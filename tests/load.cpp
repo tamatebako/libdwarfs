@@ -100,4 +100,10 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 	}
 
+	TEST(LoadTests, tebako_open_not_loaded_filesystem) {
+		struct stat buf;
+		int ret = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDONLY);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(ENOENT, errno);
+	}
 }

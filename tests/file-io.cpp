@@ -27,40 +27,51 @@
  *
  */
 
-#include <tebako-common.h>
-#include <tebako-io.h>
-#include <tebako-io-inner.h>
+#include "tests.h"
 
- /*
- * int access(const char* path, int amode);
- * https://pubs.opengroup.org/onlinepubs/9699919799/
- *
- * The access() function shall check the file named by the pathname pointed to by the path argument for accessibility according to the bit pattern contained in amode.
- * The checks for accessibility (including directory permissions checked during pathname resolution) shall be performed using THE REAL USER ID in place of the effective user ID
- * and THE REAL GROUP ID in place of the effective group ID.
- */
+/*  
+*  Unit tests for 'tebako_open', 'tebako_close', 'tebako_read', 'tebako_write'
+* 'tebako_lseek' and underlying file descriptor implementation
+*/
 
-int tebako_access(const char* path, int amode)
-{
-	const char* p_path = NULL;
-	tebako_path_t t_path;
-	if (is_tebako_cwd() && path[0] != '/') {
-		p_path = tebako_expand_path(t_path, path);
-	}
-	else if (is_tebako_path(path)) {
-		p_path = path;
+
+namespace {
+	class FileIOTests : public testing::Test {
+	protected:
+		static void SetUpTestSuite() {
+			load_fs(&gfsData[0],
+				gfsSize,
+				"debug" /*debuglevel*/,
+				NULL	/* cachesize*/,
+				NULL	/* workers */,
+				NULL	/* mlock */,
+				NULL	/* decompress_ratio*/,
+				NULL    /* image_offset */
+			);
+
+		}
+
+		static void TearDownTestSuite() {
+			drop_fs();
+		}
+	};
+
+	TEST_F(FileIOTests, tebako_open_wr) {
+		int ret = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDWR);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EROFS, errno);
 	}
 
-	if (p_path) {
-		uid_t uid = getuid();
-		gid_t gid = getgid();
-		return dwarfs_access(p_path, amode, uid, gid);
+	TEST_F(FileIOTests, tebako_absolute_path_pass_through) {
+		int ret = tebako_open(2, "/bin/sh", O_RDONLY);
+		EXPECT_LT(0, ret);
 	}
-	else {
-		return access(path, amode);
 
+	TEST_F(FileIOTests, tebako_relative_path_pass_through) {
+		int ret = chdir("/bin");
+		EXPECT_EQ(0, ret);
+		ret = tebako_open(2, "sh", O_RDONLY);
+		EXPECT_LT(0, ret);
 	}
+
 }
-
-
-

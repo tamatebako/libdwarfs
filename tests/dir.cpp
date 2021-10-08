@@ -150,7 +150,7 @@ namespace {
 	TEST_F(DirTests, tebako_mkdir_absolute_path) {
 		int ret = tebako_mkdir(TEBAKIZE_PATH("tebako-test-dir"), S_IRWXU);
 		EXPECT_EQ(-1, ret);
-		EXPECT_EQ(EACCES, errno);
+		EXPECT_EQ(EROFS, errno);
 	}
 
 	TEST_F(DirTests, tebako_mkdir_relative_path) {
@@ -158,7 +158,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 		ret = tebako_mkdir("tebako-test-dir", S_IRWXU);
 		EXPECT_EQ(-1, ret);
-		EXPECT_EQ(EACCES, errno);
+		EXPECT_EQ(EROFS, errno);
 	}
 
 	TEST_F(DirTests, tebako_mkdir_absolute_path_pass_through) {

@@ -32,16 +32,14 @@
 #include <tebako-io-inner.h>
 
  /*
- * int access(const char* path, int amode);
+ * int tebako_open(int nargs, const char* pathname, int flags, ...)
  * https://pubs.opengroup.org/onlinepubs/9699919799/
  *
- * The access() function shall check the file named by the pathname pointed to by the path argument for accessibility according to the bit pattern contained in amode.
- * The checks for accessibility (including directory permissions checked during pathname resolution) shall be performed using THE REAL USER ID in place of the effective user ID
- * and THE REAL GROUP ID in place of the effective group ID.
  */
 
-int tebako_access(const char* path, int amode)
+int tebako_open(int nargs, const char* path, int flags, ...)
 {
+	int ret = -1;
 	const char* p_path = NULL;
 	tebako_path_t t_path;
 	if (is_tebako_cwd() && path[0] != '/') {
@@ -52,15 +50,25 @@ int tebako_access(const char* path, int amode)
 	}
 
 	if (p_path) {
-		uid_t uid = getuid();
-		gid_t gid = getgid();
-		return dwarfs_access(p_path, amode, uid, gid);
+		if (flags & O_RDWR || flags & O_WRONLY) {
+			TEBAKO_SET_LAST_ERROR(EROFS);
+		}
+		else {
+			ret = dwarfs_find(p_path);
+		}
 	}
 	else {
-		return access(path, amode);
-
+		if (nargs == 2) {
+			ret = open(path, flags);
+		}
+		else {
+			va_list args;
+			mode_t mode;
+			va_start(args, flags);
+			mode = va_arg(args, mode_t);
+			va_end(args);
+			ret = open(path, flags, mode);
+		}
 	}
+	return ret;
 }
-
-
-

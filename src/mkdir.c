@@ -43,7 +43,7 @@ extern "C" {
 int tebako_mkdir(const char* path, mode_t mode)	{
 	int ret = -1;
 	if ((is_tebako_cwd() && path[0] != '/') || is_tebako_path(path)) {
-		TEBAKO_SET_LAST_ERROR(EACCES);
+		TEBAKO_SET_LAST_ERROR(EROFS);
 	}
 	else {
 		ret = mkdir(path, mode);

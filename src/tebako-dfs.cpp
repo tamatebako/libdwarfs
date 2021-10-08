@@ -27,58 +27,13 @@
  * 
  */
 
-#include <array>
-#include <iostream>
-#include <stdexcept>
-
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <filesystem>
-
-#include <folly/Conv.h>
-#include <folly/Synchronized.h>
-
-#include "dwarfs/error.h"
-#include "dwarfs/filesystem_v2.h"
-#include "dwarfs/fstypes.h"
-#include "dwarfs/logger.h"
-#include "dwarfs/metadata_v2.h"
-#include "dwarfs/mmap.h"
-#include "dwarfs/options.h"
-#include "dwarfs/util.h"
-
-
 #include "tebako-common.h"
-#include "tebako-mfs.h"
 #include "tebako-dfs.h"
+#include "tebako-io-inner.h"
+#include "tebako-mfs.h"
 
 namespace dwarfs {
-    struct options {
-        int enable_nlink{ 0 };
-        int readonly{ 0 };
-        int cache_image{ 0 };
-        int cache_files{ 0 };
-        size_t cachesize{ 0 };
-        size_t workers{ 0 };
-        mlock_mode lock_mode{ mlock_mode::NONE };
-        double decompress_ratio{ 0.0 };
-        logger::level_type debuglevel{ logger::level_type::ERROR };
-        off_t image_offset{ 0 };
-    };
-
-    struct dwarfs_userdata {
-        dwarfs_userdata(std::ostream& os, const void* dt, const unsigned int sz)
-            : lgr{ os }, data{ dt }, size{ sz } { }
-
-        const void* data;
-        const unsigned int size;
-
-        options opts;
-        stream_logger lgr;
-        filesystem_v2 fs;
-    };
-
+ 
     template <typename LoggerPolicy>
     static void load_filesystem(dwarfs_userdata* userdata) {
         LOG_PROXY(LoggerPolicy, userdata->lgr);
@@ -196,9 +151,11 @@ extern "C" int load_fs( const void* data,
     return 0;
 }
 
-// stat function implementation  for dwarFS object
-// [TODO: lambda w access ??]
-extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
+
+template <typename Functor, class... Args>
+int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
+//  [TODO]   LOG_PROXY(LoggerPolicy, userdata->lgr);
+//    LOG_DEBUG << __func__;
     int err = ENOENT;
     int ret = -1;
     auto locked = usd.rlock();
@@ -206,9 +163,11 @@ extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
     if (p) {
         try {
             auto inode = p->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
-            if (inode &&
-                (err = p->fs.getattr(*inode, buf)) == 0) {
-                ret = 0;
+            if (inode) {
+                err = fn(&p->fs, *inode, std::forward<Args>(args)...);
+                if (err == 0) {
+                    ret = 0;
+                }
             }
         }
         catch (dwarfs::system_error const& e) {
@@ -218,37 +177,28 @@ extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
             err = EIO;
         }
     }
-    if (ret) {
+    if (ret < 0) {
         TEBAKO_SET_LAST_ERROR(err);
     }
     return ret;
 }
 
-// access function implementation  for dwarFS object
-// [TODO: lambda ??]
 extern "C" int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) {
-    int err = ENOENT;
-    int ret = -1;
-    auto locked = usd.rlock();
-    auto p = *locked;
-    if (p) {
-        try {
-            auto inode = p->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
-            if ( inode &&
-                (err = p->fs.access(*inode, amode, uid, gid)) == 0) { 
-                ret = 0; 
-            }
-        }
-        catch (dwarfs::system_error const& e) {
-            err = e.get_errno();
-        }
-        catch (...) {
-            err = EIO;
-        }
-    }
-    if (ret) {
-        TEBAKO_SET_LAST_ERROR(err);
-    }
-    return ret;
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)> 
+           { [](filesystem_v2* fs, inode_view inode, int amode, uid_t uid, gid_t gid) -> int { return fs->access(inode, amode, uid, gid); } }, 
+           path, amode, uid, gid);
 }
+
+extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
+           { [](filesystem_v2* fs, inode_view inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
+           path, buf);
+}
+
+extern "C" int dwarfs_find(const char* path) {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&)>
+    { [](filesystem_v2*, inode_view inode) -> int { return inode.inode_num(); } },
+        path);
+}
+
 

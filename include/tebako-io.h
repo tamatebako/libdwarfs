@@ -29,9 +29,7 @@
 
 #pragma once
 
-#include <stddef.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include "tebako-pch.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,13 +46,14 @@ extern "C" {
 
     void drop_fs(void);
 
-	char* tebako_getcwd(char* buf, size_t size);
-	char* tebako_getwd(char* buf);
-	int   tebako_chdir(const char* path);
-	int   tebako_mkdir(const char* path, mode_t mode);
-	int   tebako_stat(const char* path, struct stat* buf);
-	int   tebako_lstat(const char* path, struct stat* buf);
-	int   tebako_access(const char* path, int amode);
+    char* tebako_getcwd(char* buf, size_t size);
+    char* tebako_getwd(char* buf);
+    int   tebako_chdir(const char* path);
+    int   tebako_mkdir(const char* path, mode_t mode);
+    int   tebako_stat(const char* path, struct stat* buf);
+    int   tebako_lstat(const char* path, struct stat* buf);
+    int   tebako_access(const char* path, int amode);
+    int   tebako_open(int nargs, const char* path, int flags, ...);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

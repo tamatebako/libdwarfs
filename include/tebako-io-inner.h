@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako (libdwarfs-wr)
+ * This file is a part of tebako (dwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,40 +27,17 @@
  *
  */
 
-#include <tebako-common.h>
-#include <tebako-io.h>
-#include <tebako-io-inner.h>
+#pragma once
 
- /*
- * int access(const char* path, int amode);
- * https://pubs.opengroup.org/onlinepubs/9699919799/
- *
- * The access() function shall check the file named by the pathname pointed to by the path argument for accessibility according to the bit pattern contained in amode.
- * The checks for accessibility (including directory permissions checked during pathname resolution) shall be performed using THE REAL USER ID in place of the effective user ID
- * and THE REAL GROUP ID in place of the effective group ID.
- */
+#include "tebako-pch.h"
 
-int tebako_access(const char* path, int amode)
-{
-	const char* p_path = NULL;
-	tebako_path_t t_path;
-	if (is_tebako_cwd() && path[0] != '/') {
-		p_path = tebako_expand_path(t_path, path);
-	}
-	else if (is_tebako_path(path)) {
-		p_path = path;
-	}
 
-	if (p_path) {
-		uid_t uid = getuid();
-		gid_t gid = getgid();
-		return dwarfs_access(p_path, amode, uid, gid);
-	}
-	else {
-		return access(path, amode);
-
-	}
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+    int dwarfs_stat(const char* path, struct stat* buf);
+    int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid);
+    int dwarfs_find(const char* path);
+#ifdef __cplusplus
 }
-
-
-
+#endif // __cplusplu

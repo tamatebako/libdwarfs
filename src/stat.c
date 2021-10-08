@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <tebako-common.h>
 #include <tebako-io.h>
-#include <tebako-dfs.h>
+#include <tebako-io-inner.h>
 
  /*
  * stat()
