@@ -61,11 +61,9 @@ int dwarfs_open(const char *path, int flags)
 		try {
 			auto fd = make_shared<tebako_fd>(path);
 			if (dwarfs_stat(path, &fd->st) == 0) {
-				// get a dummy fd from the system
-				ret = dup(0);
-				if (ret == -1) {
-					// [EMFILE]  All file descriptors available to the process are currently open.
-					TEBAKO_SET_LAST_ERROR(EMFILE);        
+				if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
+					// [ENOTDIR] ... or O_DIRECTORY was specified and the path argument resolves to a non - directory file.
+					TEBAKO_SET_LAST_ERROR(ENOTDIR);
 				}
 				else {
 					int* handle = (int*)malloc(sizeof(int));
@@ -73,9 +71,17 @@ int dwarfs_open(const char *path, int flags)
 						TEBAKO_SET_LAST_ERROR(ENOMEM);
 					}
 					else {
-						// construct a handle (mainly) for win32
-						*handle = ret;
-						(**fdtable.wlock())[ret] = fd;
+						// get a dummy fd from the system
+						ret = dup(0);
+						if (ret == -1) {
+					// [EMFILE]  All file descriptors available to the process are currently open.
+							TEBAKO_SET_LAST_ERROR(EMFILE);        
+						}
+						else {
+							// construct a handle (mainly) for win32
+							*handle = ret;
+							(**fdtable.wlock())[ret] = fd;
+						}
 					}
 				}
 			}
@@ -86,24 +92,79 @@ int dwarfs_open(const char *path, int flags)
 			}
 		}
 		catch (bad_alloc&) {
+			if (ret > 0) {
+				close(ret);
+				ret = -1;
+			}
 			TEBAKO_SET_LAST_ERROR(ENOMEM);
 		}
 	}
 	return ret;
 }
 
-
 int dwarfs_close(int vfd)
 {
 	// We do not set errno in this function since ::close will be called in case of error either here or in tebako_close
-	int ret = -1;
+	int ret = DWARFS_INVALID_FD;
 	if ((**fdtable.wlock()).erase(vfd) > 0) {
 		ret = close(vfd);
 	}
-	else {
-		ret = DWARFS_INVALID_FD;
-	}
 	return ret ;
+}
+
+
+off_t dwarfs_lseek(int vfd, off_t offset, int whence)
+{
+	// We do not set errno in this function if vfd is not found since ::lseek will be called in case of error either here or in tebako_close
+	off_t ret = DWARFS_INVALID_FD;
+	off_t pos = 0;
+	auto p_fdtable = *fdtable.rlock();
+	auto p_fd = p_fdtable->find(vfd);
+	if (p_fd != p_fdtable->end()) {
+		switch (whence) {
+		case SEEK_SET:
+			pos = offset;
+			break;
+		case SEEK_CUR:
+			pos = p_fd->second->pos + offset;
+			break;
+		case SEEK_END:
+			pos = p_fd->second->st.st_size + offset;
+			break;
+		default:
+			// [EINVAL] The whence argument is not a proper value, or the resulting file offset would be negative for a regular file, block special file, or directory.
+			TEBAKO_SET_LAST_ERROR(EINVAL);
+			ret = -1;
+			break;
+		}
+		if (pos >= 0) {
+			ret = p_fd->second->pos = pos;
+		}
+		else {
+			// [EOVERFLOW] The resulting file offset would be a value which cannot be represented correctly in an object of type off_t.
+			TEBAKO_SET_LAST_ERROR((offset<0 ? EINVAL: EOVERFLOW));
+			ret = -1;
+		}
+	}
+		
+	return ret;
+
+}
+
+ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte)
+{
+	// We do not set errno in this function since ::read will be called in case of error either here or in tebako_close
+	int ret = DWARFS_INVALID_FD;
+	auto p_fdtable = *fdtable.rlock();
+	auto p_fd = p_fdtable->find(vfd);
+	if (p_fd != p_fdtable->end()) {
+		ret = dwarfs_inode_read(vfd, buf, nbyte, p_fd->second->pos);
+		if (ret > 0) {
+			p_fd->second->pos += ret;
+		}
+	}
+	return ret;
+
 }
 
 
@@ -135,29 +196,6 @@ failure:
 	return -1;
 }
 
-off_t dwarfs_lseek(int vfd, off_t offset, int whence)
-{
-	struct squash_file *file;
-	if (!SQUASH_VALID_VFD(vfd))
-	{
-		errno = EBADF;
-		return -1;
-	}
-	file = squash_global_fdtable.fds[vfd];
-	if (SQUASH_SEEK_SET == whence)
-	{
-		file->pos = offset;
-	}
-	else if (SQUASH_SEEK_CUR == whence)
-	{
-		file->pos += offset;
-	}
-	else if (SQUASH_SEEK_END == whence)
-	{
-		assert(S_ISREG(file->node.base.mode));
-		file->pos = file->node.xtra.reg.file_size;
-	}
-	return file->pos;
-}
+
 
 */

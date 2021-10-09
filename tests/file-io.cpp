@@ -30,7 +30,7 @@
 #include "tests.h"
 
 /*  
-*  Unit tests for 'tebako_open', 'tebako_close', 'tebako_read', 'tebako_write'
+*  Unit tests for 'tebako_open', 'tebako_close', 'tebako_read'
 * 'tebako_lseek' and underlying file descriptor implementation
 */
 
@@ -88,14 +88,33 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 	}
 
-	TEST_F(FileIOTests, tebako_fio_absolute_path_pass_through) {
+	TEST_F(FileIOTests, tebako_open_dir) {
+		int ret = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY|O_DIRECTORY);
+		EXPECT_LT(0, ret);
+		ret = tebako_close(ret);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileIOTests, tebako_open_not_dir) {
+		int ret = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY | O_DIRECTORY);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(ENOTDIR, errno);
+	}
+
+	TEST_F(FileIOTests, tebako_close_bad_file) {
+		int ret = tebako_close(33);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EBADF, errno);
+	}
+
+	TEST_F(FileIOTests, tebako_open_close_absolute_path_pass_through) {
 		int ret = tebako_open(2, "/bin/sh", O_RDONLY);
 		EXPECT_LT(0, ret);
 		ret = tebako_close(ret);
 		EXPECT_EQ(0, ret);
 	}
 
-	TEST_F(FileIOTests, tebako_fio_relative_path_pass_through) {
+	TEST_F(FileIOTests, tebako_open_close_path_pass_through) {
 		int ret = tebako_chdir("/bin");
 		EXPECT_EQ(0, ret);
 		ret = tebako_open(2, "sh", O_RDONLY);

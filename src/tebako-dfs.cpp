@@ -195,4 +195,24 @@ extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
         path, buf);
 }
 
-
+extern "C" ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) {
+    int err = ENOENT;
+    int ret = -1;
+    auto locked = usd.rlock();
+    auto p = *locked;
+    if (p) {
+        try {
+            ret = p->fs.read(inode, (char *)buf, size, offset);
+        }
+        catch (dwarfs::system_error const& e) {
+            err = e.get_errno();
+        }
+        catch (...) {
+            err = EIO;
+        }
+    }
+    if (ret < 0) {
+        TEBAKO_SET_LAST_ERROR(err);
+    }
+    return ret;
+}

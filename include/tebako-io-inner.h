@@ -41,6 +41,9 @@ extern "C" {
     int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid);
     int dwarfs_stat(const char* path, struct stat* buf);
     int dwarfs_open(const char* path, int mode);
+    off_t dwarfs_lseek(int vfd, off_t offset, int whence);
+    ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte);
+    ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset);
     int dwarfs_close(int vfd);
 
 #ifdef __cplusplus

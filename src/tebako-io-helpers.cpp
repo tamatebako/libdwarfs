@@ -107,4 +107,16 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 		return expanded_path;
 	}
 
+//  Returns tebako path is cwd if within tebako memfs
+//  NULL otherwise
+	extern "C" const char* to_tebako_path(tebako_path_t t_path, const char* path) {
+		const char* p_path = NULL;
+		if (is_tebako_cwd() && path[0] != '/') {
+			p_path = tebako_expand_path(t_path, path);
+		}
+		else if (is_tebako_path(path)) {
+			p_path = path;
+		}
+		return p_path;
+	}
 

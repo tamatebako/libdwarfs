@@ -135,11 +135,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 add_library(dwarfs-wr STATIC 
-    "src/getcwd.c"
-    "src/chdir.c"
-    "src/stat.c"
-    "src/access.c"
-    "src/mkdir.c"
+    "src/dir-ctl.c"
+    
+    
+    "src/file-ctl.c"
+    
     "src/file-io.c"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
@@ -304,7 +304,7 @@ target_link_libraries(wr-tests
     ${GTEST_LDFLAGS}
 )
 
-add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
+add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM wr-bin) 
 
 gtest_add_tests(TARGET wr-tests)
 

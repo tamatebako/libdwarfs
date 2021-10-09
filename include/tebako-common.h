@@ -92,6 +92,7 @@ const char* tebako_get_cwd(tebako_path_t cwd);
 int is_tebako_path(const char* path);
 int is_tebako_cwd(void);
 const char* tebako_expand_path(tebako_path_t expanded_path, const char* path);
+const char* to_tebako_path(tebako_path_t t_path, const char* path);
 
 #ifdef __cplusplus
 }

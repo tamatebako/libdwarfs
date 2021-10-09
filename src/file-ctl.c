@@ -31,6 +31,10 @@
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif // !__cplusplus
+
  /*
  * int access(const char* path, int amode);
  * https://pubs.opengroup.org/onlinepubs/9699919799/
@@ -42,14 +46,8 @@
 
 int tebako_access(const char* path, int amode)
 {
-	const char* p_path = NULL;
 	tebako_path_t t_path;
-	if (is_tebako_cwd() && path[0] != '/') {
-		p_path = tebako_expand_path(t_path, path);
-	}
-	else if (is_tebako_path(path)) {
-		p_path = path;
-	}
+	const char* p_path = to_tebako_path(t_path, path);
 
 	if (p_path) {
 		uid_t uid = getuid();
@@ -62,5 +60,20 @@ int tebako_access(const char* path, int amode)
 	}
 }
 
+/*
+ * stat()
+ * lstat()
+ * fstat()
+ * https://pubs.opengroup.org/onlinepubs/9699919799/
+ */
 
+int tebako_stat(const char* path, struct stat* buf)
+{
+	tebako_path_t t_path;
+	const char* p_path = to_tebako_path(t_path, path);
+	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
+}
 
+#ifdef __cplusplus
+}
+#endif // !__cplusplus

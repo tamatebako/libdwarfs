@@ -84,6 +84,7 @@ extern "C" {
 		else
    		  return getcwd(buf, size);
 	}
+
 /*
 *   getwd()
 *	LEGACY, DEPRECATED
@@ -105,6 +106,57 @@ extern "C" {
 #endif 
 		}
 	}
+
+/*
+* chdir()
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*
+*/
+
+	int tebako_chdir(const char* path) {
+		int ret = -1;
+		tebako_path_t t_path;
+		const char* p_path = to_tebako_path(t_path, path);
+
+		if (p_path) {
+			struct stat st;
+			ret = tebako_stat(p_path, &st);
+			if (ret == 0) {
+				if (S_ISDIR(st.st_mode)) {
+					tebako_set_cwd(p_path);
+				}
+				else {
+					ret = -1;
+					TEBAKO_SET_LAST_ERROR(ENOTDIR);
+				}
+			}
+		}
+		else {
+			ret = chdir(path);
+			if (ret == 0) {
+				tebako_set_cwd(NULL);
+			}
+		}
+		return ret;
+	}
+
+/*
+* mkdir()
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*
+*/
+
+	int tebako_mkdir(const char* path, mode_t mode) {
+		int ret = -1;
+		if ((is_tebako_cwd() && path[0] != '/') || is_tebako_path(path)) {
+			TEBAKO_SET_LAST_ERROR(EROFS);
+	}
+		else {
+			ret = mkdir(path, mode);
+		}
+		return ret;
+}
+
 
 #ifdef __cplusplus
 }

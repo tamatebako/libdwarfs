@@ -58,9 +58,9 @@ int main(int argc, char** argv)
 	if (ret == 0) {
 		rOK = true;
 
-		/* 
+		/*
 		* Positive cases only, just to check tha define and link works correctly
-		* The real unit tests are done by gtest (wr-tests) 
+		* The real unit tests are done by gtest (wr-tests)
 		*/
 
 		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
 		printf("A call to 'chdir' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
-		r = getcwd(NULL, 0); 
+		r = getcwd(NULL, 0);
 		printf("A call to 'getcwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
 		free(r);
@@ -101,6 +101,23 @@ int main(int argc, char** argv)
 
 		ret = close(ret);
 		printf("A call to 'close' returned %i (0 expected)\n", ret);
+		rOK &= (ret == 0);
+
+		ret = unlink("/tmp/some-tebako-test-file.txt");
+		printf("A call to 'unlink' returned %i (-1 supposed but 0 is also possible)\n", ret);
+		// ret is not checked intensionally !!!
+
+		ret = open("/tmp/some-tebako-test-file.txt", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+		printf("A call to 'open' with 3 arguments returned %i (non negative file handle expected)\n", ret);
+		rOK &= (ret >= 0);
+
+		ret = close(ret);
+		printf("A call to 'close' returned %i (0 expected)\n", ret);
+		rOK &= (ret == 0);
+
+		ret = unlink("/tmp/some-tebako-test-file.txt");
+		printf("A call to 'unlink' returned %i (0 expected)\n", ret);
+		rOK &= (ret == 0);
 
 		drop_fs();
 		printf("Filesystem dropped\n");

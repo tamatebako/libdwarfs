@@ -33,7 +33,6 @@
 
  /*
  * int tebako_open(int nargs, const char* pathname, int flags, ...)
- * int tebako_close(int vfd)
  * https://pubs.opengroup.org/onlinepubs/9699919799/
  *
  */
@@ -41,14 +40,8 @@
 int tebako_open(int nargs, const char* path, int flags, ...)
 {
 	int ret = -1;
-	const char* p_path = NULL;
 	tebako_path_t t_path;
-	if (is_tebako_cwd() && path[0] != '/') {
-		p_path = tebako_expand_path(t_path, path);
-	}
-	else if (is_tebako_path(path)) {
-		p_path = path;
-	}
+	const char* p_path = to_tebako_path(t_path, path);
 
 	if (p_path) {
 		ret = dwarfs_open(p_path, flags);
@@ -68,6 +61,42 @@ int tebako_open(int nargs, const char* path, int flags, ...)
 	}
 	return ret;
 }
+
+/*
+* int tebako_lseek(int vfd, off_t offset, int whence)
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*
+*/
+
+off_t tebako_lseek(int vfd, off_t offset, int whence)
+{
+	int ret = dwarfs_lseek(vfd, offset, whence);
+	if (ret == DWARFS_INVALID_FD) {
+		ret = lseek(vfd, offset, whence);
+	}
+	return ret;
+}
+
+/*
+* ssize_t tebako_read(int vfd, void* buf, size_t nbyte)
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*
+*/
+ssize_t tebako_read(int vfd, void* buf, size_t nbyte)
+{
+	int ret = dwarfs_read(vfd, buf, nbyte);
+	if (ret == DWARFS_INVALID_FD) {
+		ret = read(vfd, buf, nbyte);
+	}
+	return ret;
+}
+
+
+/*
+* int tebako_close(int vfd)
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*
+*/
 
 int tebako_close(int vfd)
 {
