@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,6 +26,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+ /*
+ *  dwarFS filesystem data types
+ */
+
 
 #pragma once
 

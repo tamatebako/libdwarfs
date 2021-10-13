@@ -158,7 +158,7 @@ ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte)
 	auto p_fdtable = *fdtable.rlock();
 	auto p_fd = p_fdtable->find(vfd);
 	if (p_fd != p_fdtable->end()) {
-		ret = dwarfs_inode_read(vfd, buf, nbyte, p_fd->second->pos);
+		ret = dwarfs_inode_read(p_fd->second->st.st_ino, buf, nbyte, p_fd->second->pos);
 		if (ret > 0) {
 			p_fd->second->pos += ret;
 		}

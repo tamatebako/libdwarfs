@@ -42,6 +42,8 @@ int main(int argc, char** argv)
 	char* r;
 	const int true = -1, false = 0;
 	int rOK = false; 
+	int fh;
+	char readbuf[32];
 
 	int ret = load_fs(&gfsData[0],
 		gfsSize,
@@ -95,11 +97,19 @@ int main(int argc, char** argv)
 		printf("A call to 'mkdir' returned %i (-1 expected)\n", ret);
 		rOK &= (ret == -1);
 
-		ret = open(TEBAKIZE_PATH("file.txt"), O_RDONLY);
-		printf("A call to 'open' returned %i (non negative file handle expected)\n", ret);
-		rOK &= (ret >= 0);
+		fh = open(TEBAKIZE_PATH("file.txt"), O_RDONLY);
+		printf("A call to 'open' returned %i (non negative file handle expected)\n", fh);
+		rOK &= (fh >= 0);
 
-		ret = close(ret);
+		ret = lseek(fh, 2, SEEK_SET);
+		printf("A call to 'lseek' returned %i (2 expected)", ret);
+		rOK &= (ret == 2);
+
+		ret = read(fh, readbuf, 2); readbuf[2] = '\0';
+		printf("A call to 'read' returned %i (2 expected); Read buffer: '%s' ('st' expected)\n", ret, readbuf);
+		rOK &= (ret == 2);
+		rOK &= (strcmp(readbuf, "st") == 0);
+		if (fh >= 0) ret = close(fh);
 		printf("A call to 'close' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
@@ -125,6 +135,6 @@ int main(int argc, char** argv)
 		ret = rOK ? 0 : -1;
 	}
 
-	printf("Exiting. Return code=%i\n", ret);
+	printf("Exiting. Return code: %i\n", ret);
 	return ret;
 }

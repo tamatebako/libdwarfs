@@ -27,6 +27,11 @@
  * 
  */
 
+ /*
+ *  C/C++ common definitions and utility functions
+ */
+
+
 #pragma once
 
 #include "tebako-pch.h"

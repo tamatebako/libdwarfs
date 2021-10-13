@@ -54,6 +54,7 @@ namespace dwarfs {
 
         userdata->fs = filesystem_v2(
             userdata->lgr, std::make_shared<tebako::mfs>(userdata->data, userdata->size), fsopts);
+        userdata->fs.set_num_workers(userdata->opts.workers);
 
         ti << "file system initialized";
     }
@@ -96,22 +97,21 @@ extern "C" int load_fs( const void* data,
         auto locked = usd.wlock();
         *locked = new dwarfs_userdata(std::cerr, data, size);
         auto p = *locked;
-        auto opts = p->opts;
 
-        opts.cache_image = 0;
-        opts.cache_files = 1;
+        p->opts.cache_image = 0;
+        p->opts.cache_files = 1;
 
 
         try {
             p->opts.debuglevel = debuglevel ? logger::parse_level(debuglevel): logger::INFO;
 
-            p->lgr.set_threshold(opts.debuglevel);
-            p->lgr.set_with_context(opts.debuglevel >= logger::DEBUG);
+            p->lgr.set_threshold(p->opts.debuglevel);
+            p->lgr.set_with_context(p->opts.debuglevel >= logger::DEBUG);
 
-            opts.cachesize = cachesize ? dwarfs::parse_size_with_unit(cachesize) : (static_cast<size_t>(512) << 20);
-            opts.workers = workers ? folly::to<size_t>(workers) : 2;
-            opts.lock_mode =  mlock ? parse_mlock_mode(mlock) : mlock_mode::NONE;
-            opts.decompress_ratio = decompress_ratio ? folly::to<double>(decompress_ratio) : 0.8;
+            p->opts.cachesize = cachesize ? dwarfs::parse_size_with_unit(cachesize) : (static_cast<size_t>(512) << 20);
+            p->opts.workers = workers ? folly::to<size_t>(workers) : 2;
+            p->opts.lock_mode =  mlock ? parse_mlock_mode(mlock) : mlock_mode::NONE;
+            p->opts.decompress_ratio = decompress_ratio ? folly::to<double>(decompress_ratio) : 0.8;
         }
         catch (runtime_error const& e) {
             std::cerr << "error: " << e.what() << std::endl;
@@ -122,7 +122,7 @@ extern "C" int load_fs( const void* data,
             return 1;
         }
 
-        if (opts.decompress_ratio < 0.0 || opts.decompress_ratio > 1.0) {
+        if (p->opts.decompress_ratio < 0.0 || p->opts.decompress_ratio > 1.0) {
             std::cerr << "error: decratio must be between 0.0 and 1.0" << std::endl;
             return 1;
         }
@@ -130,7 +130,7 @@ extern "C" int load_fs( const void* data,
         if (image_offset) {
             std::string img_offset{ image_offset };
             try {
-                opts.image_offset = (img_offset == "auto") ? filesystem_options::IMAGE_OFFSET_AUTO : folly::to<off_t>(img_offset);
+                p->opts.image_offset = (img_offset == "auto") ? filesystem_options::IMAGE_OFFSET_AUTO : folly::to<off_t>(img_offset);
             }
             catch (...)  {
                 std::cerr << "error: failed to parse offset: " + img_offset << std::endl;
@@ -141,7 +141,7 @@ extern "C" int load_fs( const void* data,
         LOG_PROXY(debug_logger_policy, p->lgr);
         LOG_INFO << PRJ_NAME << " version " << PRJ_VERSION_STRING;
 
-        (opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(p) :  load_filesystem<prod_logger_policy>(p);
+        (p->opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(p) :  load_filesystem<prod_logger_policy>(p);
     }
 
     catch (...) {

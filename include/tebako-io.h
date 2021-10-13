@@ -27,9 +27,13 @@
  *
  */
 
+ /*
+ *  Tebako filesystem interface functions
+ *  This file shall be included into sources we want to "hack"
+ */
+
 #pragma once
 
-#include "tebako-pch.h"
 
 #ifdef __cplusplus
 extern "C" {
