@@ -57,8 +57,10 @@ extern "C" {
     int   tebako_stat(const char* path, struct stat* buf);
     int   tebako_access(const char* path, int amode);
     int   tebako_open(int nargs, const char* path, int flags, ...);
-    off_t tebako_lseek(int vfd, off_t offset, int whence);
     ssize_t tebako_read(int vfd, void* buf, size_t nbyte);
+    ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
+    off_t tebako_lseek(int vfd, off_t offset, int whence);
+    int   tebako_fstat(int vfd, struct stat* buf);
     int   tebako_close(int vfd);
 #ifdef __cplusplus
 }

@@ -135,12 +135,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 add_library(dwarfs-wr STATIC 
-    "src/dir-ctl.c"
+    "src/dir-ctl.cpp"
     
     
-    "src/file-ctl.c"
+    "src/file-ctl.cpp"
     
-    "src/file-io.c"
+    "src/file-io.cpp"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
@@ -288,11 +288,11 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
 # Google test
 
 add_executable(wr-tests 
-  "tests/load.cpp"
-  "tests/stat.cpp"
-  "tests/access.cpp"
-  "tests/dir.cpp"
-  "tests/file-io.cpp"
+  "tests/tests-fs-load.cpp"
+  "tests/tests-stat.cpp"
+  "tests/tests-access.cpp"
+  "tests/tests-dir-ctl.cpp"
+  "tests/tests-file-io.cpp"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"

@@ -34,13 +34,15 @@
 #include "tebako-fs.h"
 #include "tests-defines.h"
 
+static const int true = -1, false = 0;
+static int readv_c_test(int fh);
+static int open_3_args_c_test(void);
 
 int main(int argc, char** argv)
 {
 	struct stat buf;
 	char p[PATH_MAX];
 	char* r;
-	const int true = -1, false = 0;
 	int rOK = false; 
 	int fh;
 	char readbuf[32];
@@ -102,31 +104,24 @@ int main(int argc, char** argv)
 		rOK &= (fh >= 0);
 
 		ret = lseek(fh, 2, SEEK_SET);
-		printf("A call to 'lseek' returned %i (2 expected)", ret);
+		printf("A call to 'lseek' returned %i (2 expected)\n", ret);
 		rOK &= (ret == 2);
 
 		ret = read(fh, readbuf, 2); readbuf[2] = '\0';
 		printf("A call to 'read' returned %i (2 expected); Read buffer: '%s' ('st' expected)\n", ret, readbuf);
 		rOK &= (ret == 2);
 		rOK &= (strcmp(readbuf, "st") == 0);
-		if (fh >= 0) ret = close(fh);
-		printf("A call to 'close' returned %i (0 expected)\n", ret);
+
+		rOK &= readv_c_test(fh);  /* Skipped 'Ju', read 'st', ' a file' remains */
+
+		ret = fstat(fh, &buf);
 		rOK &= (ret == 0);
 
-		ret = unlink("/tmp/some-tebako-test-file.txt");
-		printf("A call to 'unlink' returned %i (-1 supposed but 0 is also possible)\n", ret);
-		// ret is not checked intensionally !!!
 
-		ret = open("/tmp/some-tebako-test-file.txt", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-		printf("A call to 'open' with 3 arguments returned %i (non negative file handle expected)\n", ret);
-		rOK &= (ret >= 0);
+		rOK &= open_3_args_c_test();
 
-		ret = close(ret);
+		ret = close(fh);
 		printf("A call to 'close' returned %i (0 expected)\n", ret);
-		rOK &= (ret == 0);
-
-		ret = unlink("/tmp/some-tebako-test-file.txt");
-		printf("A call to 'unlink' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
 		drop_fs();
@@ -137,4 +132,52 @@ int main(int argc, char** argv)
 
 	printf("Exiting. Return code: %i\n", ret);
 	return ret;
+}
+
+
+
+static int readv_c_test(int fh) {
+	ssize_t s;
+
+	char buf0[5];
+	char buf1[5];
+	char buf2[5];
+	int iovcnt;
+	struct iovec iov[3];
+
+
+	iov[0].iov_base = buf0;
+	iov[0].iov_len = sizeof(buf0);
+	iov[1].iov_base = buf1;
+	iov[1].iov_len = sizeof(buf1);
+	iov[2].iov_base = buf2;
+	iov[2].iov_len = sizeof(buf2);
+	iovcnt = sizeof(iov) / sizeof(struct iovec);
+
+	s = readv(fh, &iov[0], iovcnt);
+	printf("A call to 'readv' returned %li (9 expected)\n", s);
+
+	return s==9?true:false;
+}
+
+
+static int open_3_args_c_test(void) {
+	int rOK = true;
+	int ret = unlink("/tmp/some-tebako-test-file.txt");
+	printf("A call to 'unlink' returned %i (-1 supposed but 0 is also possible)\n", ret);
+	// ret is not checked intensionally !!!
+
+	ret = open("/tmp/some-tebako-test-file.txt", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	printf("A call to 'open' with 3 arguments returned %i (non negative file handle expected)\n", ret);
+	rOK &= (ret >= 0);
+
+	ret = close(ret);
+	printf("A call to 'close' returned %i (0 expected)\n", ret);
+	rOK &= (ret == 0);
+
+	ret = unlink("/tmp/some-tebako-test-file.txt");
+	printf("A call to 'unlink' returned %i (0 expected)\n", ret);
+	rOK &= (ret == 0);
+
+	return rOK;
 }

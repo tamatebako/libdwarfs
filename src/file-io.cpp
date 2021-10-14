@@ -37,7 +37,7 @@
  *
  */
 
-int tebako_open(int nargs, const char* path, int flags, ...)
+extern "C" int tebako_open(int nargs, const char* path, int flags, ...)
 {
 	int ret = -1;
 	tebako_path_t t_path;
@@ -56,7 +56,7 @@ int tebako_open(int nargs, const char* path, int flags, ...)
 			va_start(args, flags);
 			mode = va_arg(args, mode_t);
 			va_end(args);
-			ret = open(path, flags, mode);
+			ret = ::open(path, flags, mode);
 		}
 	}
 	return ret;
@@ -68,11 +68,11 @@ int tebako_open(int nargs, const char* path, int flags, ...)
 *
 */
 
-off_t tebako_lseek(int vfd, off_t offset, int whence)
+extern "C" off_t tebako_lseek(int vfd, off_t offset, int whence)
 {
-	int ret = dwarfs_lseek(vfd, offset, whence);
+	off_t ret = dwarfs_lseek(vfd, offset, whence);
 	if (ret == DWARFS_INVALID_FD) {
-		ret = lseek(vfd, offset, whence);
+		ret = ::lseek(vfd, offset, whence);
 	}
 	return ret;
 }
@@ -82,11 +82,25 @@ off_t tebako_lseek(int vfd, off_t offset, int whence)
 * https://pubs.opengroup.org/onlinepubs/9699919799/
 *
 */
-ssize_t tebako_read(int vfd, void* buf, size_t nbyte)
+extern "C" ssize_t tebako_read(int vfd, void* buf, size_t nbyte)
 {
-	int ret = dwarfs_read(vfd, buf, nbyte);
+	ssize_t ret = dwarfs_read(vfd, buf, nbyte);
 	if (ret == DWARFS_INVALID_FD) {
-		ret = read(vfd, buf, nbyte);
+		ret = ::read(vfd, buf, nbyte);
+	}
+	return ret;
+}
+
+
+/*
+* ssize_t tebako_readv(int vfd, void* buf, size_t nbyte)
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*
+*/
+extern "C" ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt) {
+	ssize_t ret = dwarfs_readv(vfd, iov, iovcnt);
+	if (ret == DWARFS_INVALID_FD) {
+		ret = ::readv(vfd, iov, iovcnt);
 	}
 	return ret;
 }
@@ -98,11 +112,24 @@ ssize_t tebako_read(int vfd, void* buf, size_t nbyte)
 *
 */
 
-int tebako_close(int vfd)
-{
+extern "C" int tebako_close(int vfd) {
 	int ret = dwarfs_close(vfd);
 	if (ret == DWARFS_INVALID_FD) {
-		ret = close(vfd);
+		ret = ::close(vfd);
+	}
+	return ret;
+}
+
+/*
+* int tebako_fstat(int vfd, struct stat* buf)
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*
+*/
+
+extern "C" int tebako_fstat(int vfd, struct stat* buf) {
+	int ret = dwarfs_fstat(vfd, buf);
+	if (ret == DWARFS_INVALID_FD) {
+		ret = ::fstat(vfd, buf);
 	}
 	return ret;
 }
