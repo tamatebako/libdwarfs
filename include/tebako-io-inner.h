@@ -47,6 +47,7 @@ extern "C" {
     ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte);
     ssize_t dwarfs_readv(int vfd, const struct iovec* iov, int iovcnt);
     ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset);
+    int   dwarfs_fstat(int vfd, struct stat* buf);
     int dwarfs_close(int vfd);
 
 #ifdef __cplusplus

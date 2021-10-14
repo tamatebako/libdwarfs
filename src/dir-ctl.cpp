@@ -30,15 +30,12 @@
 #include <tebako-common.h>
 #include <tebako-io.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif // !__cplusplus
 /*	
 *   getcwd()
 *   https://pubs.opengroup.org/onlinepubs/9699919799/
 */
 
-	char* tebako_getcwd(char* buf, size_t size) {
+extern "C" char* tebako_getcwd(char* buf, size_t size) {
 		char _cwd[TEBAKO_PATH_LENGTH];
 		const char* cwd = tebako_get_cwd(_cwd);
 		size_t len = strlen(cwd);
@@ -56,7 +53,7 @@ extern "C" {
 						buf = NULL;
 					}
 					else {
-						buf = malloc(size);
+						buf = (char*)malloc(size);
 						if (!buf) {
 							TEBAKO_SET_LAST_ERROR(ENOMEM);
 						}
@@ -90,7 +87,7 @@ extern "C" {
 *	LEGACY, DEPRECATED
 *	https://pubs.opengroup.org/onlinepubs/009695299/functions/getwd.html
 */
-	char* tebako_getwd(char* buf) {
+extern "C"	char* tebako_getwd(char* buf) {
 		if (is_tebako_cwd()) {
 			tebako_get_cwd(buf);
 			return buf;
@@ -113,7 +110,7 @@ extern "C" {
 *
 */
 
-	int tebako_chdir(const char* path) {
+extern "C"	int tebako_chdir(const char* path) {
 		int ret = -1;
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, path);
@@ -146,7 +143,7 @@ extern "C" {
 *
 */
 
-	int tebako_mkdir(const char* path, mode_t mode) {
+extern "C"	int tebako_mkdir(const char* path, mode_t mode) {
 		int ret = -1;
 		if ((is_tebako_cwd() && path[0] != '/') || is_tebako_path(path)) {
 			TEBAKO_SET_LAST_ERROR(EROFS);
@@ -157,7 +154,3 @@ extern "C" {
 		return ret;
 }
 
-
-#ifdef __cplusplus
-}
-#endif // !__cplusplus

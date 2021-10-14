@@ -112,11 +112,24 @@ extern "C" ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt) {
 *
 */
 
-extern "C" int tebako_close(int vfd)
-{
+extern "C" int tebako_close(int vfd) {
 	int ret = dwarfs_close(vfd);
 	if (ret == DWARFS_INVALID_FD) {
-		ret = close(vfd);
+		ret = ::close(vfd);
+	}
+	return ret;
+}
+
+/*
+* int tebako_fstat(int vfd, struct stat* buf)
+* https://pubs.opengroup.org/onlinepubs/9699919799/
+*
+*/
+
+extern "C" int tebako_fstat(int vfd, struct stat* buf) {
+	int ret = dwarfs_fstat(vfd, buf);
+	if (ret == DWARFS_INVALID_FD) {
+		ret = ::fstat(vfd, buf);
 	}
 	return ret;
 }
