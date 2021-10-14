@@ -140,7 +140,7 @@ add_library(dwarfs-wr STATIC
     
     "src/file-ctl.c"
     
-    "src/file-io.c"
+    "src/file-io.cpp"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"

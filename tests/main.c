@@ -109,6 +109,24 @@ int main(int argc, char** argv)
 		printf("A call to 'read' returned %i (2 expected); Read buffer: '%s' ('st' expected)\n", ret, readbuf);
 		rOK &= (ret == 2);
 		rOK &= (strcmp(readbuf, "st") == 0);
+/*
+		char buf0[20];
+		char buf1[30];
+		char buf2[40];
+		int iovcnt;
+		struct iovec iov[3];
+
+
+		iov[0].iov_base = buf0;
+		iov[0].iov_len = sizeof(buf0);
+		iov[1].iov_base = buf1;
+		iov[1].iov_len = sizeof(buf1);
+		iov[2].iov_base = buf2;
+		iov[2].iov_len = sizeof(buf2);
+		...
+			iovcnt = sizeof(iov) / sizeof(struct iovec);
+*/
+
 		if (fh >= 0) ret = close(fh);
 		printf("A call to 'close' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);

@@ -47,11 +47,39 @@ struct tebako_fd {
 
 typedef map<int, shared_ptr<tebako_fd>> tebako_fdtable;
 
-static folly::Synchronized<tebako_fdtable*> fdtable{ new tebako_fdtable };
+class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
+public:
+	sync_tebako_fdtable(void): folly::Synchronized<tebako_fdtable*>(new tebako_fdtable) { }
+	ssize_t sync_op_start(int vfd, uint32_t& ino, off_t& pos) {
+		ssize_t ret = DWARFS_INVALID_FD;
+		auto p_fdtable = *this->rlock();
+		auto p_fd = p_fdtable->find(vfd);
+		if (p_fd != p_fdtable->end()) {
+			ino = p_fd->second->st.st_ino;
+			pos = p_fd->second->pos;
+			ret = DWARFS_IO_CONTINUE;
+		}
+		return ret;
+	}
+
+	ssize_t sync_pos_set(int vfd, off_t pos) {
+		ssize_t ret = DWARFS_IO_ERROR;
+		auto p_fdtable = *this->rlock();
+		auto p_fd = p_fdtable->find(vfd);
+		if (p_fd != p_fdtable->end()) {
+			p_fd->second->pos += ret;
+			ret = DWARFS_IO_CONTINUE;
+		}
+		return ret;
+	}
+
+ 
+};
+
+static sync_tebako_fdtable fdtable;
 
 
-int dwarfs_open(const char *path, int flags)
-{
+int dwarfs_open(const char *path, int flags) {
 	int ret = -1;
 	if (flags & (O_RDWR | O_WRONLY | O_TRUNC)) {
 		//	[EROFS] The named file resides on a read - only file system and either O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set in the oflag argument.
@@ -102,8 +130,7 @@ int dwarfs_open(const char *path, int flags)
 	return ret;
 }
 
-int dwarfs_close(int vfd)
-{
+int dwarfs_close(int vfd) {
 	// We do not set errno in this function since ::close will be called in case of error either here or in tebako_close
 	int ret = DWARFS_INVALID_FD;
 	if ((**fdtable.wlock()).erase(vfd) > 0) {
@@ -113,8 +140,7 @@ int dwarfs_close(int vfd)
 }
 
 
-off_t dwarfs_lseek(int vfd, off_t offset, int whence)
-{
+off_t dwarfs_lseek(int vfd, off_t offset, int whence) {
 	// We do not set errno in this function if vfd is not found since ::lseek will be called in case of error either here or in tebako_close
 	off_t ret = DWARFS_INVALID_FD;
 	off_t pos = 0;
@@ -151,51 +177,45 @@ off_t dwarfs_lseek(int vfd, off_t offset, int whence)
 
 }
 
-ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte)
-{
+ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte)  {
 	// We do not set errno in this function since ::read will be called in case of error either here or in tebako_close
-	int ret = DWARFS_INVALID_FD;
-	auto p_fdtable = *fdtable.rlock();
-	auto p_fd = p_fdtable->find(vfd);
-	if (p_fd != p_fdtable->end()) {
-		ret = dwarfs_inode_read(p_fd->second->st.st_ino, buf, nbyte, p_fd->second->pos);
-		if (ret > 0) {
-			p_fd->second->pos += ret;
+	uint32_t ino;
+	off_t pos;
+	ssize_t ret = fdtable.sync_op_start(vfd, ino, pos);
+	ret = dwarfs_inode_read(ino, buf, nbyte, pos);
+	if (ret > 0) {
+		ssize_t r = fdtable.sync_pos_set(vfd, pos);
+		if (r != DWARFS_IO_CONTINUE) {
+			ret = r;
 		}
 	}
 	return ret;
 
 }
 
-
-/*
-
-ssize_t dwarfs_read(int vfd, void *buf, sqfs_off_t nbyte)
-{
-	sqfs_err error;
-	struct squash_file *file;
-
-	if (!SQUASH_VALID_VFD(vfd))
-	{
-		errno = EBADF;
-		goto failure;
+ssize_t dwarfs_readv(int vfd, const struct iovec* iov, int iovcnt) {
+	// We do not set errno in this function since ::readv will be called in case of error either here or in tebako_close
+	uint32_t ino;
+	off_t pos;
+	ssize_t ret = fdtable.sync_op_start(vfd, ino, pos);
+	if (ret == DWARFS_IO_CONTINUE) {
+		for (int i = 0; i < iovcnt; ++i) {
+			ssize_t ssize = dwarfs_inode_read(ino, iov[i].iov_base, iov[i].iov_len, pos);
+			if (ssize > 0) {
+				pos += ssize;
+				ret += ssize;
+			}
+			else {
+				if (ssize < 0) {
+					ret = DWARFS_IO_ERROR;
+				}
+				break;
+			}
+		}
+		ssize_t r = fdtable.sync_pos_set(vfd, pos);
+		if (r != DWARFS_IO_CONTINUE) {
+			ret = r;
+		}
 	}
-	file = squash_global_fdtable.fds[vfd];
-
-	error = sqfs_read_range(file->fs, &file->node, file->pos, &nbyte, buf);
-	if (SQFS_OK != error)
-	{
-		goto failure;
-	}
-	file->pos += nbyte;
-	return nbyte;
-failure:
-	if (!errno) {
-		errno = EBADF;
-	}
-	return -1;
+	return ret;
 }
-
-
-
-*/
