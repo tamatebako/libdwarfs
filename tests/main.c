@@ -35,17 +35,20 @@
 #include "tests-defines.h"
 
 static const int true = -1, false = 0;
+static int attr_functions_c_test(char* fname);
+static int pread_c_test(int fh);
 static int readv_c_test(int fh);
+static int lseek_read_c_test(int fh);
 static int open_3_args_c_test(void);
+static int openat_c_test(int fh);
 
 int main(int argc, char** argv)
 {
-	struct stat buf;
 	char p[PATH_MAX];
 	char* r;
 	int rOK = false; 
 	int fh;
-	char readbuf[32];
+	struct stat buf;
 
 	int ret = load_fs(&gfsData[0],
 		gfsSize,
@@ -62,18 +65,7 @@ int main(int argc, char** argv)
 	if (ret == 0) {
 		rOK = true;
 
-		/*
-		* Positive cases only, just to check tha define and link works correctly
-		* The real unit tests are done by gtest (wr-tests)
-		*/
-
-		ret = stat(TEBAKIZE_PATH("file.txt"), &buf);
-		printf("A call to 'stat' returned %i (0 expected)\n", ret);
-		rOK &= (ret == 0);
-
-		ret = access(TEBAKIZE_PATH("file.txt"), F_OK);
-		printf("A call to 'access' returned %i (0 expected)\n", ret);
-		rOK &= (ret == 0);
+		rOK &= attr_functions_c_test(TEBAKIZE_PATH("file.txt"));
 
 		ret = chdir(TEBAKIZE_PATH("directory-1"));
 		printf("A call to 'chdir' returned %i (0 expected)\n", ret);
@@ -102,27 +94,21 @@ int main(int argc, char** argv)
 		fh = open(TEBAKIZE_PATH("file.txt"), O_RDONLY);
 		printf("A call to 'open' returned %i (non negative file handle expected)\n", fh);
 		rOK &= (fh >= 0);
-
-		ret = lseek(fh, 2, SEEK_SET);
-		printf("A call to 'lseek' returned %i (2 expected)\n", ret);
-		rOK &= (ret == 2);
-
-		ret = read(fh, readbuf, 2); readbuf[2] = '\0';
-		printf("A call to 'read' returned %i (2 expected); Read buffer: '%s' ('st' expected)\n", ret, readbuf);
-		rOK &= (ret == 2);
-		rOK &= (strcmp(readbuf, "st") == 0);
-
+		
+		rOK &= lseek_read_c_test(fh);
 		rOK &= readv_c_test(fh);  /* Skipped 'Ju', read 'st', ' a file' remains */
+		rOK &= pread_c_test(fh);
+		rOK &= openat_c_test(fh);
 
 		ret = fstat(fh, &buf);
 		rOK &= (ret == 0);
 
-
-		rOK &= open_3_args_c_test();
-
 		ret = close(fh);
 		printf("A call to 'close' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
+
+
+		rOK &= open_3_args_c_test();
 
 		drop_fs();
 		printf("Filesystem dropped\n");
@@ -134,6 +120,56 @@ int main(int argc, char** argv)
 	return ret;
 }
 
+static int attr_functions_c_test(char* fname) {
+	struct stat buf;
+	int rOK = true;
+	int ret = stat(fname, &buf);
+	printf("A call to 'stat' returned %i (0 expected)\n", ret);
+	rOK &= (ret == 0);
+
+	ret = access(fname, F_OK);
+	printf("A call to 'access' returned %i (0 expected)\n", ret);
+	rOK &= (ret == 0);
+
+	return rOK;
+}
+
+static int openat_c_test(int fh) {
+	int fh2 = openat(fh, TEBAKIZE_PATH("file2.txt"), O_RDONLY);
+	printf("A call to 'openat' returned %i (non negative file handle expected expected)\n", fh2);
+
+	int ret = close(fh2);
+	printf("A call to 'close' returned %i (0 expected)\n", ret);
+
+	return fh2 > 0 && ret == 0;
+
+}
+
+static int lseek_read_c_test(int fh) {
+	int ret;
+	char readbuf[32];
+	int rOK = true;
+	ret = lseek(fh, 2, SEEK_SET);
+	printf("A call to 'lseek' returned %i (2 expected)\n", ret);
+	rOK &= (ret == 2);
+
+	ret = read(fh, readbuf, 2); readbuf[2] = '\0';
+	printf("A call to 'read' returned %i (2 expected); Read buffer: '%s' ('st' expected)\n", ret, readbuf);
+	rOK &= (ret == 2);
+	rOK &= (strcmp(readbuf, "st") == 0);
+	return rOK;
+}
+
+static int pread_c_test(int fh) {
+	int ret;
+	char readbuf[32];
+	int rOK = true;
+	ret = pread(fh, readbuf, 4, 7); readbuf[4] = '\0';
+	printf("A call to 'pread' returned %i (4 expected); Read buffer: '%s' ('file' expected)\n", ret, readbuf);
+	rOK &= (ret == 4);
+	rOK &= (strcmp(readbuf, "file") == 0);
+	return rOK;
+}
 
 
 static int readv_c_test(int fh) {

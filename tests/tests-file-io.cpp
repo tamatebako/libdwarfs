@@ -34,7 +34,6 @@
 * 'tebako_lseek' and underlying file descriptor implementation
 */
 
-
 namespace {
 	class FileIOTests : public testing::Test {
 	protected:
@@ -211,18 +210,118 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
-	TEST_F(FileIOTests, tebako_open_close_lseek_read_absolute_path_pass_through) {
-		int fh = tebako_open(2, "/bin/sh", O_RDONLY);
+	TEST_F(FileIOTests, tebako_open_pread_u_close_relative_path) {
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
+		EXPECT_EQ(0, ret);
+
+		int fh = tebako_open(2, "file-in-directory-2.txt", O_RDONLY);
 		EXPECT_LT(0, fh);
-		int ret = tebako_lseek(fh, 5, SEEK_SET);
-		EXPECT_EQ(5, ret);
+
 		char readbuf[64];
-		ret = tebako_read(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0]));
-		EXPECT_EQ(sizeof(readbuf) / sizeof(readbuf[0]), ret);
-		ret = ::read(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0]));
+		const char* pattern = "This is a file in a second directory";
+		const int l = strlen(pattern);
+		const int offset = 10;
+		ret = tebako_pread(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0]), offset);
+		EXPECT_EQ(l - offset, ret);
+		EXPECT_EQ(0, strncmp(readbuf, pattern + offset, l - offset));
 
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileIOTests, tebako_pread_invalid_handle) {
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
+		EXPECT_EQ(0, ret);
+
+		char readbuf[64];
+		const char* pattern = "This is a file in a second directory";
+		const int l = strlen(pattern);
+		const int offset = 10;
+		ret = tebako_pread(33, readbuf, sizeof(readbuf) / sizeof(readbuf[0]), offset);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EBADF, errno);
+	}
+
+	TEST_F(FileIOTests, tebako_openat_invalid_handle) {
+		int ret = tebako_openat(3, 33, "file.txt", O_RDONLY);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EBADF, errno);
+	}
+
+	TEST_F(FileIOTests, tebako_openat_rdwr) {
+		int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY);
+		EXPECT_LT(0, fh1);
+		int fh2 = tebako_openat(3, fh1, "file2-in-directory-2.txt", O_RDWR);
+		EXPECT_EQ(-1, fh2);
+		EXPECT_EQ(EROFS, errno);
+		EXPECT_EQ(0, tebako_close(fh1));
+	}
+
+	TEST_F(FileIOTests, tebako_openat_not_relative) {
+		int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY);
+		EXPECT_LT(0, fh1);
+		int fh2 = tebako_openat(3, fh1, TEBAKIZE_PATH("file.txt"), O_RDONLY);
+		EXPECT_LT(0, fh2);
+
+		char readbuf[32];
+		const char* pattern = "Just a file";
+		const int num2read = strlen(pattern);
+		EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf)/sizeof(readbuf[0]))); 
+		EXPECT_EQ(0, strncmp(readbuf, "Just a file", num2read));
+
+		EXPECT_EQ(0, tebako_close(fh1));
+		EXPECT_EQ(0, tebako_close(fh2));
+	}
+
+	TEST_F(FileIOTests, tebako_openat_atcwd) {
+		int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY);
+		EXPECT_LT(0, fh1);
+
+		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("")));
+		int fh2 = tebako_openat(3, AT_FDCWD, TEBAKIZE_PATH("file.txt"), O_RDONLY);
+		EXPECT_LT(0, fh2);
+
+		char readbuf[32];
+		const char* pattern = "Just a file";
+		const int num2read = strlen(pattern);
+		EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
+		EXPECT_EQ(0, strncmp(readbuf, "Just a file", num2read));
+
+		EXPECT_EQ(0, tebako_close(fh1));
+		EXPECT_EQ(0, tebako_close(fh2));
+	}
+
+	TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path_pass_through) {
+		int fh1 = tebako_open(2, "/bin/sh", O_RDONLY);
+		EXPECT_LT(0, fh1);
+		int ret = tebako_lseek(fh1, 5, SEEK_SET);
+		EXPECT_EQ(5, ret);
+		char readbuf[64];
+		ret = tebako_read(fh1, readbuf, sizeof(readbuf) / sizeof(readbuf[0]));
+		EXPECT_EQ(sizeof(readbuf) / sizeof(readbuf[0]), ret);
+
+		ret = tebako_close(fh1);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileIOTests, tebako_open_openat_close_interop) {
+		int fh1 = ::open("/bin", O_RDONLY|O_DIRECTORY);
+		EXPECT_LT(0, fh1);
+
+		int fh2 = tebako_openat(3, fh1, "bash", O_RDONLY);
+		EXPECT_LT(0, fh2);
+
+		EXPECT_EQ(0, ::close(fh1));
+		EXPECT_EQ(0, tebako_close(fh2));
+
+		fh1 = tebako_open(2, "/bin", O_RDONLY);
+		EXPECT_LT(0, fh1);
+
+		fh2 = tebako_openat(3, fh1, "bash", O_RDONLY);
+		EXPECT_LT(0, fh2);
+
+		EXPECT_EQ(0, close(fh1));
+		EXPECT_EQ(0, tebako_close(fh2));
 	}
 
 	TEST_F(FileIOTests, tebako_open_close_relative_path_pass_through) {

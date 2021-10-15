@@ -77,6 +77,9 @@ extern "C" void drop_fs(void) {
         delete *locked;
     }
     *locked = NULL;
+
+    dwarfs_dir_close_all();
+    dwarfs_fd_close_all();
 }
 
 
@@ -183,36 +186,68 @@ int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
     return ret;
 }
 
-extern "C" int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)> 
-           { [](filesystem_v2* fs, inode_view inode, int amode, uid_t uid, gid_t gid) -> int { return fs->access(inode, amode, uid, gid); } }, 
-           path, amode, uid, gid);
-}
-
-extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
-    { [](filesystem_v2* fs, inode_view inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
-        path, buf);
-}
-
-extern "C" ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) {
-    int err = ENOENT;
+template <typename Functor, class... Args>
+int safe_dwarfs_call(Functor&& fn, uint32_t inode, Args&&... args) {
+    //  [TODO]   LOG_PROXY(LoggerPolicy, userdata->lgr);
+    //    LOG_DEBUG << __func__;
     int ret = -1;
     auto locked = usd.rlock();
     auto p = *locked;
     if (p) {
         try {
-            ret = p->fs.read(inode, (char *)buf, size, offset);
+            ret = fn(&p->fs, inode, std::forward<Args>(args)...);
         }
         catch (dwarfs::system_error const& e) {
-            err = e.get_errno();
+            TEBAKO_SET_LAST_ERROR(e.get_errno());
         }
         catch (...) {
-            err = EIO;
+            TEBAKO_SET_LAST_ERROR(EIO);
         }
-    }
-    if (ret < 0) {
-        TEBAKO_SET_LAST_ERROR(err);
     }
     return ret;
 }
+
+int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)> 
+           { [](filesystem_v2* fs, inode_view& inode, int amode, uid_t uid, gid_t gid) -> int { return fs->access(inode, amode, uid, gid); } }, 
+           path, amode, uid, gid);
+}
+
+int dwarfs_stat(const char* path, struct stat* buf) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
+    { [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
+        path, buf);
+}
+
+int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)>
+    { [](filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int { 
+            auto pi = fs->find(inode);
+            return pi ? fs->getattr(*pi, buf) : ENOENT;
+        } },
+        inode, path, buf);
+}
+
+int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, int, uid_t, gid_t)>
+    { [](filesystem_v2* fs, uint32_t inode, int amode, uid_t uid, gid_t gid) -> int { 
+            auto pi = fs->find(inode);
+            return pi ? fs->access(*pi, amode, uid, gid) : ENOENT;
+        } },
+        inode, amode, uid, gid);
+}
+
+ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset)  noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, void*, size_t, off_t)>
+    { [](filesystem_v2* fs, uint32_t inode, void* buf, size_t size, off_t offset) -> int { return fs->read(inode, (char*)buf, size, offset); } }, 
+        inode, buf, size, offset);
+}
+
+int dwarfs_inode_readdir(uint32_t inode, struct dirent* cache, off_t start, size_t size, size_t& load) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, struct dirent*, off_t, size_t, size_t&)>
+    { [](filesystem_v2* fs, uint32_t inode, struct dirent* cache, off_t start, size_t size, size_t& load) -> int {
+            return -1;
+        }},
+        inode, cache, start, size,load);
+}
+

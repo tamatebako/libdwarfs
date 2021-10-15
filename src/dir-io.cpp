@@ -24,35 +24,65 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
+#include <tebako-common.h>
+#include <tebako-io.h>
+#include <tebako-io-inner.h>
+
+#include <filesystem>
+
 /*
-* This a set of standard "C" headers used through libdwarfs-wr source files
+* tebako_opendir
+* tebako_fdopendir
+* tebako_closedir
+* tebako_readdir
+* tebako_telldir
+* tebako_seekdir
+* tebako_rewinddir
+* tebako_dirfd
+* tebako_scandir
+*
+*  https://pubs.opengroup.org/onlinepubs/9699919799/
 */
 
-#pragma once
+extern "C" DIR* tebako_opendir(const char* dirname) {
+	DIR* ret = NULL;
+	tebako_path_t t_path;
+	const char* p_path = to_tebako_path(t_path, dirname);
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <dirent.h>
+	return p_path ? dwarfs_opendir(p_path) : ::opendir(dirname);
+}
 
-#ifdef _WIN32
- #include <direct.h>
- #include <Shlwapi.h>
-#else
- #include <sys/param.h>
- #include <sys/uio.h>
- #include <unistd.h>
- #include <ftw.h>
- #include <dirent.h>
- #include <dlfcn.h>
-#endif
+extern "C" DIR* tebako_fdopendir(int fd) {
+	return NULL;
+}
 
+extern "C" struct dirent* tebako_readdir(DIR* dirp) {
+	return NULL;
+}
+
+extern "C" long tebako_telldir(DIR* dirp) {
+	return -1;
+}
+
+extern "C" void tebako_seekdir(DIR* dirp, long loc) {
+}
+
+extern "C" void tebako_rewinddir(DIR* dirp) {
+}
+
+extern "C" int tebako_closedir(DIR * dirp) {
+	return -1;
+}
+
+extern "C" int tebako_dirfd(DIR * dirp) {
+	return -1;
+}
+
+extern "C" int tebako_scandir(const char* dir, struct dirent*** namelist,
+	int (*sel)(const struct dirent*),
+	int (*compar)(const struct dirent**, const struct dirent**)) {
+	return -1;
+}

@@ -57,11 +57,26 @@ extern "C" {
     int   tebako_stat(const char* path, struct stat* buf);
     int   tebako_access(const char* path, int amode);
     int   tebako_open(int nargs, const char* path, int flags, ...);
+    int   tebako_openat(int nargs, int fd, const char* path, int flags, ...);
     ssize_t tebako_read(int vfd, void* buf, size_t nbyte);
     ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
+    ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
     off_t tebako_lseek(int vfd, off_t offset, int whence);
     int   tebako_fstat(int vfd, struct stat* buf);
     int   tebako_close(int vfd);
+
+    DIR* tebako_opendir(const char* dirname);
+    DIR* tebako_fdopendir(int fd);
+    struct dirent* tebako_readdir(DIR* dirp);
+    long tebako_telldir(DIR* dirp);
+    void tebako_seekdir(DIR* dirp, long loc);
+    void tebako_rewinddir(DIR* dirp);
+    int tebako_closedir(DIR* dirp);
+    int tebako_dirfd(DIR* dirp);
+    int tebako_scandir(const char* dir, struct dirent*** namelist,
+        int (*sel)(const struct dirent*),
+        int (*compar)(const struct dirent**, const struct dirent**));
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
