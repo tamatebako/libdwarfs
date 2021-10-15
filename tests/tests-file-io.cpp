@@ -211,6 +211,38 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+	TEST_F(FileIOTests, tebako_open_pread_u_close_relative_path) {
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
+		EXPECT_EQ(0, ret);
+
+		int fh = tebako_open(2, "file-in-directory-2.txt", O_RDONLY);
+		EXPECT_LT(0, fh);
+
+		char readbuf[64];
+		const char* pattern = "This is a file in a second directory";
+		const int l = strlen(pattern);
+		const int offset = 10;
+		ret = tebako_pread(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0]), offset);
+		EXPECT_EQ(l - offset, ret);
+		EXPECT_EQ(0, strncmp(readbuf, pattern + offset, l - offset));
+
+		ret = tebako_close(fh);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileIOTests, tebako_pread_invalid_handle) {
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
+		EXPECT_EQ(0, ret);
+
+		char readbuf[64];
+		const char* pattern = "This is a file in a second directory";
+		const int l = strlen(pattern);
+		const int offset = 10;
+		ret = tebako_pread(33, readbuf, sizeof(readbuf) / sizeof(readbuf[0]), offset);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EBADF, errno);
+	}
+
 	TEST_F(FileIOTests, tebako_open_close_lseek_read_absolute_path_pass_through) {
 		int fh = tebako_open(2, "/bin/sh", O_RDONLY);
 		EXPECT_LT(0, fh);
@@ -219,7 +251,6 @@ namespace {
 		char readbuf[64];
 		ret = tebako_read(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0]));
 		EXPECT_EQ(sizeof(readbuf) / sizeof(readbuf[0]), ret);
-		ret = ::read(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0]));
 
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);

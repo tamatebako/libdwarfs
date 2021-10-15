@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <dirent.h>
 
 #ifdef _WIN32
  #include <direct.h>

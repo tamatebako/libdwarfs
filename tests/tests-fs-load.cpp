@@ -106,4 +106,28 @@ namespace {
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOENT, errno);
 	}
+
+	TEST(LoadTests, tebako_close_all) {
+		int ret = load_fs(&gfsData[0],
+			gfsSize,
+			"debug" /*debuglevel*/,
+			NULL	/* cachesize*/,
+			NULL	/* workers */,
+			NULL	/* mlock */,
+			NULL	/* decompress_ratio*/,
+			NULL    /* image_offset */
+		);
+
+		EXPECT_EQ(0, ret);
+		int fh = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDONLY);
+		EXPECT_LT(0, fh);
+		drop_fs();
+
+		char readbuf[32];
+		const int num2read = 4;
+
+		ret = tebako_read(fh, readbuf, num2read);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EBADF, errno);
+	}
 }

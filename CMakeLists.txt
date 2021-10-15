@@ -152,7 +152,7 @@ add_library(dwarfs-wr STATIC
     "include/tebako-mfs.h"
     "include/tebako-defines.h" 
     "include/version.h"
-     )
+       "src/dir-io.cpp")
 
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)

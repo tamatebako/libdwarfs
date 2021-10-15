@@ -31,25 +31,29 @@
 
 #include "tebako-pch.h"
 
+const int DWARFS_IO_CONTINUE = 0;
+const int DWARFS_IO_ERROR = -1;
+const int DWARFS_INVALID_FD = -2;
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
+int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept;
+int dwarfs_stat(const char* path, struct stat* buf) noexcept ;
+int dwarfs_open(const char* path, int mode)  noexcept;
+int dwarfs_openat(int vfd, const char* path, int flags) noexcept;
+off_t dwarfs_lseek(int vfd, off_t offset, int whence)  noexcept;
+ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte)  noexcept;
+ssize_t dwarfs_readv(int vfd, const struct iovec* iov, int iovcnt)  noexcept;
+ssize_t dwarfs_pread(int vfd, void* buf, size_t nbyte, off_t offset)  noexcept;
+ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept;
+int   dwarfs_fstat(int vfd, struct stat* buf)  noexcept;
+int dwarfs_close(int vfd)  noexcept;
 
-#define DWARFS_IO_CONTINUE  0
-#define DWARFS_IO_ERROR    -1
-#define DWARFS_INVALID_FD  -2  
+DIR* dwarfs_opendir(const char* dirname) noexcept;
+DIR* dwarfs_fdopendir(int vfd) noexcept;
+int dwarfs_inode_opendir(uint32_t inode, struct dirent*& dtbl) noexcept;
+int dwarfs_closedir(DIR* dirp) noexcept;
 
-    int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid);
-    int dwarfs_stat(const char* path, struct stat* buf);
-    int dwarfs_open(const char* path, int mode);
-    off_t dwarfs_lseek(int vfd, off_t offset, int whence);
-    ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte);
-    ssize_t dwarfs_readv(int vfd, const struct iovec* iov, int iovcnt);
-    ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset);
-    int   dwarfs_fstat(int vfd, struct stat* buf);
-    int dwarfs_close(int vfd);
 
-#ifdef __cplusplus
-}
-#endif // __cplusplu
+void dwarfs_close_all(void)  noexcept;
+
+
+

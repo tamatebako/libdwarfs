@@ -86,10 +86,6 @@
 #define TEBAKO_MOINT_POINT "__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_LENGTH  16
  
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
 typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];
 
 void tebako_set_cwd(const char* path);
@@ -99,6 +95,3 @@ int is_tebako_cwd(void);
 const char* tebako_expand_path(tebako_path_t expanded_path, const char* path);
 const char* to_tebako_path(tebako_path_t t_path, const char* path);
 
-#ifdef __cplusplus
-}
-#endif // __cplusplus
