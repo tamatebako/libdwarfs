@@ -78,7 +78,8 @@ extern "C" void drop_fs(void) {
     }
     *locked = NULL;
 
-    dwarfs_close_all();
+    dwarfs_dir_close_all();
+    dwarfs_fd_close_all();
 }
 
 
@@ -185,36 +186,26 @@ int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
     return ret;
 }
 
-
 template <typename Functor, class... Args>
 int safe_dwarfs_call(Functor&& fn, uint32_t inode, Args&&... args) {
     //  [TODO]   LOG_PROXY(LoggerPolicy, userdata->lgr);
     //    LOG_DEBUG << __func__;
-    int err = ENOENT;
     int ret = -1;
     auto locked = usd.rlock();
     auto p = *locked;
     if (p) {
         try {
-            err = fn(&p->fs, inode, std::forward<Args>(args)...);
-            if (err == 0) {
-                ret = 0;
-            }
+            ret = fn(&p->fs, inode, std::forward<Args>(args)...);
         }
         catch (dwarfs::system_error const& e) {
-            err = e.get_errno();
+            TEBAKO_SET_LAST_ERROR(e.get_errno());
         }
         catch (...) {
-            err = EIO;
+            TEBAKO_SET_LAST_ERROR(EIO);
         }
-    }   
-    if (ret < 0) {
-        TEBAKO_SET_LAST_ERROR(err);
     }
     return ret;
 }
-
-
 
 int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)> 
@@ -228,57 +219,35 @@ int dwarfs_stat(const char* path, struct stat* buf) noexcept {
         path, buf);
 }
 
-//int __opendir(filesystem_v2* fs, inode_view inode, directory_view& dir, off_t& size) {
-//    int ret = ENOTDIR;
-//    auto pdir = fs->opendir(inode);
-//    if (pdir) {
-//        dir = *pdir;
-//        size = fs->dirsize(dir);
-//    }
-//
-//    return ret;
-//}
-//
-//int dwarfs_opendir(const char* path, void* buf) noexcept {
-//    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, void*)> { __opendir }, path, buf);
-//}
+int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)>
+    { [](filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int { 
+            auto pi = fs->find(inode);
+            return pi ? fs->getattr(*pi, buf) : ENOENT;
+        } },
+        inode, path, buf);
+}
 
+int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, int, uid_t, gid_t)>
+    { [](filesystem_v2* fs, uint32_t inode, int amode, uid_t uid, gid_t gid) -> int { 
+            auto pi = fs->find(inode);
+            return pi ? fs->access(*pi, amode, uid, gid) : ENOENT;
+        } },
+        inode, amode, uid, gid);
+}
 
-ssize_t _dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset)  noexcept {
+ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset)  noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, void*, size_t, off_t)>
     { [](filesystem_v2* fs, uint32_t inode, void* buf, size_t size, off_t offset) -> int { return fs->read(inode, (char*)buf, size, offset); } }, 
         inode, buf, size, offset);
 }
 
-
-ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset)  noexcept {
-    int err = ENOENT;
-    int ret = -1;
-    auto locked = usd.rlock();
-    auto p = *locked;
-    if (p) {
-        try {
-            ret = p->fs.read(inode, (char *)buf, size, offset);
-        }
-        catch (dwarfs::system_error const& e) {
-            err = e.get_errno();
-        }
-        catch (...) {
-            err = EIO;
-        }
-    }
-    if (ret < 0) {
-        TEBAKO_SET_LAST_ERROR(err);
-    }
-    return ret;
-}
-
-typedef struct dirent* pdirent;
-
-int dwarfs_inode_opendir(uint32_t inode, struct dirent*& dtbl) noexcept {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, struct dirent*&)>
-    { [](filesystem_v2* fs, uint32_t inode, struct dirent*& dtbl) -> int {
-            return -1; 
+int dwarfs_inode_readdir(uint32_t inode, struct dirent* cache, off_t start, size_t size, size_t& load) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, struct dirent*, off_t, size_t, size_t&)>
+    { [](filesystem_v2* fs, uint32_t inode, struct dirent* cache, off_t start, size_t size, size_t& load) -> int {
+            return -1;
         }},
-        inode, dtbl);
+        inode, cache, start, size,load);
 }
+

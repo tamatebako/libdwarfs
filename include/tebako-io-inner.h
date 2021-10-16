@@ -43,17 +43,20 @@ off_t dwarfs_lseek(int vfd, off_t offset, int whence)  noexcept;
 ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte)  noexcept;
 ssize_t dwarfs_readv(int vfd, const struct iovec* iov, int iovcnt)  noexcept;
 ssize_t dwarfs_pread(int vfd, void* buf, size_t nbyte, off_t offset)  noexcept;
-ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept;
 int   dwarfs_fstat(int vfd, struct stat* buf)  noexcept;
 int dwarfs_close(int vfd)  noexcept;
 
 DIR* dwarfs_opendir(const char* dirname) noexcept;
 DIR* dwarfs_fdopendir(int vfd) noexcept;
-int dwarfs_inode_opendir(uint32_t inode, struct dirent*& dtbl) noexcept;
 int dwarfs_closedir(DIR* dirp) noexcept;
 
+int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept;
+int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept;
+ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept;
+int dwarfs_fd_readdir(int vfd, struct dirent* cache, off_t start, size_t size, size_t& load) noexcept;
+int dwarfs_inode_readdir(uint32_t inode, struct dirent* cache, off_t start, size_t size, size_t& load) noexcept;
 
-void dwarfs_close_all(void)  noexcept;
-
+void dwarfs_fd_close_all(void)  noexcept;
+void dwarfs_dir_close_all(void)  noexcept;
 
 

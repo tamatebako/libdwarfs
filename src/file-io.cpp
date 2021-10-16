@@ -73,15 +73,10 @@ extern "C" int tebako_openat(int nargs, int vfd, const char* path, int flags, ..
 	int ret = -1;
 	va_list args;
 	mode_t mode;
-
 	//	The openat() function shall be equivalent to the open() function except in the case where path specifies a relative path.
 	//  In this case the file to be opened is determined relative to the directory associated with the file descriptor fd instead of the current working directory.
-	//  If the access mode of the open file description associated with the file descriptor is not O_SEARCH, the function shall check whether directory searches are 
-	//  permitted using the current permissions of the directory underlying the file descriptor.
-	//  If the access mode is O_SEARCH, the function shall not perform the check.
-	//	The oflag parameterand the optional fourth parameter correspond exactly to the parameters of open().
+    //  ...
 	//	If openat() is passed the special value AT_FDCWD in the fd parameter, the current working directory shall be used and the behavior shall be identical to a call to open().
-
 	try {
 		std::filesystem::path std_path(path);
 		if (std_path.is_relative() && vfd != AT_FDCWD) {

@@ -135,16 +135,15 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 add_library(dwarfs-wr STATIC 
-    "src/dir-ctl.cpp"
-    
-    
     "src/file-ctl.cpp"
-    
+    "src/dir-ctl.cpp"
     "src/file-io.cpp"
+    "src/dir-io.cpp"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
     "src/tebako-fd.cpp"
+    "src/tebako-ds.cpp"
     "include/tebako-pch.h"
     "include/tebako-common.h"
     "include/tebako-io.h"
@@ -152,7 +151,7 @@ add_library(dwarfs-wr STATIC
     "include/tebako-mfs.h"
     "include/tebako-defines.h" 
     "include/version.h"
-       "src/dir-io.cpp")
+ )
 
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)

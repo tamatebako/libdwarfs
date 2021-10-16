@@ -28,7 +28,7 @@
  */
 
 #include <tebako-common.h>
-#include "tebako-io-inner.h"
+#include <tebako-io-inner.h>
 #include <tebako-dfs.h>
 
 using namespace std;
@@ -39,17 +39,8 @@ struct tebako_fd {
 	string filename;
 	int* handle;
 
-	struct dirent* dtbl;
-	long           dpos;
-
-	tebako_fd(const char* p) : filename(p), pos(0), handle(NULL), dtbl(NULL), dpos(-1) {	}
+	tebako_fd(const char* p) : filename(p), pos(0), handle(NULL) {	}
 	~tebako_fd() { 
-		if (dtbl) {
-			delete dtbl;
-		}
-		dtbl = NULL;
-		dpos = -1;
-
 		if (handle) {
 			::close(*handle);
 			delete(handle);
@@ -127,34 +118,12 @@ public:
 		return ret;
 	}
 
-	ssize_t sync_dtbl_set(int vfd, struct dirent* dtable) {
-		ssize_t ret = DWARFS_IO_ERROR;
-		auto p_fdtable = *this->rlock();
-		auto p_fd = p_fdtable->find(vfd);
-		if (p_fd != p_fdtable->end()) {
-			p_fd->second->dtbl = dtable;
-			ret = DWARFS_IO_CONTINUE;
-		}
-		return ret;
-	}
-
-	int sync_get_stat(int vfd, struct stat* buf) {
+	int sync_get_stat(int vfd, struct stat* st) {
 		int ret = DWARFS_INVALID_FD;
 		auto p_fdtable = *this->rlock();
 		auto p_fd = p_fdtable->find(vfd);
 		if (p_fd != p_fdtable->end()) {
-			memcpy(buf, &p_fd->second->st, sizeof(struct stat));
-			ret = DWARFS_IO_CONTINUE;
-		}
-		return ret;
-	}
-
-	int sync_get_stat_fname(int vfd, string& fname) {
-		int ret = DWARFS_INVALID_FD;
-		auto p_fdtable = *this->rlock();
-		auto p_fd = p_fdtable->find(vfd);
-		if (p_fd != p_fdtable->end()) {
-			fname = p_fd->second->filename;
+			memcpy(st, &p_fd->second->st, sizeof(struct stat));
 			ret = DWARFS_IO_CONTINUE;
 		}
 		return ret;
@@ -165,7 +134,7 @@ public:
 static sync_tebako_fdtable fdtable;
 
 
-void dwarfs_close_all(void)  noexcept {
+void dwarfs_fd_close_all(void)  noexcept {
 	fdtable.close_all();
 }
 
@@ -224,25 +193,75 @@ int dwarfs_open(const char *path, int flags)  noexcept {
 }
 
 int dwarfs_openat(int vfd, const char* path, int flags) noexcept  {
-	string fname;
-	int ret = fdtable.sync_get_stat_fname(vfd, fname);
+	struct stat stfd;
+	int ret = fdtable.sync_get_stat(vfd, &stfd);
 	if (ret == DWARFS_IO_CONTINUE) {
-		//  .... 
-		//  If the access mode of the open file description associated with the file descriptor is not O_SEARCH, the function shall check whether directory searches are 
-		//  If the access mode is O_SEARCH, the function shall not perform the check.
-		//	.... 
-		//	However, Linux does not support O_SERACH (
-		//  So, We will assume that it is not set 
-		std::filesystem::path pname(fname);
-		pname.remove_filename();
-		if (dwarfs_access(pname.c_str(), X_OK, getuid(), getgid()) == 0) {
-			pname /= path;
-			ret = dwarfs_open(pname.c_str(), flags);
+		ret = DWARFS_IO_ERROR;
+		if (!S_ISDIR(stfd.st_mode)) {
+			// [ENOTDIR] ... or O_DIRECTORY was specified and the path argument resolves to a non - directory file.
+			TEBAKO_SET_LAST_ERROR(ENOTDIR);
 		}
 		else {
-			TEBAKO_SET_LAST_ERROR(EACCES);
-			ret = DWARFS_IO_ERROR;
+			if (flags & (O_RDWR | O_WRONLY | O_TRUNC)) {
+				//	[EROFS] The named file resides on a read - only file system and either O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set in the oflag argument.
+				TEBAKO_SET_LAST_ERROR(EROFS);
+			}
+			else {
+				//  .... 
+				//  If the access mode of the open file description associated with the file descriptor is not O_SEARCH, the function shall check whether directory searches are 
+				//  If the access mode is O_SEARCH, the function shall not perform the check.
+				//	.... 
+				//	However, Linux does not support O_SERACH (
+				//  So, We will assume that it is not set 
+				ret = dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid());
+				if (ret == DWARFS_IO_CONTINUE) {
+					try {
+						auto fd = make_shared<tebako_fd>(path);
+						if (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st) == 0) {
+							if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
+								// [ENOTDIR] ... or O_DIRECTORY was specified and the path argument resolves to a non - directory file.
+								TEBAKO_SET_LAST_ERROR(ENOTDIR);
+							}
+							else {
+								fd->handle = new int;
+								if (fd->handle == NULL) {
+									TEBAKO_SET_LAST_ERROR(ENOMEM);
+								}
+								else {
+									// get a dummy fd from the system
+									ret = dup(0);
+									if (ret == DWARFS_IO_ERROR) {
+										// [EMFILE]  All file descriptors available to the process are currently open.
+										TEBAKO_SET_LAST_ERROR(EMFILE);
+									}
+									else {
+										// construct a handle (mainly) for win32
+										*fd->handle = ret;
+										(**fdtable.wlock())[ret] = fd;
+									}
+								}
+							}
+						}
+						else {
+							//	[ENOENT] O_CREAT is not set and a component of path does not name an existing file, or O_CREAT is set and a component of the path prefix of path does not name an existing file, or path points to an empty string.
+							//	[EROFS] The named file resides on a read - only file system and either O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set in the oflag argument.
+							TEBAKO_SET_LAST_ERROR((flags & O_CREAT) ? EROFS : ENOENT);
+						}
+					}
+					catch (bad_alloc&) {
+						if (ret > 0) {
+							close(ret);
+							ret = DWARFS_IO_ERROR;
+						}
+						TEBAKO_SET_LAST_ERROR(ENOMEM);
+					}
+				} 
+				else {
+					TEBAKO_SET_LAST_ERROR(EACCES);
+				}
+			}
 		}
+		
 	}
 	return ret;
 }
@@ -341,19 +360,12 @@ int dwarfs_fstat(int vfd, struct stat* buf)  noexcept {
 	return fdtable.sync_get_stat(vfd, buf);
 }
 
-int dwarfs_fdopendir(int vfd, DIR*& dhandle) noexcept {
-	dhandle = NULL;
+
+int dwarfs_fd_readdir(int vfd, struct dirent* cache, off_t start, size_t size, size_t& load) noexcept {
 	uint32_t ino;
-	int* handle;
-	int ret = fdtable.sync_op_start(vfd, ino, handle);
+	int ret = fdtable.sync_op_start(vfd, ino);
 	if (ret == DWARFS_IO_CONTINUE) {
-		struct dirent* dtbl;
-		ret = dwarfs_inode_opendir(ino, dtbl);
-		if (ret == DWARFS_IO_CONTINUE) {
-			dhandle = reinterpret_cast<DIR*>(handle);
-			fdtable.sync_dtbl_set(vfd, dtbl);
-		}
+		ret = dwarfs_inode_readdir(ino, cache, start, size, load);
 	}
-	 
 	return ret;
 }
