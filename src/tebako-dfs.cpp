@@ -243,11 +243,47 @@ ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) 
         inode, buf, size, offset);
 }
 
-int dwarfs_inode_readdir(uint32_t inode, struct dirent* cache, off_t start, size_t size, size_t& load) noexcept {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, struct dirent*, off_t, size_t, size_t&)>
-    { [](filesystem_v2* fs, uint32_t inode, struct dirent* cache, off_t start, size_t size, size_t& load) -> int {
-            return -1;
-        }},
-        inode, cache, start, size,load);
+int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) {
+    int ret = -1;
+    auto pi = fs->find(inode);
+    if (pi) {
+        auto dir = fs->opendir(*pi);
+        if (dir) {
+            dir_size = fs->dirsize(*dir);
+            struct stat st;
+            cache_size = 0;
+            bool pOK = true;
+            while (cache_start + cache_size < dir_size && cache_size < buffer_size && pOK) {
+                auto res = fs->readdir(*dir, cache_start + cache_size);
+                if (!res) {
+                    pOK = false;
+                }
+                else {
+                    auto [entry, name_view] = *res;
+                    std::string name(name_view);
+                    fs->getattr(entry, &st);
+                    cache[cache_size].e.d_ino = st.st_ino;
+                    cache[cache_size].e.d_off = cache_start + cache_size;
+                    cache[cache_size].e.d_type = DT_UNKNOWN;
+                    strncpy(cache[cache_size].e.d_name, name.c_str(), TEBAKO_PATH_LENGTH);
+                    cache[cache_size].e.d_name[TEBAKO_PATH_LENGTH] = '\0';
+                    cache[cache_size].e.d_reclen = std::max(sizeof(cache[0]), sizeof(cache[0]) + strlen(cache[cache_size].e.d_name) - 256 + 1);
+                    ++cache_size;
+                }
+            }
+            if (pOK) {
+                ret = 0;
+            }
+        }
+    }
+    if (ret < 0) {
+        TEBAKO_SET_LAST_ERROR(ENOTDIR);
+        cache_size = 0;
+    }
+    return ret;
+}
+
+int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, tebako_dirent*, off_t, size_t, size_t&, size_t& )> { internal_readdir }, inode, cache, cache_start, buffer_size, cache_size, dir_size);
 }
 

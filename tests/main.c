@@ -41,6 +41,8 @@ static int readv_c_test(int fh);
 static int lseek_read_c_test(int fh);
 static int open_3_args_c_test(void);
 static int openat_c_test(int fh);
+static int dirio_c_test(void);
+static int dirio_fd_c_test(void);
 
 int main(int argc, char** argv)
 {
@@ -107,12 +109,13 @@ int main(int argc, char** argv)
 		printf("A call to 'close' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 
-
 		rOK &= open_3_args_c_test();
+		rOK &= dirio_c_test();
+		rOK &= dirio_fd_c_test();
 
 		drop_fs();
 		printf("Filesystem dropped\n");
-		
+	
 		ret = rOK ? 0 : -1;
 	}
 
@@ -171,31 +174,37 @@ static int pread_c_test(int fh) {
 	return rOK;
 }
 
-
 static int readv_c_test(int fh) {
-	ssize_t s;
+	int rOK = true;
 
-	char buf0[5];
-	char buf1[5];
-	char buf2[5];
+	ssize_t s;
+	const int buflen = 5;
+	char buf0[buflen];
+	char buf1[buflen];
+	char buf2[buflen];
 	int iovcnt;
 	struct iovec iov[3];
-
+	char* pattern = " a file";
+	int l = strlen(pattern);
 
 	iov[0].iov_base = buf0;
-	iov[0].iov_len = sizeof(buf0);
+	iov[0].iov_len = buflen;
 	iov[1].iov_base = buf1;
-	iov[1].iov_len = sizeof(buf1);
+	iov[1].iov_len = buflen;
 	iov[2].iov_base = buf2;
-	iov[2].iov_len = sizeof(buf2);
+	iov[2].iov_len = buflen;
 	iovcnt = sizeof(iov) / sizeof(struct iovec);
 
 	s = readv(fh, &iov[0], iovcnt);
-	printf("A call to 'readv' returned %li (9 expected)\n", s);
+	printf("A call to 'readv' returned %li (7 expected)\n", s);      /* Skipped 'Ju', read 'st', ' a file' remains */
+	rOK &= (s == 7);
 
-	return s==9?true:false;
+	printf("buf0 = '%.*s'(' a fi' expected); buf1 = '%.*s'('le' expected)", buflen, buf0, l-buflen, buf1);
+	rOK &= (strncmp(buf0, pattern, buflen)==0);
+	rOK &= (strncmp(buf1, pattern + buflen, l-buflen)==0);
+
+	return rOK;
 }
-
 
 static int open_3_args_c_test(void) {
 	int rOK = true;
@@ -213,6 +222,62 @@ static int open_3_args_c_test(void) {
 
 	ret = unlink("/tmp/some-tebako-test-file.txt");
 	printf("A call to 'unlink' returned %i (0 expected)\n", ret);
+	rOK &= (ret == 0);
+
+	return rOK;
+}
+
+static int dirio_c_test(void) {
+	int rOK = true;
+	DIR* dirp = opendir(TEBAKIZE_PATH("directory-1"));
+	printf("A call to 'opendir' returned %p (not NULL expected)\n", dirp);
+	rOK &= (dirp != NULL);
+
+	long pos = telldir(dirp);
+	printf("A call to 'telldir' returned %li (0 expected)\n", pos);
+	rOK &= (pos == 0L);
+
+	seekdir(dirp, 3);
+	pos = telldir(dirp);
+	printf("A call to 'telldir' after 'seekdir(dirp, 3)' returned %li (3 expected)\n", pos);
+	rOK &= (pos == 3L);
+
+	struct dirent* entry = readdir(dirp);
+	printf("A call to 'readdir'  returned %p (not NULL expected)\n", entry);
+	rOK &= (entry != NULL);
+	if (entry != NULL) {
+		printf("Filename: %s ('file2-in-directory-1.txt' expected)\n", entry->d_name);
+		rOK &= (strcmp(entry->d_name, "file2-in-directory-1.txt") == 0);
+	}
+
+	rewinddir(dirp);
+	pos = telldir(dirp);
+	printf("A call to 'telldir' after 'rewinddir(dirp)' returned %li (0 expected)\n", pos);
+	rOK &= (pos == 0L);
+
+	int ret = closedir(dirp);
+	printf("A call to 'closedir' returned %i (0 expected)\n", ret);
+	rOK &= (ret == 0);
+
+	return rOK;
+}
+
+static int dirio_fd_c_test(void) {
+	int rOK = true;
+	int fh = open(TEBAKIZE_PATH("directory-1"), O_RDONLY|O_DIRECTORY);
+	printf("A call to 'open' returned %i (non negative file handle expected)\n", fh);
+	rOK &= (fh >= 0);
+
+	DIR* dirp = fdopendir(fh);
+	printf("A call to 'opendir' returned %p (not NULL expected)\n", dirp);
+	rOK &= (dirp != NULL);
+
+	int fh2 = dirfd(dirp);
+	printf("A call to 'dirfd' returned %i (%i expected)\n", fh, fh2);
+	rOK &= (fh == fh2);
+
+	int ret = closedir(dirp);
+	printf("A call to 'closedir' returned %i (0 expected)\n", ret);
 	rOK &= (ret == 0);
 
 	return rOK;

@@ -136,7 +136,7 @@ namespace {
 		EXPECT_EQ(l, ret);
 
 		ret = tebako_lseek(fh, -off2move, SEEK_CUR);
-		EXPECT_EQ(l- off2move, ret);
+		EXPECT_EQ(l-off2move, ret);
 
 
 		char readbuf[32];
@@ -155,17 +155,17 @@ namespace {
 
 		const char* pattern = "This is a file in a second directory";
 		const int l = strlen(pattern);
+		const int off2move = 10;
 
-		int ret = tebako_lseek(fh, 10, SEEK_SET);
+		int ret = tebako_lseek(fh, off2move, SEEK_SET);
 		EXPECT_EQ(10, ret);
 
 		ret = tebako_lseek(fh, 0, SEEK_END);
 		EXPECT_EQ(l, ret);
 
-		ret = tebako_lseek(fh, -10, SEEK_CUR);
-		EXPECT_EQ(l - 10, ret);
+		ret = tebako_lseek(fh, -off2move, SEEK_CUR);
+		EXPECT_EQ(l-off2move, ret);
 
-		const int off2move = 10;
 		const int bsize = off2move/2+1;
 		char buf0[bsize];
 		char buf1[bsize];

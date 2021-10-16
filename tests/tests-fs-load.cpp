@@ -107,7 +107,7 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 	}
 
-	TEST(LoadTests, tebako_close_all) {
+	TEST(LoadTests, tebako_close_all_fd) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
 			"debug" /*debuglevel*/,
@@ -130,4 +130,49 @@ namespace {
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EBADF, errno);
 	}
+
+	TEST(LoadTests, tebako_close_all_dir) {
+		int ret = load_fs(&gfsData[0],
+			gfsSize,
+			"debug" /*debuglevel*/,
+			NULL	/* cachesize*/,
+			NULL	/* workers */,
+			NULL	/* mlock */,
+			NULL	/* decompress_ratio*/,
+			NULL    /* image_offset */
+		);
+
+		EXPECT_EQ(0, ret);
+		DIR * dirp = tebako_opendir(TEBAKIZE_PATH("directory-1"));
+		EXPECT_TRUE(dirp!=NULL);
+		drop_fs();
+
+/*
+*	If the end of the directory stream is reached, NULL is returned
+*	and errno is not changed.If an error occurs, NULL is returned
+*	and errno is set to indicate the error.To distinguish end of
+*	stream from an error, set errno to zero before calling readdir()
+*	and then check the value of errno if NULL is returned.
+*/
+
+/*		tebako_seekdir(dirp, 3);
+
+		errno = 0;
+		long loc = tebako_telldir(dirp);
+		EXPECT_EQ(-1L, loc);
+		EXPECT_EQ(EBADF, errno);
+
+
+		errno = 0;
+		struct dirent* entry = tebako_readdir(dirp);
+		EXPECT_EQ(NULL, entry);
+		EXPECT_EQ(EBADF, errno);
+
+		tebako_rewinddir(dirp);
+
+		errno = 0;
+		ret = tebako_closedir(dirp);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EBADF, errno);
+*/	}
 }
