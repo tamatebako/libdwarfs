@@ -361,11 +361,11 @@ int dwarfs_fstat(int vfd, struct stat* buf)  noexcept {
 }
 
 
-int dwarfs_fd_readdir(int vfd, struct dirent* cache, off_t start, size_t size, size_t& load) noexcept {
+int dwarfs_fd_readdir(int vfd, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept {
 	uint32_t ino;
 	int ret = fdtable.sync_op_start(vfd, ino);
 	if (ret == DWARFS_IO_CONTINUE) {
-		ret = dwarfs_inode_readdir(ino, cache, start, size, load);
+		ret = dwarfs_inode_readdir(ino, cache, cache_start, buffer_size, cache_size, dir_size);
 	}
 	return ret;
 }
