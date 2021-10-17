@@ -291,11 +291,12 @@ add_executable(wr-tests
   "tests/tests-stat.cpp"
   "tests/tests-access.cpp"
   "tests/tests-dir-ctl.cpp"
+  "tests/tests-dir-io.cpp"
   "tests/tests-file-io.cpp"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
- )
+)
 
 target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
 target_link_libraries(wr-tests 

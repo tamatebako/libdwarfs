@@ -174,31 +174,37 @@ static int pread_c_test(int fh) {
 	return rOK;
 }
 
-
 static int readv_c_test(int fh) {
-	ssize_t s;
+	int rOK = true;
 
-	char buf0[5];
-	char buf1[5];
-	char buf2[5];
+	ssize_t s;
+	const int buflen = 5;
+	char buf0[buflen];
+	char buf1[buflen];
+	char buf2[buflen];
 	int iovcnt;
 	struct iovec iov[3];
-
+	char* pattern = " a file";
+	int l = strlen(pattern);
 
 	iov[0].iov_base = buf0;
-	iov[0].iov_len = sizeof(buf0);
+	iov[0].iov_len = buflen;
 	iov[1].iov_base = buf1;
-	iov[1].iov_len = sizeof(buf1);
+	iov[1].iov_len = buflen;
 	iov[2].iov_base = buf2;
-	iov[2].iov_len = sizeof(buf2);
+	iov[2].iov_len = buflen;
 	iovcnt = sizeof(iov) / sizeof(struct iovec);
 
 	s = readv(fh, &iov[0], iovcnt);
-	printf("A call to 'readv' returned %li (9 expected)\n", s);
+	printf("A call to 'readv' returned %li (7 expected)\n", s);      /* Skipped 'Ju', read 'st', ' a file' remains */
+	rOK &= (s == 7);
 
-	return s==9?true:false;
+	printf("buf0 = '%.*s'(' a fi' expected); buf1 = '%.*s'('le' expected)", buflen, buf0, l-buflen, buf1);
+	rOK &= (strncmp(buf0, pattern, buflen)==0);
+	rOK &= (strncmp(buf1, pattern + buflen, l-buflen)==0);
+
+	return rOK;
 }
-
 
 static int open_3_args_c_test(void) {
 	int rOK = true;
