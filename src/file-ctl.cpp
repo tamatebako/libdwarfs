@@ -27,9 +27,11 @@
  *
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+
 
  /*
  * tebaco_access
@@ -39,15 +41,29 @@
  */
 
 int tebako_access(const char* path, int amode) {
-	tebako_path_t t_path;
-	const char* p_path = to_tebako_path(t_path, path);
-	return p_path ? dwarfs_access(p_path, amode, getuid(), getgid()) : access(path, amode);
-
+	int ret = -1;
+	if (path == NULL) {
+		TEBAKO_SET_LAST_ERROR(ENOENT);
+	}
+	else {
+		tebako_path_t t_path;
+		const char* p_path = to_tebako_path(t_path, path);
+		ret = p_path ? dwarfs_access(p_path, amode, getuid(), getgid()) :
+			access(path, amode);
+	}
+	return ret;
 }
 
 int tebako_stat(const char* path, struct stat* buf) {
-	tebako_path_t t_path;
-	const char* p_path = to_tebako_path(t_path, path);
-	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
+	int ret = -1;
+	if (path == NULL) {
+		TEBAKO_SET_LAST_ERROR(ENOENT);
+	}
+	else {
+		tebako_path_t t_path;
+		const char* p_path = to_tebako_path(t_path, path);
+		ret = p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
+	}
+	return ret;
 }
 

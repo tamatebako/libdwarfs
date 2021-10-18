@@ -77,6 +77,8 @@ extern "C" {
         int (*sel)(const struct dirent*),
         int (*compar)(const struct dirent**, const struct dirent**));
 
+    void* tebako_dlopen(const char* path, int flags);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

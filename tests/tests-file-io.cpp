@@ -55,6 +55,12 @@ namespace {
 		}
 	};
 
+	TEST_F(FileIOTests, tebako_open_null_path) {
+		int ret = tebako_open(2, NULL, O_RDWR);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(ENOENT, errno);
+	}
+
 	TEST_F(FileIOTests, tebako_open_rdwr) {
 		int ret = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDWR);
 		EXPECT_EQ(-1, ret);

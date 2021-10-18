@@ -27,10 +27,12 @@
  * 
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
 #include <tebako-pch-pp.h>
 #include <tebako-dfs.h>
 #include <tebako-io-inner.h>
+#include <tebako-fd.h>
 #include <tebako-dirent.h>
 #include <tebako-mfs.h>
 
@@ -81,7 +83,7 @@ extern "C" void drop_fs(void) {
     *locked = NULL;
 
     sync_tebako_dstable::dstable.close_all();
-    dwarfs_fd_close_all();
+    sync_tebako_fdtable::fdtable.close_all();
 }
 
 
@@ -219,6 +221,12 @@ int dwarfs_stat(const char* path, struct stat* buf) noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
     { [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
         path, buf);
+}
+
+int dwarfs_readlink(const char* path, char* buf, size_t bufsize) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, char*, size_t)>
+    { [](filesystem_v2* fs, inode_view& inode, char* buf, size_t bufsize) -> int { return -1; } },
+        path, buf, bufsize);
 }
 
 int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept {

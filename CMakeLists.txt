@@ -139,6 +139,7 @@ add_library(dwarfs-wr STATIC
     "src/dir-ctl.cpp"
     "src/file-io.cpp"
     "src/dir-io.cpp"
+    "src/dl.cpp"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
@@ -149,10 +150,12 @@ add_library(dwarfs-wr STATIC
     "include/tebako-common.h"
     "include/tebako-io.h"
     "include/tebako-io-inner.h"
+    "include/tebako-fd.h"
+    "include/tebako-dirent.h"
     "include/tebako-mfs.h"
     "include/tebako-defines.h" 
     "include/version.h"
-   )
+  )
 
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -289,15 +292,15 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
 
 add_executable(wr-tests 
   "tests/tests-fs-load.cpp"
-  "tests/tests-stat.cpp"
-  "tests/tests-access.cpp"
+  "tests/tests-file-ctl.cpp"
+  "tests/tests-file-io.cpp"
   "tests/tests-dir-ctl.cpp"
   "tests/tests-dir-io.cpp"
-  "tests/tests-file-io.cpp"
+  "tests/tests-dl.cpp"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
-)
+ )
 
 target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
 target_link_libraries(wr-tests 
