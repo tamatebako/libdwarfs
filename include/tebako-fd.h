@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako (libdwarfs-wr)
+ * This file is a part of tebako (dwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,48 +24,50 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
-
- /*
- *  dwarFS filesystem data types
- */
-
 
 #pragma once
 
-#include "dwarfs/error.h"
-#include "dwarfs/filesystem_v2.h"
-#include "dwarfs/fstypes.h"
-#include "dwarfs/logger.h"
-#include "dwarfs/metadata_v2.h"
-#include "dwarfs/mmap.h"
-#include "dwarfs/options.h"
-#include "dwarfs/util.h"
+union tebako_dirent;
 
-namespace dwarfs {
-    struct options {
-        int enable_nlink{ 0 };
-        int readonly{ 0 };
-        int cache_image{ 0 };
-        int cache_files{ 0 };
-        size_t cachesize{ 0 };
-        size_t workers{ 0 };
-        mlock_mode lock_mode{ mlock_mode::NONE };
-        double decompress_ratio{ 0.0 };
-        logger::level_type debuglevel{ logger::level_type::ERROR };
-        off_t image_offset{ 0 };
-    };
+struct tebako_fd {
+	struct stat st;
+	uint64_t pos;
+	std::string filename;
+	int* handle;
 
-    struct dwarfs_userdata {
-        dwarfs_userdata(std::ostream& os, const void* dt, const unsigned int sz)
-            : lgr{ os }, data{ dt }, size{ sz } { }
+	tebako_fd(const char* p) : filename(p), pos(0), handle(NULL) {	}
+	~tebako_fd() {
+		if (handle) {
+			::close(*handle);
+			delete(handle);
+		}
+		handle = NULL;
+	}
+};
 
-        const void* data;
-        const unsigned int size;
+typedef std::map<int, std::shared_ptr<tebako_fd>> tebako_fdtable;
 
-        dwarfs::options opts;
-        stream_logger lgr;
-        filesystem_v2 fs;
-    };
-}
+class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
+public:
+	sync_tebako_fdtable(void) : folly::Synchronized<tebako_fdtable*>(new tebako_fdtable) { }
+
+	int open(const char* path, int flags)  noexcept;
+	int openat(int vfd, const char* path, int flags) noexcept;
+	int close(int vfd) noexcept;
+	void close_all(void) noexcept;
+	int fstat(int vfd, struct stat* st) noexcept;
+	ssize_t read(int vfd, void* buf, size_t nbyte) noexcept;
+	ssize_t pread(int vfd, void* buf, size_t nbyte, off_t offset) noexcept;
+	int readdir(int vfd, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;
+	ssize_t readv(int vfd, const struct iovec* iov, int iovcnt) noexcept;
+	off_t lseek(int vfd, off_t offset, int whence) noexcept;
+
+	static sync_tebako_fdtable fdtable;
+};
+
+
+
+
+

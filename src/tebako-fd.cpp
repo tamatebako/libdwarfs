@@ -27,90 +27,16 @@
  * 
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
+#include <tebako-pch-pp.h>
 #include <tebako-io-inner.h>
+#include <tebako-fd.h>
 #include <tebako-dfs.h>
 
 using namespace std;
 
-struct tebako_fd {
-	struct stat st;
-	uint64_t pos;
-	string filename;
-	int* handle;
-
-	tebako_fd(const char* p) : filename(p), pos(0), handle(NULL) {	}
-	~tebako_fd() { 
-		if (handle) {
-			::close(*handle);
-			delete(handle);
-		}
-		handle = NULL;
-	}
-};
-
-typedef map<int, shared_ptr<tebako_fd>> tebako_fdtable;
-
-class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
-public:
-	sync_tebako_fdtable(void): folly::Synchronized<tebako_fdtable*>(new tebako_fdtable) { }
-	
-	int open(const char* path, int flags)  noexcept;
-	int openat(int vfd, const char* path, int flags) noexcept;
-	int close(int vfd) noexcept;
-	void close_all(void) noexcept;
-	int fstat(int vfd, struct stat* st) noexcept;
-	ssize_t read(int vfd, void* buf, size_t nbyte) noexcept;
-	ssize_t pread(int vfd, void* buf, size_t nbyte, off_t offset) noexcept;
-	int readdir(int vfd, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;
-	ssize_t readv(int vfd, const struct iovec* iov, int iovcnt) noexcept;
-	off_t lseek(int vfd, off_t offset, int whence) noexcept;
-
-	static sync_tebako_fdtable fdtable;
-};
-
 sync_tebako_fdtable sync_tebako_fdtable::fdtable;
-
-int dwarfs_open(const char* path, int flags)  noexcept {
-	return sync_tebako_fdtable::fdtable.open(path, flags);
-}
-
-int dwarfs_openat(int vfd, const char* path, int flags) noexcept {
-	return sync_tebako_fdtable::fdtable.openat(vfd, path, flags);
-}
-
-void dwarfs_fd_close_all(void)  noexcept {
-	sync_tebako_fdtable::fdtable.close_all();
-}
-
-int dwarfs_close(int vfd)  noexcept {
-	return sync_tebako_fdtable::fdtable.close(vfd);
-}
-
-int dwarfs_fstat(int vfd, struct stat* buf) noexcept {
-	return sync_tebako_fdtable::fdtable.fstat(vfd, buf);
-}
-
-int dwarfs_fd_readdir(int vfd, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept {
-	return sync_tebako_fdtable::fdtable.readdir(vfd, cache, cache_start, buffer_size, cache_size, dir_size);
-}
-
-ssize_t dwarfs_read(int vfd, void* buf, size_t nbyte) noexcept {
-	return sync_tebako_fdtable::fdtable.read(vfd, buf, nbyte);
-}
-
-ssize_t dwarfs_pread(int vfd, void* buf, size_t nbyte, off_t offset) noexcept {
-	return sync_tebako_fdtable::fdtable.pread(vfd, buf, nbyte, offset);
-}
-
-ssize_t dwarfs_readv(int vfd, const struct iovec* iov, int iovcnt) noexcept {
-	return sync_tebako_fdtable::fdtable.readv(vfd, iov, iovcnt);
-}
-
-off_t dwarfs_lseek(int vfd, off_t offset, int whence)  noexcept {
-	return sync_tebako_fdtable::fdtable.lseek(vfd, offset, whence);
-}
-
 
 int sync_tebako_fdtable::open(const char* path, int flags)  noexcept {
 	int ret = DWARFS_IO_ERROR;

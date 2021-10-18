@@ -27,6 +27,7 @@
  * 
  */
 
+#include <tebako-pch.h>
 #include <tebako-defines.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -43,6 +44,8 @@ static int open_3_args_c_test(void);
 static int openat_c_test(int fh);
 static int dirio_c_test(void);
 static int dirio_fd_c_test(void);
+static int scandir_c_test(void);
+static int dlopen_c_test(void);
 
 int main(int argc, char** argv)
 {
@@ -112,6 +115,8 @@ int main(int argc, char** argv)
 		rOK &= open_3_args_c_test();
 		rOK &= dirio_c_test();
 		rOK &= dirio_fd_c_test();
+		rOK &= scandir_c_test();
+		rOK &= dlopen_c_test();
 
 		drop_fs();
 		printf("Filesystem dropped\n");
@@ -280,5 +285,36 @@ static int dirio_fd_c_test(void) {
 	printf("A call to 'closedir' returned %i (0 expected)\n", ret);
 	rOK &= (ret == 0);
 
+	return rOK;
+}
+
+static int scandir_c_test(void) {
+	struct dirent** namelist;
+	int n, i;
+	int rOK = true;
+
+	n = scandir(TEBAKIZE_PATH("directory-1"), &namelist, NULL, alphasort);
+	printf("A call to 'scandir' returned %i (4 expected)\n", n);
+	rOK &= (n == 5);
+	if ( n>0 ) {
+		for (i = 0; i < n; i++) {
+			printf("Scandir file name #%i: '%s'\n", i, namelist[i]->d_name);
+			free(namelist[i]);
+		}
+		free(namelist);
+	}
+
+	return rOK;
+}
+
+static int dlopen_c_test(void) {
+	int rOK = true;
+	void* handle = dlopen(TEBAKIZE_PATH("directory-1/libzip.so.5.0"),
+			                         RTLD_LAZY | RTLD_GLOBAL);
+	rOK &= (handle != NULL);
+	printf("A call to 'dlopen' returned %p (not NULL expected)\n", handle);
+//	if (handle != NULL) {
+//		rOK &= (dlclose(handle) != -1);
+//	}
 	return rOK;
 }

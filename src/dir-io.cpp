@@ -27,9 +27,13 @@
  *
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
+#include <tebako-pch-pp.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-fd.h>
+#include <tebako-dirent.h>
 
 /*
 * tebako_opendir
@@ -45,50 +49,136 @@
 *  https://pubs.opengroup.org/onlinepubs/9699919799/
 */
 
+typedef std::set<uintptr_t> tebako_kfdtable;
+
+class sync_tebako_kfdtable : public folly::Synchronized<tebako_kfdtable*> {
+public:
+	sync_tebako_kfdtable(void) : folly::Synchronized<tebako_kfdtable*>(new tebako_kfdtable) { }
+
+	bool check(uintptr_t dirp) {
+		auto p_kfdtable = *rlock();
+		auto p_kfd = p_kfdtable->find(dirp);
+		return (p_kfd != p_kfdtable->end());
+	};
+
+	void erase(uintptr_t dirp) {
+		auto p_kfdtable = *wlock();
+		p_kfdtable->erase(dirp);
+	}
+
+	void insert(uintptr_t dirp) {
+		auto p_kfdtable = *wlock();
+		p_kfdtable->insert(dirp);
+	}
+
+	static sync_tebako_kfdtable kfdtable;
+};
+
+sync_tebako_kfdtable sync_tebako_kfdtable::kfdtable;
+
 extern "C" DIR* tebako_opendir(const char* dirname) {
 	DIR* ret = NULL;
-	tebako_path_t t_path;
-	const char* p_path = to_tebako_path(t_path, dirname);
-
-	if (!p_path) {
-		ret = ::opendir(dirname);
-	}
+	if (dirname == NULL) {
+		TEBAKO_SET_LAST_ERROR(ENOENT);
+	} 
 	else {
-		int vfd = dwarfs_open(p_path, O_RDONLY|O_DIRECTORY);
-		if (vfd == DWARFS_INVALID_FD) {
-			TEBAKO_SET_LAST_ERROR(ENOENT);
+		tebako_path_t t_path;
+		const char* p_path = to_tebako_path(t_path, dirname);
+
+		if (!p_path) {
+			ret = ::opendir(dirname);
+			if (ret != NULL) {
+				sync_tebako_kfdtable::kfdtable.insert(reinterpret_cast<uintptr_t>(ret));
+			}
 		}
-		ret = (vfd < 0) ? NULL : dwarfs_fdopendir(vfd); 
+		else {
+			int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY); 
+			if (vfd < 0) {
+				if (vfd == DWARFS_INVALID_FD) {
+					TEBAKO_SET_LAST_ERROR(ENOENT);
+				}
+				ret = NULL;
+			}
+			else {
+				ret = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
+			}
+		}
 	}
 	return ret;
 }
 
 extern "C" DIR* tebako_fdopendir(int vfd) {
-	DIR* ret = dwarfs_fdopendir(vfd);
-	return (ret == NULL) ? ::fdopendir(vfd) : ret;
+	DIR* ret = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
+	if (ret == NULL) {
+		ret = ::fdopendir(vfd);
+		if (ret != NULL) {
+			sync_tebako_kfdtable::kfdtable.insert(reinterpret_cast<uintptr_t>(ret));
+		}
+	}
+	return ret;
 }
 
 extern "C" int tebako_closedir(DIR * dirp) {
-	int ret = dwarfs_closedir(dirp);
-	return (ret == DWARFS_INVALID_FD) ? ::closedir(dirp) : ret;
+	int ret = DWARFS_IO_ERROR;
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.closedir(uip);
+	if (ret == DWARFS_INVALID_FD) {
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			ret = DWARFS_IO_ERROR;
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			ret = ::closedir(dirp);
+			sync_tebako_kfdtable::kfdtable.erase(uip);
+		}
+	}
+	return ret;
 }
 
-
 extern "C" struct dirent* tebako_readdir(DIR* dirp) {
-	struct dirent* res = NULL;
-	int ret = dwarfs_readdir(dirp, res);
-	return (ret == DWARFS_INVALID_FD) ? ::readdir(dirp) : res;
+	struct dirent* entry = NULL;
+	int ret = DWARFS_IO_ERROR;
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.readdir(uip, entry);
+	if (ret == DWARFS_INVALID_FD) {
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			ret = DWARFS_IO_ERROR;
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			entry = ::readdir(dirp);
+		}
+	}
+	return entry;
 }
 
 extern "C" long tebako_telldir(DIR* dirp) {
-	long ret = dwarfs_telldir(dirp);
-	return (ret == DWARFS_INVALID_FD) ? ::telldir(dirp) : ret;
+	long ret = DWARFS_IO_ERROR;
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.telldir(uip);
+	if (ret == DWARFS_INVALID_FD) {
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			ret = DWARFS_IO_ERROR;
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			ret = ::telldir(dirp);
+		}
+	}
+	return ret;
 }
 
 extern "C" void tebako_seekdir(DIR* dirp, long loc) {
-	int ret = dwarfs_seekdir(dirp, loc);
+	int ret = DWARFS_IO_ERROR;
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.seekdir(uip, loc);
 	if (ret == DWARFS_INVALID_FD) {
-		::seekdir(dirp, loc);
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			::seekdir(dirp, loc);
+		}
 	}
 }
 
@@ -97,70 +187,92 @@ extern "C" void tebako_rewinddir(DIR* dirp) {
 }
 
 extern "C" int tebako_dirfd(DIR * dirp) {
-	int ret = dwarfs_dirfd(dirp);
-	return (ret == DWARFS_INVALID_FD) ? ::dirfd(dirp) : ret;
+	int ret = DWARFS_IO_ERROR;
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.dirfd(uip);
+	if (ret == DWARFS_INVALID_FD) {
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			ret = DWARFS_IO_ERROR;
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			ret = ::dirfd(dirp);
+		}
+	}
+	return ret;
 }
 
-extern "C" int tebako_scandir(const char* dir, struct dirent*** namelist,
-	int (*sel)(const struct dirent*),
-	int (*compar)(const struct dirent**, const struct dirent**)) {
-	return -1;
-}
+typedef int(*qsort_compar)(const void*, const void*);
 
-/*
-+ typedef int(*qsort_compar)(const void*, const void*);
-+
-+int squash_scandir(sqfs * fs, const char* dirname, struct SQUASH_DIRENT*** namelist,
-	+int (*select)(const struct SQUASH_DIRENT*),
-	+int (*compar)(const struct SQUASH_DIRENT**, const struct SQUASH_DIRENT**))
-	+ {
-	+SQUASH_DIR * openeddir = 0;
-	+size_t n = 0;
-	+struct SQUASH_DIRENT** list = NULL;
-	+struct SQUASH_DIRENT* ent = 0, *p = 0;
-	+
-		+if ((dirname == NULL) || (namelist == NULL))
-		+ return -1;
-	+
-		+openeddir = squash_opendir(fs, dirname);
-	+if (openeddir == NULL)
-		+ return -1;
-	+
-		+
-		+list = (struct SQUASH_DIRENT**)malloc(MAX_DIR_ENT * sizeof(struct SQUASH_DIRENT*));
-	+
-		+
-		+while ((ent = squash_readdir(openeddir)) != NULL)
-		+ {
-		+if (select && !select(ent))
-			+ continue;
-		+
-			+p = (struct SQUASH_DIRENT*)malloc(sizeof(struct SQUASH_DIRENT));
-		+
-			+memcpy((void*)p, (void*)ent, sizeof(struct SQUASH_DIRENT));
-		+list[n] = p;
-		+
-			+n++;
-		+if (n >= MAX_DIR_ENT)
-			+ break;
-		+
-			+}
-	+
-		+	//close the squash_dir
-		+squash_closedir(openeddir);
-	+
-		+	//realloc the array
-		+*namelist = realloc((void*)list, n * sizeof(struct SQUASH_DIRENT*));
-	+if (*namelist == NULL)
-		+ *namelist = list;
-	+
-		+
-		+	//sort the array
-		+if (compar)
-		+qsort((void*)*namelist, n, sizeof(struct SQUASH_DIRENT*), (qsort_compar)compar);
-	+
-		+return n;
-	+
-		+}
+ static struct dirent* internal_readdir(DIR* dirp) {
+	 struct dirent* entry = NULL;
+	 sync_tebako_dstable::dstable.readdir(reinterpret_cast<uintptr_t>(dirp), entry);
+	 return entry;
+ }
 
-*/
+ extern "C" int tebako_scandir(const char* dirname, struct dirent*** namelist,
+	 int (*sel)(const struct dirent*),
+	 int (*compar)(const struct dirent**, const struct dirent**)) {
+
+	 int ret = DWARFS_IO_ERROR;
+	 if (dirname == NULL) {
+		 TEBAKO_SET_LAST_ERROR(ENOENT);
+	 }
+	 else {
+		 DIR* dirp = NULL;
+		 tebako_path_t t_path;
+		 const char* p_path = to_tebako_path(t_path, dirname);
+
+		 if (!p_path) {
+			 ret = ::scandir(dirname, namelist, sel, compar);
+		 }
+		 else {
+			 if (namelist != NULL) {
+				 int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY);
+				 if (vfd == DWARFS_INVALID_FD) {
+					 TEBAKO_SET_LAST_ERROR(ENOENT);
+					 vfd = DWARFS_IO_ERROR;
+				 }
+				 if (vfd >= DWARFS_IO_CONTINUE) {
+					 size_t size;
+					 dirp = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd, size));
+					 if (dirp != NULL) {
+						 int n = 0;
+						 struct dirent** list = new struct dirent* [size];
+						 struct dirent* ent = 0, * p = 0;
+						 while (list != NULL && (ent = internal_readdir(dirp)) != NULL) {
+							 if (sel && !sel(ent)) continue;
+							 p = (struct dirent*)malloc(ent->d_reclen);
+							 if (p == NULL) {
+								 while (--n >= 0) {
+									 delete list[n];
+								 }
+								 delete list;
+								 list = NULL;
+							 }
+							 else {
+								 memcpy((void*)p, (void*)ent, ent->d_reclen);
+								 list[n++] = p;
+							 }
+						 }
+						 sync_tebako_dstable::dstable.closedir(reinterpret_cast<uintptr_t>(dirp));
+						 if (list == NULL) {
+							 TEBAKO_SET_LAST_ERROR(ENOMEM);
+						 }
+						 else {
+							 *namelist = (struct dirent**)realloc((void*)list, std::max(n, 1) * sizeof(struct dirent*));
+							 if (*namelist == NULL) {
+								 *namelist = list;
+							 }
+							 if (compar && n > 0) {
+								 qsort((void*)*namelist, n, sizeof(struct dirent*), (qsort_compar)compar);
+							 }
+							 ret = n;
+						 }
+					 }
+				 }
+			 }
+		 }
+	 }
+	 return ret;
+ }

@@ -27,75 +27,19 @@
  * 
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
+#include <tebako-pch-pp.h>
 #include <tebako-io-inner.h>
+#include <tebako-fd.h>
+#include <tebako-dirent.h>
 #include <tebako-dfs.h>
 
 using namespace std;
 
-const size_t TEBAKO_DIR_CACHE_SIZE = 50;
-
-struct tebako_ds {
-	tebako_dirent cache[TEBAKO_DIR_CACHE_SIZE];
-	size_t dir_size;
-	long dir_position;
-	off_t cache_start;
-	size_t cache_size;
-	int vfd;
-
-	tebako_ds(int fd) : cache_size(0), cache_start(0), dir_position(-1), dir_size(0), vfd(fd) { }
-
-	int load_cache(int new_cache_start, bool set_pos = false) noexcept;
-};
-
-typedef map<uintptr_t, shared_ptr<tebako_ds>> tebako_dstable;
-
-class sync_tebako_dstable : public folly::Synchronized<tebako_dstable*> {
-public:
-	sync_tebako_dstable(void) : folly::Synchronized<tebako_dstable*>(new tebako_dstable) { }
-
-	void close_all(void) noexcept;
-	uintptr_t opendir(int vfd) noexcept;
-	int closedir(uintptr_t dirp) noexcept;
-	long telldir(uintptr_t dirp) noexcept;
-	int seekdir(uintptr_t dirp, long pos) noexcept;
-	long dirfd(uintptr_t dirp) noexcept;
-	int readdir(uintptr_t  dirp, struct dirent*& entry) noexcept;
-	
-	static sync_tebako_dstable dstable;
-};
-
 sync_tebako_dstable sync_tebako_dstable::dstable;
 
-void dwarfs_dir_close_all(void) noexcept {
-	sync_tebako_dstable::dstable.close_all();
-}
-
-DIR* dwarfs_fdopendir(int vfd) noexcept {
-	return reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
-}
-
-int dwarfs_closedir(DIR* dirp) noexcept {
-	return sync_tebako_dstable::dstable.closedir(reinterpret_cast<uintptr_t>(dirp));
-}
-
-long dwarfs_telldir(DIR* dirp) noexcept {
-	return sync_tebako_dstable::dstable.telldir(reinterpret_cast<uintptr_t>(dirp));
-}
-
-int dwarfs_seekdir(DIR* dirp, long pos) noexcept {
-	return sync_tebako_dstable::dstable.seekdir(reinterpret_cast<uintptr_t>(dirp), pos);
-}
-
-int dwarfs_dirfd(DIR* dirp) noexcept {
-	return sync_tebako_dstable::dstable.dirfd(reinterpret_cast<uintptr_t>(dirp));
-}
-
-int dwarfs_readdir(DIR* dirp, struct dirent*& entry) {
-	return sync_tebako_dstable::dstable.readdir(reinterpret_cast<uintptr_t>(dirp), entry);
-}
-
-uintptr_t sync_tebako_dstable::opendir(int vfd) noexcept {
+uintptr_t sync_tebako_dstable::opendir(int vfd, size_t& size) noexcept {
 	uintptr_t ret = 0;;
 	int err = ENOTDIR;
 	try {
@@ -108,6 +52,7 @@ uintptr_t sync_tebako_dstable::opendir(int vfd) noexcept {
 			if (err == DWARFS_IO_CONTINUE) {
 				ret = reinterpret_cast<uintptr_t>(ds.get());
 				(**wlock())[ret] = ds;
+				size = ds->dir_size;
 			}
 			else {
 				ret = 0;
@@ -137,7 +82,8 @@ int sync_tebako_dstable::closedir(uintptr_t dirp) noexcept {
 	auto p_dstable = *wlock();
 	auto p_ds = p_dstable->find(dirp);
 	if (p_ds != p_dstable->end()) {
-		ret = dwarfs_close(p_ds->second->vfd);
+		ret = sync_tebako_fdtable::fdtable.close(p_ds->second->vfd); 
+		p_dstable->erase(dirp);
 	}
 	return ret;
 }
@@ -145,7 +91,8 @@ int sync_tebako_dstable::closedir(uintptr_t dirp) noexcept {
 void sync_tebako_dstable::close_all(void) noexcept {
 	auto p_dstable = *wlock();
 	for (auto it = p_dstable->begin(); it != p_dstable->end(); ++it) {
-		dwarfs_close(it->second->vfd);
+		sync_tebako_fdtable::fdtable.close(it->second->vfd);
+
 	}
 	p_dstable->clear();
 }
@@ -223,7 +170,10 @@ int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcep
 }
 
 int tebako_ds::load_cache(int new_cache_start, bool set_pos) noexcept {
-	int ret = dwarfs_fd_readdir(vfd, cache, new_cache_start, TEBAKO_DIR_CACHE_SIZE, cache_size, dir_size);
+	int ret = sync_tebako_fdtable::fdtable.readdir(vfd, cache, new_cache_start, 
+			                                       TEBAKO_DIR_CACHE_SIZE, cache_size, 
+												   dir_size);
+
 	if (ret == DWARFS_IO_CONTINUE) {
 		if (set_pos) {
 			dir_position = new_cache_start;

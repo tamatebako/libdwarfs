@@ -35,8 +35,6 @@
 
 #pragma once
 
-#include "tebako-pch.h"
-
 #define _TEBAKO_PP_NARG(...) \
     _TEBAKO_PP_NARG_(__VA_ARGS__,_TEBAKO_PP_RSEQ_N())
 #define _TEBAKO_PP_NARG_(...) \

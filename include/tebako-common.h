@@ -34,7 +34,6 @@
 
 #pragma once
 
-#include "tebako-pch.h"
 #include <version.h>
 
 #ifndef __cplusplus

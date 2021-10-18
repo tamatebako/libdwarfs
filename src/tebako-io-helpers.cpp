@@ -27,8 +27,9 @@
  *
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
-#include <folly/Synchronized.h>
+#include <tebako-pch-pp.h>
 
 
 //  Current working direcory (within tebako memfs)
@@ -68,7 +69,8 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 //  Checks if a path is withing tebako memfs
 //  [TODO: Canonical ?]
 	int is_tebako_path(const char* path) {
-		return (strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
+		return (path != NULL &&
+			(strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 #ifdef _WIN32
 			|| strncmp(path, "\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 			|| strncmp(path + 1, ":/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
@@ -80,7 +82,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 					strncmp(path + 5, ":\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
 					)
 #endif
-			) ? -1 : 0;
+			)) ? -1 : 0;
 	}
 
 //	Checks if the current cwd path is withing tebako memfs
@@ -93,18 +95,22 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 //  Expands a path withing tebako memfs
 //  [TODO: Canonical ?]
 	const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
-		size_t cwd_len;
-		{
-			auto locked = tebako_cwd.rlock();
-			auto p = *locked;
-			cwd_len = strlen(p->d);
-			memcpy(expanded_path, p->d, cwd_len);
-		}
+		const char* ret = NULL;
+		if (path != NULL) {
+			size_t cwd_len;
+			{
+				auto locked = tebako_cwd.rlock();
+				auto p = *locked;
+				cwd_len = strlen(p->d);
+				memcpy(expanded_path, p->d, cwd_len);
+			}
 
-		size_t path_len = std::min(strlen(path), TEBAKO_PATH_LENGTH - cwd_len);
-		memcpy(expanded_path + cwd_len, path, path_len);
-		expanded_path[cwd_len + path_len] = '\0';
-		return expanded_path;
+			size_t path_len = std::min(strlen(path), TEBAKO_PATH_LENGTH - cwd_len);
+			memcpy(expanded_path + cwd_len, path, path_len);
+			expanded_path[cwd_len + path_len] = '\0';
+			ret = expanded_path;
+		}
+		return ret;
 	}
 
 //  Returns tebako path is cwd if within tebako memfs
