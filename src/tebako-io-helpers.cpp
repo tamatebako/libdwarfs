@@ -94,22 +94,22 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 //  Expands a path withing tebako memfs
 //  [TODO: Canonical ?]
 	const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
-		if (path == NULL) {
-			return NULL;
-		}
+		const char* ret = NULL;
+		if (path != NULL) {
+			size_t cwd_len;
+			{
+				auto locked = tebako_cwd.rlock();
+				auto p = *locked;
+				cwd_len = strlen(p->d);
+				memcpy(expanded_path, p->d, cwd_len);
+			}
 
-		size_t cwd_len;
-		{
-			auto locked = tebako_cwd.rlock();
-			auto p = *locked;
-			cwd_len = strlen(p->d);
-			memcpy(expanded_path, p->d, cwd_len);
+			size_t path_len = std::min(strlen(path), TEBAKO_PATH_LENGTH - cwd_len);
+			memcpy(expanded_path + cwd_len, path, path_len);
+			expanded_path[cwd_len + path_len] = '\0';
+			ret = expanded_path;
 		}
-
-		size_t path_len = std::min(strlen(path), TEBAKO_PATH_LENGTH - cwd_len);
-		memcpy(expanded_path + cwd_len, path, path_len);
-		expanded_path[cwd_len + path_len] = '\0';
-		return expanded_path;
+		return ret;
 	}
 
 //  Returns tebako path is cwd if within tebako memfs

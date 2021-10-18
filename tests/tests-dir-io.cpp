@@ -93,7 +93,7 @@ namespace {
 	}
 	
 	TEST_F(DirIOTests, tebako_opendir_seekdir_readdir_rewinddir_closedir) {
-		DIR* dirp = tebako_opendir(TEBAKIZE_PATH("directory-with-89-files"));
+		DIR* dirp = tebako_opendir(TEBAKIZE_PATH("directory-with-90-files"));
 		EXPECT_TRUE(dirp != NULL);
 		if (dirp != NULL) {
 			errno = 0;
@@ -158,4 +158,92 @@ namespace {
 			EXPECT_EQ(0, tebako_closedir(dirp));
 		}
 	}
+
+	TEST_F(DirIOTests, tebako_scandir) {
+		const off_t start_fnum = 10;  /* The first file nane is file - 10.txt */
+		const size_t size_dir = 90;
+		struct dirent** namelist;
+		std::string fname;
+		int n = tebako_scandir(TEBAKIZE_PATH("directory-with-90-files"), &namelist, NULL, alphasort);
+		EXPECT_EQ(n, size_dir + 2);
+		EXPECT_TRUE(namelist != NULL);
+		if (n > 0 && namelist != NULL) {
+			for (int i = 0; i < n; i++) {
+				switch (i) {
+				case 0:
+					fname = ".";
+					break;
+				case 1:
+					fname = "..";
+					break;
+				default:
+					fname = "file-";
+					fname += std::to_string(i + start_fnum - 2 /* for '.' and '..' */);
+					fname += ".txt";
+					break;
+				}
+				EXPECT_TRUE(namelist[i] != NULL);
+				if (namelist[i]) {
+					EXPECT_TRUE(fname == namelist[i]->d_name);
+					free(namelist[i]);
+				}
+			}
+			free(namelist);
+		}
+	}
+
+	extern "C" int zero_filter(const struct dirent* )
+	{
+		return 0;
+	}
+
+	TEST_F(DirIOTests, tebako_scandir_filter_empty) {
+		const off_t start_fnum = 10;  /* The first file nane is file - 10.txt */
+		const size_t size_dir = 90;
+		struct dirent** namelist;
+		std::string fname;
+		int n = tebako_scandir(TEBAKIZE_PATH("directory-with-90-files"), &namelist, zero_filter, alphasort);
+		EXPECT_EQ(0, n);
+		EXPECT_TRUE(namelist != NULL);
+		if (namelist != NULL) {
+			free(namelist);
+		}
+	}
+
+	TEST_F(DirIOTests, tebako_dir_io_null_ptr) {
+		errno = 0;
+		EXPECT_EQ(NULL, tebako_opendir(NULL));
+		EXPECT_EQ(ENOENT, errno);
+
+		errno = 0;
+		EXPECT_EQ(-1, tebako_telldir(NULL));
+		EXPECT_EQ(EBADF, errno);
+
+		tebako_seekdir(NULL, 1);   // Just nothing. No error, no SEGFAULT
+		tebako_rewinddir(NULL);    // The same  
+
+		errno = 0;
+		EXPECT_EQ(-1, tebako_dirfd(NULL));
+		EXPECT_EQ(EBADF, errno);
+
+		errno = 0;
+		EXPECT_EQ(-1, tebako_closedir(NULL));
+		EXPECT_EQ(EBADF, errno);
+
+		errno = 0;
+		EXPECT_EQ(NULL, tebako_readdir(NULL));
+		EXPECT_EQ(EBADF, errno);
+
+		
+		struct dirent** namelist;
+
+		errno = 0;
+		EXPECT_EQ(-1, tebako_scandir(NULL, &namelist, zero_filter, alphasort));
+		EXPECT_EQ(ENOENT, errno);
+
+		errno = 0;
+		EXPECT_EQ(-1, tebako_scandir("somedir", NULL, zero_filter, alphasort));
+		EXPECT_EQ(ENOENT, errno);
+
+	}   
 }
