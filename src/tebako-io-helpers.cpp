@@ -28,7 +28,7 @@
  */
 
 #include <tebako-common.h>
-#include <folly/Synchronized.h>
+#include <tebako-pch-pp.h>
 
 
 //  Current working direcory (within tebako memfs)
@@ -68,7 +68,8 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 //  Checks if a path is withing tebako memfs
 //  [TODO: Canonical ?]
 	int is_tebako_path(const char* path) {
-		return (strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
+		return (path != NULL &&
+			(strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 #ifdef _WIN32
 			|| strncmp(path, "\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 			|| strncmp(path + 1, ":/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
@@ -80,7 +81,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 					strncmp(path + 5, ":\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
 					)
 #endif
-			) ? -1 : 0;
+			)) ? -1 : 0;
 	}
 
 //	Checks if the current cwd path is withing tebako memfs
@@ -93,6 +94,10 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 //  Expands a path withing tebako memfs
 //  [TODO: Canonical ?]
 	const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
+		if (path == NULL) {
+			return NULL;
+		}
+
 		size_t cwd_len;
 		{
 			auto locked = tebako_cwd.rlock();

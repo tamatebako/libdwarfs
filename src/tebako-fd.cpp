@@ -28,6 +28,7 @@
  */
 
 #include <tebako-common.h>
+#include <tebako-pch-pp.h>
 #include <tebako-io-inner.h>
 #include <tebako-dfs.h>
 

@@ -27,10 +27,12 @@
  * 
  */
 
-#include "tebako-common.h"
-#include "tebako-dfs.h"
-#include "tebako-io-inner.h"
-#include "tebako-mfs.h"
+#include <tebako-common.h>
+#include <tebako-pch-pp.h>
+#include <tebako-dfs.h>
+#include <tebako-io-inner.h>
+#include <tebako-dirent.h>
+#include <tebako-mfs.h>
 
 namespace dwarfs {
  
@@ -78,7 +80,7 @@ extern "C" void drop_fs(void) {
     }
     *locked = NULL;
 
-    dwarfs_dir_close_all();
+    sync_tebako_dstable::dstable.close_all();
     dwarfs_fd_close_all();
 }
 
@@ -243,7 +245,7 @@ ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) 
         inode, buf, size, offset);
 }
 
-int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) {
+static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) {
     int ret = -1;
     auto pi = fs->find(inode);
     if (pi) {

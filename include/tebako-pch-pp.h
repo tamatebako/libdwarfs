@@ -27,45 +27,21 @@
  * 
  */
 
- /*
- *  dwarFS filesystem data types
- */
-
+/*
+* This a set of standard "C++" headers used through libdwarfs-wr source files
+*/
 
 #pragma once
 
-#include "dwarfs/error.h"
-#include "dwarfs/filesystem_v2.h"
-#include "dwarfs/fstypes.h"
-#include "dwarfs/logger.h"
-#include "dwarfs/metadata_v2.h"
-#include "dwarfs/mmap.h"
-#include "dwarfs/options.h"
-#include "dwarfs/util.h"
+#include <array>
+#include <map>
+#include <iostream>
+#include <stdexcept>
 
-namespace dwarfs {
-    struct options {
-        int enable_nlink{ 0 };
-        int readonly{ 0 };
-        int cache_image{ 0 };
-        int cache_files{ 0 };
-        size_t cachesize{ 0 };
-        size_t workers{ 0 };
-        mlock_mode lock_mode{ mlock_mode::NONE };
-        double decompress_ratio{ 0.0 };
-        logger::level_type debuglevel{ logger::level_type::ERROR };
-        off_t image_offset{ 0 };
-    };
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
 
-    struct dwarfs_userdata {
-        dwarfs_userdata(std::ostream& os, const void* dt, const unsigned int sz)
-            : lgr{ os }, data{ dt }, size{ sz } { }
-
-        const void* data;
-        const unsigned int size;
-
-        dwarfs::options opts;
-        stream_logger lgr;
-        filesystem_v2 fs;
-    };
-}
+#include <folly/Conv.h>
+#include <folly/Synchronized.h>
