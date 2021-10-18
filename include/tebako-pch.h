@@ -27,6 +27,10 @@
  * 
  */
 
+/*
+* This a set of standard "C" headers used through libdwarfs-wr source files
+*/
+
 #pragma once
 
 #include <stdlib.h>
@@ -38,6 +42,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <dirent.h>
 
 #ifdef _WIN32
  #include <direct.h>

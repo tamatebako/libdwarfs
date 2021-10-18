@@ -32,77 +32,22 @@
 #include <tebako-io-inner.h>
 
  /*
- * int tebako_open(int nargs, const char* pathname, int flags, ...)
- * https://pubs.opengroup.org/onlinepubs/9699919799/
+ * tebaco_access
+ * tebaco_stat
  *
+ * https://pubs.opengroup.org/onlinepubs/9699919799/
  */
 
-int tebako_open(int nargs, const char* path, int flags, ...)
-{
-	int ret = -1;
+int tebako_access(const char* path, int amode) {
 	tebako_path_t t_path;
 	const char* p_path = to_tebako_path(t_path, path);
+	return p_path ? dwarfs_access(p_path, amode, getuid(), getgid()) : access(path, amode);
 
-	if (p_path) {
-		ret = dwarfs_open(p_path, flags);
-	}
-	else {
-		if (nargs == 2) {
-			ret = open(path, flags);
-		}
-		else {
-			va_list args;
-			mode_t mode;
-			va_start(args, flags);
-			mode = va_arg(args, mode_t);
-			va_end(args);
-			ret = open(path, flags, mode);
-		}
-	}
-	return ret;
 }
 
-/*
-* int tebako_lseek(int vfd, off_t offset, int whence)
-* https://pubs.opengroup.org/onlinepubs/9699919799/
-*
-*/
-
-off_t tebako_lseek(int vfd, off_t offset, int whence)
-{
-	int ret = dwarfs_lseek(vfd, offset, whence);
-	if (ret == DWARFS_INVALID_FD) {
-		ret = lseek(vfd, offset, whence);
-	}
-	return ret;
+int tebako_stat(const char* path, struct stat* buf) {
+	tebako_path_t t_path;
+	const char* p_path = to_tebako_path(t_path, path);
+	return p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
 }
 
-/*
-* ssize_t tebako_read(int vfd, void* buf, size_t nbyte)
-* https://pubs.opengroup.org/onlinepubs/9699919799/
-*
-*/
-ssize_t tebako_read(int vfd, void* buf, size_t nbyte)
-{
-	int ret = dwarfs_read(vfd, buf, nbyte);
-	if (ret == DWARFS_INVALID_FD) {
-		ret = read(vfd, buf, nbyte);
-	}
-	return ret;
-}
-
-
-/*
-* int tebako_close(int vfd)
-* https://pubs.opengroup.org/onlinepubs/9699919799/
-*
-*/
-
-int tebako_close(int vfd)
-{
-	int ret = dwarfs_close(vfd);
-	if (ret == DWARFS_INVALID_FD) {
-		ret = close(vfd);
-	}
-	return ret;
-}

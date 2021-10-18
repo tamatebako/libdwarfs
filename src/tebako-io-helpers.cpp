@@ -28,7 +28,7 @@
  */
 
 #include <tebako-common.h>
-#include <folly/Synchronized.h>
+#include <tebako-pch-pp.h>
 
 
 //  Current working direcory (within tebako memfs)
@@ -42,7 +42,7 @@ struct tebako_path_s {
 static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 
 //	Gets current working directory 
-	extern "C" const char* tebako_get_cwd(tebako_path_t cwd) {
+	const char* tebako_get_cwd(tebako_path_t cwd) {
 		auto locked = tebako_cwd.rlock();
 		auto p = *locked;
 		return strcpy(cwd, p->d);
@@ -50,7 +50,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 
 //	Sets current working directory to path and removes all extra trailing slashes
 //  [TODO: Canonical ?]
-	extern "C" void tebako_set_cwd(const char* path) {
+	void tebako_set_cwd(const char* path) {
 		auto locked = tebako_cwd.wlock();
 		auto p = *locked;
 		if (!path) {
@@ -67,8 +67,9 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 
 //  Checks if a path is withing tebako memfs
 //  [TODO: Canonical ?]
-	extern "C" int is_tebako_path(const char* path) {
-		return (strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
+	int is_tebako_path(const char* path) {
+		return (path != NULL &&
+			(strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 #ifdef _WIN32
 			|| strncmp(path, "\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 			|| strncmp(path + 1, ":/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
@@ -80,11 +81,11 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 					strncmp(path + 5, ":\\" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
 					)
 #endif
-			) ? -1 : 0;
+			)) ? -1 : 0;
 	}
 
 //	Checks if the current cwd path is withing tebako memfs
-	extern "C" int is_tebako_cwd(void) {
+	int is_tebako_cwd(void) {
 		auto locked = tebako_cwd.rlock();
 		auto p = *locked;
 		return 	(p->d[0] == '\0') ? 0 : -1;
@@ -92,24 +93,28 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 
 //  Expands a path withing tebako memfs
 //  [TODO: Canonical ?]
-	extern "C" const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
-		size_t cwd_len;
-		{
-			auto locked = tebako_cwd.rlock();
-			auto p = *locked;
-			cwd_len = strlen(p->d);
-			memcpy(expanded_path, p->d, cwd_len);
-		}
+	const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
+		const char* ret = NULL;
+		if (path != NULL) {
+			size_t cwd_len;
+			{
+				auto locked = tebako_cwd.rlock();
+				auto p = *locked;
+				cwd_len = strlen(p->d);
+				memcpy(expanded_path, p->d, cwd_len);
+			}
 
-		size_t path_len = std::min(strlen(path), TEBAKO_PATH_LENGTH - cwd_len);
-		memcpy(expanded_path + cwd_len, path, path_len);
-		expanded_path[cwd_len + path_len] = '\0';
-		return expanded_path;
+			size_t path_len = std::min(strlen(path), TEBAKO_PATH_LENGTH - cwd_len);
+			memcpy(expanded_path + cwd_len, path, path_len);
+			expanded_path[cwd_len + path_len] = '\0';
+			ret = expanded_path;
+		}
+		return ret;
 	}
 
 //  Returns tebako path is cwd if within tebako memfs
 //  NULL otherwise
-	extern "C" const char* to_tebako_path(tebako_path_t t_path, const char* path) {
+	const char* to_tebako_path(tebako_path_t t_path, const char* path) {
 		const char* p_path = NULL;
 		if (is_tebako_cwd() && path[0] != '/') {
 			p_path = tebako_expand_path(t_path, path);

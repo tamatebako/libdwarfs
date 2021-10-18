@@ -30,8 +30,8 @@
 #pragma once	
 
 #include <gtest/gtest.h>
-
-#include <tebako-io.h>
+#include "tebako-pch.h"
+#include "tebako-io.h"
 
 #include "tebako-fs.h"
 #include "tests-defines.h"

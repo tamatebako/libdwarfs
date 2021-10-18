@@ -27,10 +27,12 @@
  * 
  */
 
-#include "tebako-common.h"
-#include "tebako-dfs.h"
-#include "tebako-io-inner.h"
-#include "tebako-mfs.h"
+#include <tebako-common.h>
+#include <tebako-pch-pp.h>
+#include <tebako-dfs.h>
+#include <tebako-io-inner.h>
+#include <tebako-dirent.h>
+#include <tebako-mfs.h>
 
 namespace dwarfs {
  
@@ -54,6 +56,7 @@ namespace dwarfs {
 
         userdata->fs = filesystem_v2(
             userdata->lgr, std::make_shared<tebako::mfs>(userdata->data, userdata->size), fsopts);
+        userdata->fs.set_num_workers(userdata->opts.workers);
 
         ti << "file system initialized";
     }
@@ -76,6 +79,9 @@ extern "C" void drop_fs(void) {
         delete *locked;
     }
     *locked = NULL;
+
+    sync_tebako_dstable::dstable.close_all();
+    dwarfs_fd_close_all();
 }
 
 
@@ -96,22 +102,21 @@ extern "C" int load_fs( const void* data,
         auto locked = usd.wlock();
         *locked = new dwarfs_userdata(std::cerr, data, size);
         auto p = *locked;
-        auto opts = p->opts;
 
-        opts.cache_image = 0;
-        opts.cache_files = 1;
+        p->opts.cache_image = 0;
+        p->opts.cache_files = 1;
 
 
         try {
             p->opts.debuglevel = debuglevel ? logger::parse_level(debuglevel): logger::INFO;
 
-            p->lgr.set_threshold(opts.debuglevel);
-            p->lgr.set_with_context(opts.debuglevel >= logger::DEBUG);
+            p->lgr.set_threshold(p->opts.debuglevel);
+            p->lgr.set_with_context(p->opts.debuglevel >= logger::DEBUG);
 
-            opts.cachesize = cachesize ? dwarfs::parse_size_with_unit(cachesize) : (static_cast<size_t>(512) << 20);
-            opts.workers = workers ? folly::to<size_t>(workers) : 2;
-            opts.lock_mode =  mlock ? parse_mlock_mode(mlock) : mlock_mode::NONE;
-            opts.decompress_ratio = decompress_ratio ? folly::to<double>(decompress_ratio) : 0.8;
+            p->opts.cachesize = cachesize ? dwarfs::parse_size_with_unit(cachesize) : (static_cast<size_t>(512) << 20);
+            p->opts.workers = workers ? folly::to<size_t>(workers) : 2;
+            p->opts.lock_mode =  mlock ? parse_mlock_mode(mlock) : mlock_mode::NONE;
+            p->opts.decompress_ratio = decompress_ratio ? folly::to<double>(decompress_ratio) : 0.8;
         }
         catch (runtime_error const& e) {
             std::cerr << "error: " << e.what() << std::endl;
@@ -122,7 +127,7 @@ extern "C" int load_fs( const void* data,
             return 1;
         }
 
-        if (opts.decompress_ratio < 0.0 || opts.decompress_ratio > 1.0) {
+        if (p->opts.decompress_ratio < 0.0 || p->opts.decompress_ratio > 1.0) {
             std::cerr << "error: decratio must be between 0.0 and 1.0" << std::endl;
             return 1;
         }
@@ -130,7 +135,7 @@ extern "C" int load_fs( const void* data,
         if (image_offset) {
             std::string img_offset{ image_offset };
             try {
-                opts.image_offset = (img_offset == "auto") ? filesystem_options::IMAGE_OFFSET_AUTO : folly::to<off_t>(img_offset);
+                p->opts.image_offset = (img_offset == "auto") ? filesystem_options::IMAGE_OFFSET_AUTO : folly::to<off_t>(img_offset);
             }
             catch (...)  {
                 std::cerr << "error: failed to parse offset: " + img_offset << std::endl;
@@ -141,7 +146,7 @@ extern "C" int load_fs( const void* data,
         LOG_PROXY(debug_logger_policy, p->lgr);
         LOG_INFO << PRJ_NAME << " version " << PRJ_VERSION_STRING;
 
-        (opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(p) :  load_filesystem<prod_logger_policy>(p);
+        (p->opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(p) :  load_filesystem<prod_logger_policy>(p);
     }
 
     catch (...) {
@@ -183,36 +188,104 @@ int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
     return ret;
 }
 
-extern "C" int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)> 
-           { [](filesystem_v2* fs, inode_view inode, int amode, uid_t uid, gid_t gid) -> int { return fs->access(inode, amode, uid, gid); } }, 
-           path, amode, uid, gid);
-}
-
-extern "C" int dwarfs_stat(const char* path, struct stat* buf) {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
-    { [](filesystem_v2* fs, inode_view inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
-        path, buf);
-}
-
-extern "C" ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) {
-    int err = ENOENT;
+template <typename Functor, class... Args>
+int safe_dwarfs_call(Functor&& fn, uint32_t inode, Args&&... args) {
+    //  [TODO]   LOG_PROXY(LoggerPolicy, userdata->lgr);
+    //    LOG_DEBUG << __func__;
     int ret = -1;
     auto locked = usd.rlock();
     auto p = *locked;
     if (p) {
         try {
-            ret = p->fs.read(inode, (char *)buf, size, offset);
+            ret = fn(&p->fs, inode, std::forward<Args>(args)...);
         }
         catch (dwarfs::system_error const& e) {
-            err = e.get_errno();
+            TEBAKO_SET_LAST_ERROR(e.get_errno());
         }
         catch (...) {
-            err = EIO;
+            TEBAKO_SET_LAST_ERROR(EIO);
         }
-    }
-    if (ret < 0) {
-        TEBAKO_SET_LAST_ERROR(err);
     }
     return ret;
 }
+
+int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)> 
+           { [](filesystem_v2* fs, inode_view& inode, int amode, uid_t uid, gid_t gid) -> int { return fs->access(inode, amode, uid, gid); } }, 
+           path, amode, uid, gid);
+}
+
+int dwarfs_stat(const char* path, struct stat* buf) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
+    { [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
+        path, buf);
+}
+
+int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)>
+    { [](filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int { 
+            auto pi = fs->find(inode);
+            return pi ? fs->getattr(*pi, buf) : ENOENT;
+        } },
+        inode, path, buf);
+}
+
+int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, int, uid_t, gid_t)>
+    { [](filesystem_v2* fs, uint32_t inode, int amode, uid_t uid, gid_t gid) -> int { 
+            auto pi = fs->find(inode);
+            return pi ? fs->access(*pi, amode, uid, gid) : ENOENT;
+        } },
+        inode, amode, uid, gid);
+}
+
+ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset)  noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, void*, size_t, off_t)>
+    { [](filesystem_v2* fs, uint32_t inode, void* buf, size_t size, off_t offset) -> int { return fs->read(inode, (char*)buf, size, offset); } }, 
+        inode, buf, size, offset);
+}
+
+static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) {
+    int ret = -1;
+    auto pi = fs->find(inode);
+    if (pi) {
+        auto dir = fs->opendir(*pi);
+        if (dir) {
+            dir_size = fs->dirsize(*dir);
+            struct stat st;
+            cache_size = 0;
+            bool pOK = true;
+            while (cache_start + cache_size < dir_size && cache_size < buffer_size && pOK) {
+                auto res = fs->readdir(*dir, cache_start + cache_size);
+                if (!res) {
+                    pOK = false;
+                }
+                else {
+                    auto [entry, name_view] = *res;
+                    std::string name(name_view);
+                    fs->getattr(entry, &st);
+                    cache[cache_size].e.d_ino = st.st_ino;
+                    cache[cache_size].e.d_off = cache_start + cache_size;
+                    cache[cache_size].e.d_type = DT_UNKNOWN;
+                    strncpy(cache[cache_size].e.d_name, name.c_str(), TEBAKO_PATH_LENGTH);
+                    cache[cache_size].e.d_name[TEBAKO_PATH_LENGTH] = '\0';
+                    cache[cache_size].e.d_reclen = std::max(sizeof(cache[0]), sizeof(cache[0]) + strlen(cache[cache_size].e.d_name) - 256 + 1);
+                    ++cache_size;
+                }
+            }
+            if (pOK) {
+                ret = 0;
+            }
+        }
+    }
+    if (ret < 0) {
+        TEBAKO_SET_LAST_ERROR(ENOTDIR);
+        cache_size = 0;
+    }
+    return ret;
+}
+
+int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, tebako_dirent*, off_t, size_t, size_t&, size_t& )> { internal_readdir }, inode, cache, cache_start, buffer_size, cache_size, dir_size);
+}
+

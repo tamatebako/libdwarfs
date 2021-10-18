@@ -29,16 +29,14 @@
 
 #include <tebako-common.h>
 #include <tebako-io.h>
+#include <tebako-io-inner.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif // !__cplusplus
 /*	
 *   getcwd()
 *   https://pubs.opengroup.org/onlinepubs/9699919799/
 */
 
-	char* tebako_getcwd(char* buf, size_t size) {
+extern "C" char* tebako_getcwd(char* buf, size_t size) {
 		char _cwd[TEBAKO_PATH_LENGTH];
 		const char* cwd = tebako_get_cwd(_cwd);
 		size_t len = strlen(cwd);
@@ -56,7 +54,7 @@ extern "C" {
 						buf = NULL;
 					}
 					else {
-						buf = malloc(size);
+						buf = (char*)malloc(size);
 						if (!buf) {
 							TEBAKO_SET_LAST_ERROR(ENOMEM);
 						}
@@ -82,7 +80,7 @@ extern "C" {
 			return buf;
 		}
 		else
-   		  return getcwd(buf, size);
+   		  return ::getcwd(buf, size);
 	}
 
 /*
@@ -90,22 +88,29 @@ extern "C" {
 *	LEGACY, DEPRECATED
 *	https://pubs.opengroup.org/onlinepubs/009695299/functions/getwd.html
 */
-	char* tebako_getwd(char* buf) {
+extern "C"	char* tebako_getwd(char* buf) {
+	char * ret = NULL;
+	if (buf == NULL) {
+		TEBAKO_SET_LAST_ERROR(EFAULT);
+	}
+	else {
 		if (is_tebako_cwd()) {
 			tebako_get_cwd(buf);
-			return buf;
-		} 
+			ret = buf;
+		}
 		else {
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif 
-			return getwd(buf);
+			ret = ::getwd(buf);
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif 
 		}
 	}
+	return ret;
+}
 
 /*
 * chdir()
@@ -113,8 +118,12 @@ extern "C" {
 *
 */
 
-	int tebako_chdir(const char* path) {
-		int ret = -1;
+extern "C"	int tebako_chdir(const char* path) {
+	int ret = DWARFS_IO_ERROR;
+	if (path == NULL) {
+		TEBAKO_SET_LAST_ERROR(EFAULT);
+	}
+	else {
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, path);
 
@@ -132,13 +141,15 @@ extern "C" {
 			}
 		}
 		else {
-			ret = chdir(path);
+			ret = ::chdir(path);
 			if (ret == 0) {
 				tebako_set_cwd(NULL);
 			}
 		}
-		return ret;
 	}
+	
+	return ret;
+}
 
 /*
 * mkdir()
@@ -146,18 +157,19 @@ extern "C" {
 *
 */
 
-	int tebako_mkdir(const char* path, mode_t mode) {
-		int ret = -1;
+extern "C"	int tebako_mkdir(const char* path, mode_t mode) {
+	int ret = DWARFS_IO_ERROR;
+	if (path == NULL) {
+		TEBAKO_SET_LAST_ERROR(EFAULT);
+	}
+	else {
 		if ((is_tebako_cwd() && path[0] != '/') || is_tebako_path(path)) {
 			TEBAKO_SET_LAST_ERROR(EROFS);
-	}
-		else {
-			ret = mkdir(path, mode);
 		}
-		return ret;
+		else {
+			ret = ::mkdir(path, mode);
+		}
+	}
+	return ret;
 }
 
-
-#ifdef __cplusplus
-}
-#endif // !__cplusplus
