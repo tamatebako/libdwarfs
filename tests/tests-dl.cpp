@@ -47,7 +47,6 @@ namespace {
 				NULL	/* decompress_ratio*/,
 				NULL    /* image_offset */
 			);
-
 		}
 
 		static void TearDownTestSuite() {
@@ -71,21 +70,21 @@ namespace {
 
 	TEST_F(DlTests, tebako_dlopen_absolute_path) {
 		void *handle;
-		handle = tebako_dlopen(TEBAKIZE_PATH("directory-2/libz.so.1.2.11"), RTLD_LAZY | RTLD_GLOBAL);
+		handle = tebako_dlopen(TEBAKIZE_PATH("directory-2/empty-2.so"), RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_TRUE(handle != NULL);
-//        if (handle != NULL) {
-//			dlclose(handle);
-//		}
+        if (handle != NULL) {
+			EXPECT_EQ(0, dlclose(handle));
+		}
 	}
 
 	TEST_F(DlTests, tebako_dlopen_relative_path) {
 		EXPECT_EQ(0,tebako_chdir(TEBAKIZE_PATH("directory-1")));
 		void* handle;
-		handle = tebako_dlopen("libzip.so.5.0", RTLD_LAZY | RTLD_GLOBAL);
+		handle = tebako_dlopen("empty-1.so", RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_TRUE(handle != NULL);
-//		if (handle != NULL) {
-//			dlclose(handle);
-//		}
+		if (handle != NULL) {
+			EXPECT_EQ(0, dlclose(handle));
+		}
 	}
 
 	TEST_F(DlTests, tebako_dlopen_pass_through) {
@@ -118,6 +117,6 @@ namespace {
 		double rt = (*sqrt)(4.0);
 		EXPECT_TRUE(abs(rt - 2.0) < 1E-8);
 
-//		dlclose(handle);
+		EXPECT_EQ(0, dlclose(handle));
 	}
 }
