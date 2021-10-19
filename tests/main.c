@@ -251,8 +251,8 @@ static int dirio_c_test(void) {
 	printf("A call to 'readdir'  returned %p (not NULL expected)\n", entry);
 	rOK &= (entry != NULL);
 	if (entry != NULL) {
-		printf("Filename: %s ('file2-in-directory-1.txt' expected)\n", entry->d_name);
-		rOK &= (strcmp(entry->d_name, "file2-in-directory-1.txt") == 0);
+		printf("Filename: %s ('file-in-directory-1.txt' expected)\n", entry->d_name);
+		rOK &= (strcmp(entry->d_name, "file-in-directory-1.txt") == 0);
 	}
 
 	rewinddir(dirp);
@@ -294,7 +294,7 @@ static int scandir_c_test(void) {
 	int rOK = true;
 
 	n = scandir(TEBAKIZE_PATH("directory-1"), &namelist, NULL, alphasort);
-	printf("A call to 'scandir' returned %i (4 expected)\n", n);
+	printf("A call to 'scandir' returned %i (5 expected)\n", n);
 	rOK &= (n == 5);
 	if ( n>0 ) {
 		for (i = 0; i < n; i++) {
@@ -309,12 +309,14 @@ static int scandir_c_test(void) {
 
 static int dlopen_c_test(void) {
 	int rOK = true;
-	void* handle = dlopen(TEBAKIZE_PATH("directory-1/libzip.so.5.0"),
+	void* handle = dlopen(TEBAKIZE_PATH("directory-1/empty-1.so"),
 			                         RTLD_LAZY | RTLD_GLOBAL);
 	rOK &= (handle != NULL);
 	printf("A call to 'dlopen' returned %p (not NULL expected)\n", handle);
-//	if (handle != NULL) {
-//		rOK &= (dlclose(handle) != -1);
-//	}
+	if (handle != NULL) {
+		int ret = dlclose(handle);
+		printf("A call to 'dlclose' returned %i (0 expected)\n", ret);
+		rOK &= (ret == 0);
+	}
 	return rOK;
 }
