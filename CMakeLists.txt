@@ -311,7 +311,7 @@ endfunction()
  #               (2) it is statically linked
 
 add_executable(wr-bin
-  "tests/main.c"
+  "tests/tests-defines-static.c"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
