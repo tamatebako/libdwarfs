@@ -29,20 +29,45 @@
 
 #pragma once
 
-const int DWARFS_IO_CONTINUE = 0;
-const int DWARFS_IO_ERROR = -1;
-const int DWARFS_INVALID_FD = -2;
-
 union tebako_dirent;
 
-int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept;
-int dwarfs_stat(const char* path, struct stat* buf) noexcept ;
-int dwarfs_readlink(const char* path, std::string& lnk) noexcept;
+struct tebako_fd {
+	struct stat st;
+	uint64_t pos;
+	std::string filename;
+	int* handle;
 
-int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept;
-int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept;
-ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept;
-int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;
+	tebako_fd(const char* p) : filename(p), pos(0), handle(NULL) {	}
+	~tebako_fd() {
+		if (handle) {
+			::close(*handle);
+			delete(handle);
+		}
+		handle = NULL;
+	}
+};
+
+typedef std::map<int, std::shared_ptr<tebako_fd>> tebako_fdtable;
+
+class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
+public:
+	sync_tebako_fdtable(void) : folly::Synchronized<tebako_fdtable*>(new tebako_fdtable) { }
+
+	int open(const char* path, int flags)  noexcept;
+	int openat(int vfd, const char* path, int flags) noexcept;
+	int close(int vfd) noexcept;
+	void close_all(void) noexcept;
+	int fstat(int vfd, struct stat* st) noexcept;
+	ssize_t read(int vfd, void* buf, size_t nbyte) noexcept;
+	ssize_t pread(int vfd, void* buf, size_t nbyte, off_t offset) noexcept;
+	int readdir(int vfd, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;
+	ssize_t readv(int vfd, const struct iovec* iov, int iovcnt) noexcept;
+	off_t lseek(int vfd, off_t offset, int whence) noexcept;
+
+	static sync_tebako_fdtable fdtable;
+};
+
+
 
 
 

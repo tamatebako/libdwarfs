@@ -27,9 +27,11 @@
  * 
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
 #include <tebako-pch-pp.h>
 #include <tebako-io-inner.h>
+#include <tebako-fd.h>
 #include <tebako-dirent.h>
 #include <tebako-dfs.h>
 
@@ -80,7 +82,8 @@ int sync_tebako_dstable::closedir(uintptr_t dirp) noexcept {
 	auto p_dstable = *wlock();
 	auto p_ds = p_dstable->find(dirp);
 	if (p_ds != p_dstable->end()) {
-		ret = dwarfs_close(p_ds->second->vfd);
+		ret = sync_tebako_fdtable::fdtable.close(p_ds->second->vfd); 
+		p_dstable->erase(dirp);
 	}
 	return ret;
 }
@@ -88,7 +91,8 @@ int sync_tebako_dstable::closedir(uintptr_t dirp) noexcept {
 void sync_tebako_dstable::close_all(void) noexcept {
 	auto p_dstable = *wlock();
 	for (auto it = p_dstable->begin(); it != p_dstable->end(); ++it) {
-		dwarfs_close(it->second->vfd);
+		sync_tebako_fdtable::fdtable.close(it->second->vfd);
+
 	}
 	p_dstable->clear();
 }
@@ -166,7 +170,10 @@ int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcep
 }
 
 int tebako_ds::load_cache(int new_cache_start, bool set_pos) noexcept {
-	int ret = dwarfs_fd_readdir(vfd, cache, new_cache_start, TEBAKO_DIR_CACHE_SIZE, cache_size, dir_size);
+	int ret = sync_tebako_fdtable::fdtable.readdir(vfd, cache, new_cache_start, 
+			                                       TEBAKO_DIR_CACHE_SIZE, cache_size, 
+												   dir_size);
+
 	if (ret == DWARFS_IO_CONTINUE) {
 		if (set_pos) {
 			dir_position = new_cache_start;

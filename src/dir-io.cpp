@@ -27,10 +27,12 @@
  *
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
 #include <tebako-pch-pp.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-fd.h>
 #include <tebako-dirent.h>
 
 /*
@@ -47,6 +49,33 @@
 *  https://pubs.opengroup.org/onlinepubs/9699919799/
 */
 
+typedef std::set<uintptr_t> tebako_kfdtable;
+
+class sync_tebako_kfdtable : public folly::Synchronized<tebako_kfdtable*> {
+public:
+	sync_tebako_kfdtable(void) : folly::Synchronized<tebako_kfdtable*>(new tebako_kfdtable) { }
+
+	bool check(uintptr_t dirp) {
+		auto p_kfdtable = *rlock();
+		auto p_kfd = p_kfdtable->find(dirp);
+		return (p_kfd != p_kfdtable->end());
+	};
+
+	void erase(uintptr_t dirp) {
+		auto p_kfdtable = *wlock();
+		p_kfdtable->erase(dirp);
+	}
+
+	void insert(uintptr_t dirp) {
+		auto p_kfdtable = *wlock();
+		p_kfdtable->insert(dirp);
+	}
+
+	static sync_tebako_kfdtable kfdtable;
+};
+
+sync_tebako_kfdtable sync_tebako_kfdtable::kfdtable;
+
 extern "C" DIR* tebako_opendir(const char* dirname) {
 	DIR* ret = NULL;
 	if (dirname == NULL) {
@@ -58,13 +87,21 @@ extern "C" DIR* tebako_opendir(const char* dirname) {
 
 		if (!p_path) {
 			ret = ::opendir(dirname);
+			if (ret != NULL) {
+				sync_tebako_kfdtable::kfdtable.insert(reinterpret_cast<uintptr_t>(ret));
+			}
 		}
 		else {
-			int vfd = dwarfs_open(p_path, O_RDONLY|O_DIRECTORY);
-			if (vfd == DWARFS_INVALID_FD) {
-				TEBAKO_SET_LAST_ERROR(ENOENT);
+			int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY); 
+			if (vfd < 0) {
+				if (vfd == DWARFS_INVALID_FD) {
+					TEBAKO_SET_LAST_ERROR(ENOENT);
+				}
+				ret = NULL;
 			}
-			ret = (vfd < 0) ? NULL : reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
+			else {
+				ret = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
+			}
 		}
 	}
 	return ret;
@@ -72,50 +109,76 @@ extern "C" DIR* tebako_opendir(const char* dirname) {
 
 extern "C" DIR* tebako_fdopendir(int vfd) {
 	DIR* ret = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
-	return (ret == NULL) ? ::fdopendir(vfd) : ret;
+	if (ret == NULL) {
+		ret = ::fdopendir(vfd);
+		if (ret != NULL) {
+			sync_tebako_kfdtable::kfdtable.insert(reinterpret_cast<uintptr_t>(ret));
+		}
+	}
+	return ret;
 }
 
 extern "C" int tebako_closedir(DIR * dirp) {
 	int ret = DWARFS_IO_ERROR;
-	if (dirp == NULL) {
-		TEBAKO_SET_LAST_ERROR(EBADF);
-	} 
-	else {
-		ret = sync_tebako_dstable::dstable.closedir(reinterpret_cast<uintptr_t>(dirp));
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.closedir(uip);
+	if (ret == DWARFS_INVALID_FD) {
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			ret = DWARFS_IO_ERROR;
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			ret = ::closedir(dirp);
+			sync_tebako_kfdtable::kfdtable.erase(uip);
+		}
 	}
-	return (ret == DWARFS_INVALID_FD) ? ::closedir(dirp) : ret;
+	return ret;
 }
 
 extern "C" struct dirent* tebako_readdir(DIR* dirp) {
 	struct dirent* entry = NULL;
 	int ret = DWARFS_IO_ERROR;
-	if (dirp == NULL) {
-		TEBAKO_SET_LAST_ERROR(EBADF);
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.readdir(uip, entry);
+	if (ret == DWARFS_INVALID_FD) {
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			ret = DWARFS_IO_ERROR;
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			entry = ::readdir(dirp);
+		}
 	}
-	else {
-		ret = sync_tebako_dstable::dstable.readdir(reinterpret_cast<uintptr_t>(dirp), entry);
-	}
-	return (ret == DWARFS_INVALID_FD) ? ::readdir(dirp) : entry;
+	return entry;
 }
 
 extern "C" long tebako_telldir(DIR* dirp) {
 	long ret = DWARFS_IO_ERROR;
-	if (dirp == NULL) {
-		TEBAKO_SET_LAST_ERROR(EBADF);
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.telldir(uip);
+	if (ret == DWARFS_INVALID_FD) {
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			ret = DWARFS_IO_ERROR;
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			ret = ::telldir(dirp);
+		}
 	}
-	else {
-		ret = sync_tebako_dstable::dstable.telldir(reinterpret_cast<uintptr_t>(dirp));
-	}
-	return (ret == DWARFS_INVALID_FD) ? ::telldir(dirp) : ret;
+	return ret;
 }
 
 extern "C" void tebako_seekdir(DIR* dirp, long loc) {
 	int ret = DWARFS_IO_ERROR;
-	if (dirp != NULL) {
-		ret = sync_tebako_dstable::dstable.seekdir(reinterpret_cast<uintptr_t>(dirp), loc);
-	}
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.seekdir(uip, loc);
 	if (ret == DWARFS_INVALID_FD) {
-		::seekdir(dirp, loc);
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			::seekdir(dirp, loc);
+		}
 	}
 }
 
@@ -124,15 +187,19 @@ extern "C" void tebako_rewinddir(DIR* dirp) {
 }
 
 extern "C" int tebako_dirfd(DIR * dirp) {
-	struct dirent* entry = NULL;
 	int ret = DWARFS_IO_ERROR;
-	if (dirp == NULL) {
-		TEBAKO_SET_LAST_ERROR(EBADF);
+	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
+	ret = sync_tebako_dstable::dstable.dirfd(uip);
+	if (ret == DWARFS_INVALID_FD) {
+		if (!sync_tebako_kfdtable::kfdtable.check(uip)) {
+			ret = DWARFS_IO_ERROR;
+			TEBAKO_SET_LAST_ERROR(EBADF);
+		}
+		else {
+			ret = ::dirfd(dirp);
+		}
 	}
-	else {
-		ret = sync_tebako_dstable::dstable.dirfd(reinterpret_cast<uintptr_t>(dirp));
-	}
-	return (ret == DWARFS_INVALID_FD) ? ::dirfd(dirp) : ret;
+	return ret;
 }
 
 typedef int(*qsort_compar)(const void*, const void*);
@@ -161,7 +228,7 @@ typedef int(*qsort_compar)(const void*, const void*);
 		 }
 		 else {
 			 if (namelist != NULL) {
-				 int vfd = dwarfs_open(p_path, O_RDONLY | O_DIRECTORY);
+				 int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY);
 				 if (vfd == DWARFS_INVALID_FD) {
 					 TEBAKO_SET_LAST_ERROR(ENOENT);
 					 vfd = DWARFS_IO_ERROR;

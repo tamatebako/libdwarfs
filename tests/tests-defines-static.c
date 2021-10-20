@@ -27,6 +27,7 @@
  * 
  */
 
+#include <tebako-pch.h>
 #include <tebako-defines.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,6 +45,8 @@ static int openat_c_test(int fh);
 static int dirio_c_test(void);
 static int dirio_fd_c_test(void);
 static int scandir_c_test(void);
+static int dlopen_c_test(void);
+static int link_c_tests(void);
 
 int main(int argc, char** argv)
 {
@@ -114,6 +117,8 @@ int main(int argc, char** argv)
 		rOK &= dirio_c_test();
 		rOK &= dirio_fd_c_test();
 		rOK &= scandir_c_test();
+		rOK &= dlopen_c_test();
+		rOK &= link_c_tests();
 
 		drop_fs();
 		printf("Filesystem dropped\n");
@@ -248,8 +253,8 @@ static int dirio_c_test(void) {
 	printf("A call to 'readdir'  returned %p (not NULL expected)\n", entry);
 	rOK &= (entry != NULL);
 	if (entry != NULL) {
-		printf("Filename: %s ('file2-in-directory-1.txt' expected)\n", entry->d_name);
-		rOK &= (strcmp(entry->d_name, "file2-in-directory-1.txt") == 0);
+		printf("Filename: %s ('file-in-directory-1.txt' expected)\n", entry->d_name);
+		rOK &= (strcmp(entry->d_name, "file-in-directory-1.txt") == 0);
 	}
 
 	rewinddir(dirp);
@@ -291,8 +296,8 @@ static int scandir_c_test(void) {
 	int rOK = true;
 
 	n = scandir(TEBAKIZE_PATH("directory-1"), &namelist, NULL, alphasort);
-	printf("A call to 'scandir' returned %i (4 expected)\n", n);
-	rOK &= (n == 4);
+	printf("A call to 'scandir' returned %i (5 expected)\n", n);
+	rOK &= (n == 5);
 	if ( n>0 ) {
 		for (i = 0; i < n; i++) {
 			printf("Scandir file name #%i: '%s'\n", i, namelist[i]->d_name);
@@ -301,5 +306,37 @@ static int scandir_c_test(void) {
 		free(namelist);
 	}
 
+	return rOK;
+}
+
+static int dlopen_c_test(void) {
+	int rOK = true;
+	void* handle = dlopen(TEBAKIZE_PATH("directory-1/empty-1.so"),
+			                         RTLD_LAZY | RTLD_GLOBAL);
+	rOK &= (handle != NULL);
+	printf("A call to 'dlopen' returned %p (not NULL expected)\n", handle);
+	if (handle != NULL) {
+		int ret = dlclose(handle);
+		printf("A call to 'dlclose' returned %i (0 expected)\n", ret);
+		rOK &= (ret == 0);
+	}
+	return rOK;
+}
+
+static int link_c_tests(void) {
+	int rOK = true;
+#ifdef WITH_LINK_TESTS
+	struct stat st;
+	char buf[256];
+	int ret = lstat(TEBAKIZE_PATH("s-link-to-dir-1"), &st);
+	printf("A call to 'lstat' returned %i (0 expected)\n", ret);
+	rOK &= (ret == 0);
+
+	ret = readlink(TEBAKIZE_PATH("s-link-to-dir-1"), buf, sizeof(buf) / sizeof(buf[0]));
+	printf("A call to 'readlink' returned %i (35 expected)\n", ret);
+	rOK &= (ret == 35);
+#else
+	printf("WITH_LINK_TESTS is undefined, skipping C tests for 'readlink' and 'lstat'\n");
+#endif
 	return rOK;
 }

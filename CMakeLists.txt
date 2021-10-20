@@ -38,8 +38,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 
 enable_testing()
 
-option(SYSTEM_GTESTS "prefer system gtest" ON)
-
 set(Boost_USE_STATIC_LIBS   ON)
 set(BOOST_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
@@ -78,6 +76,45 @@ ExternalProject_Add(${INCBIN_PRJ}
    BUILD_COMMAND ""
    INSTALL_COMMAND ""
 )
+
+# ...................................................................
+# Filesystem locations
+
+# Visual Studio/Windows Subsystem for Linux (WSL) environment requires 
+# source tree to be placed to native Windows partiotion
+# Native Windows partition does not support links
+# So, two options are privided below:
+# -- disable links tests: set WITH_LINK_TEST to OFF
+# -- place test data to WSL native partition
+
+option(WITH_LINK_TESTS "Include tests for hard and symbolic links" ON)
+option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
+
+# DATA_TEST_DIR folder contains raw data for filesystem tests 
+
+if(${USE_TEMP_FS})
+ string(RANDOM LENGTH 10 TMPNM)
+ set(DATA_TEST_DIR "/tmp/${TMPNM}")
+ set(DATA_TEST_DIR_MSG "at '${DATA_TEST_DIR}'")
+else()
+ set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
+ set(DATA_TEST_DIR_MSG "")
+endif()
+
+
+if (${WITH_LINK_TESTS}) 
+ set(WLT "with link tests")
+ add_compile_definitions("WITH_LINK_TESTS")
+else()
+ set(WLT "without link tests")
+endif()
+
+message("Using test data set ${WLT} from '${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem' ${DATA_TEST_DIR_MSG}")
+
+# DATA_BIN_DIR folder is used to create packaged filesystem  
+set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
+# DATA_BIN_FILE is packaged filesystem itself
+set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
 
 
 # ...................................................................
@@ -139,6 +176,7 @@ add_library(dwarfs-wr STATIC
     "src/dir-ctl.cpp"
     "src/file-io.cpp"
     "src/dir-io.cpp"
+    "src/dl.cpp"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
@@ -149,10 +187,12 @@ add_library(dwarfs-wr STATIC
     "include/tebako-common.h"
     "include/tebako-io.h"
     "include/tebako-io-inner.h"
+    "include/tebako-fd.h"
+    "include/tebako-dirent.h"
     "include/tebako-mfs.h"
     "include/tebako-defines.h" 
     "include/version.h"
-   )
+  )
 
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -175,25 +215,49 @@ pkg_search_module(GTEST gtest_main)
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 #FetchContent_MakeAvailable(googletest)
 
-
-# ...................................................................
-# Filesystem locations
-
-# DATA_TEST_DIR folder contains raw data for filesystem tests 
-  set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
-# DATA_BIN_DIR folder is used to create packaged filesystem  
-  set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
-# DATA_BIN_FILE is packaged filesystem itself
-  set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
-
 # ...................................................................
 # Packaged filesystem
+# links for testing are created here to avoid interoperatibility problems Linux/Windows
 
-add_custom_target(PACKAGED_FILESYSTEM ALL
-   COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-   DEPENDS ${DWARFS_PRJ} 
-   BYPRODUCTS ${DATA_BIN_FILE}
-)
+if (${WITH_LINK_TESTS}) 
+ if (${USE_TEMP_FS})
+   add_custom_target(PACKAGED_FILESYSTEM ALL
+     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
+     COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
+     COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
+     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+     COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
+     DEPENDS ${DWARFS_PRJ} 
+     BYPRODUCTS ${DATA_BIN_FILE}
+   )
+ else()
+   add_custom_target(PACKAGED_FILESYSTEM ALL
+     COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
+     COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
+     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+     COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/h-link-to-dir-2 
+     COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/s-link-to-dir-1
+     DEPENDS ${DWARFS_PRJ} 
+     BYPRODUCTS ${DATA_BIN_FILE}
+   )
+ endif()
+else()
+ if (${USE_TEMP_FS})
+   add_custom_target(PACKAGED_FILESYSTEM ALL
+     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
+     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+     COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
+     DEPENDS ${DWARFS_PRJ} 
+     BYPRODUCTS ${DATA_BIN_FILE}
+   )
+  else()
+   add_custom_target(PACKAGED_FILESYSTEM ALL
+     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+     DEPENDS ${DWARFS_PRJ} 
+     BYPRODUCTS ${DATA_BIN_FILE}
+   )
+ endif()
+endif()
 
 configure_file(
    ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs.cpp.in 
@@ -247,7 +311,7 @@ endfunction()
  #               (2) it is statically linked
 
 add_executable(wr-bin
-  "tests/main.c"
+  "tests/tests-defines-static.c"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
@@ -289,15 +353,16 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
 
 add_executable(wr-tests 
   "tests/tests-fs-load.cpp"
-  "tests/tests-stat.cpp"
-  "tests/tests-access.cpp"
+  "tests/tests-file-ctl.cpp"
+  "tests/tests-file-io.cpp"
   "tests/tests-dir-ctl.cpp"
   "tests/tests-dir-io.cpp"
-  "tests/tests-file-io.cpp"
+  "tests/tests-ln.cpp"
+  "tests/tests-dl.cpp"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
-)
+ )
 
 target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
 target_link_libraries(wr-tests 

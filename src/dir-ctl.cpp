@@ -27,7 +27,9 @@
  *
  */
 
+#include <tebako-pch.h>
 #include <tebako-common.h>
+#include <tebako-pch-pp.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
@@ -91,7 +93,7 @@ extern "C" char* tebako_getcwd(char* buf, size_t size) {
 extern "C"	char* tebako_getwd(char* buf) {
 	char * ret = NULL;
 	if (buf == NULL) {
-		TEBAKO_SET_LAST_ERROR(EFAULT);
+		TEBAKO_SET_LAST_ERROR(ENOENT);
 	}
 	else {
 		if (is_tebako_cwd()) {
@@ -121,7 +123,7 @@ extern "C"	char* tebako_getwd(char* buf) {
 extern "C"	int tebako_chdir(const char* path) {
 	int ret = DWARFS_IO_ERROR;
 	if (path == NULL) {
-		TEBAKO_SET_LAST_ERROR(EFAULT);
+		TEBAKO_SET_LAST_ERROR(ENOENT);
 	}
 	else {
 		tebako_path_t t_path;
@@ -160,7 +162,7 @@ extern "C"	int tebako_chdir(const char* path) {
 extern "C"	int tebako_mkdir(const char* path, mode_t mode) {
 	int ret = DWARFS_IO_ERROR;
 	if (path == NULL) {
-		TEBAKO_SET_LAST_ERROR(EFAULT);
+		TEBAKO_SET_LAST_ERROR(ENOENT);
 	}
 	else {
 		if ((is_tebako_cwd() && path[0] != '/') || is_tebako_path(path)) {

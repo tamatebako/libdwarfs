@@ -63,7 +63,9 @@ extern "C" {
     ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
     off_t tebako_lseek(int vfd, off_t offset, int whence);
     int   tebako_fstat(int vfd, struct stat* buf);
+    int   tebako_lstat(const char* path, struct stat* buf);
     int   tebako_close(int vfd);
+    ssize_t tebako_readlink(const char* path, char* buf, size_t bufsiz);
 
     DIR* tebako_opendir(const char* dirname);
     DIR* tebako_fdopendir(int fd);
@@ -76,6 +78,8 @@ extern "C" {
     int tebako_scandir(const char* dir, struct dirent*** namelist,
         int (*sel)(const struct dirent*),
         int (*compar)(const struct dirent**, const struct dirent**));
+
+    void* tebako_dlopen(const char* path, int flags);
 
 #ifdef __cplusplus
 }

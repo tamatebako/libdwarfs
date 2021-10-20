@@ -155,7 +155,7 @@ namespace {
 *	and then check the value of errno if NULL is returned.
 */
 
-/*		tebako_seekdir(dirp, 3);
+		tebako_seekdir(dirp, 3);
 
 		errno = 0;
 		long loc = tebako_telldir(dirp);
@@ -174,5 +174,5 @@ namespace {
 		ret = tebako_closedir(dirp);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EBADF, errno);
-*/	}
+	}
 }
