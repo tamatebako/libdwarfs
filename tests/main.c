@@ -46,6 +46,7 @@ static int dirio_c_test(void);
 static int dirio_fd_c_test(void);
 static int scandir_c_test(void);
 static int dlopen_c_test(void);
+static int link_c_tests(void);
 
 int main(int argc, char** argv)
 {
@@ -117,6 +118,7 @@ int main(int argc, char** argv)
 		rOK &= dirio_fd_c_test();
 		rOK &= scandir_c_test();
 		rOK &= dlopen_c_test();
+		rOK &= link_c_tests();
 
 		drop_fs();
 		printf("Filesystem dropped\n");
@@ -318,5 +320,18 @@ static int dlopen_c_test(void) {
 		printf("A call to 'dlclose' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
 	}
+	return rOK;
+}
+
+static int link_c_tests(void) {
+	int rOK = true;
+#ifdef WITH_LINK_TESTS
+	struct stat buf;
+	int ret = lstat(TEBAKIZE_PATH("s-link-to-dir-1"), &buf);
+	printf("A call to 'lstat' returned %i (0 expected)\n", ret);
+	rOK &= (ret == 0);
+#else
+	printf("WITH_LINK_TESTS is undefined, skipping C tests for 'readlink' and 'lstat'\n");
+#endif
 	return rOK;
 }

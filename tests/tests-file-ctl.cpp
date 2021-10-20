@@ -176,7 +176,7 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_open_fstat_close_absolute_path_pass_through) {
-		int fh = tebako_open(2, "/bin/sh", O_RDONLY);
+		int fh = tebako_open(2, "/bin/bash", O_RDONLY);
 		EXPECT_LT(0, fh);
 
 		struct stat st;
@@ -191,12 +191,63 @@ namespace {
 		struct stat st;
 		int ret = tebako_chdir("/");
 		EXPECT_EQ(0, ret);
-		int fh = tebako_open(2, "bin/sh", O_RDONLY);
+		int fh = tebako_open(2, "bin/bash", O_RDONLY);
 		EXPECT_LT(0, fh);
 		ret = tebako_fstat(fh, &st);
 		EXPECT_EQ(0, ret);
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);
 	}
+#ifdef WITH_LINK_TESTS
+	TEST_F(FileCtlTests, tebako_lstat_absolute_path) {
+		struct stat st;
+		int ret = tebako_lstat(TEBAKIZE_PATH("s-link-to-dir-1"), &st);
+		EXPECT_EQ(0, ret);
+	}
 
+	TEST_F(FileCtlTests, tebako_lstat_absolute_path_no_file) {
+		struct stat st;
+		int ret = tebako_stat(TEBAKIZE_PATH("no_file"), &st);
+		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(-1, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_lstat_null) {
+		struct stat st;
+		int ret = tebako_lstat(NULL, &st);
+		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(-1, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_lstat_relative_path) {
+		struct stat st;
+		int ret = tebako_chdir(TEBAKIZE_PATH(""));
+		EXPECT_EQ(0, ret);
+		ret = tebako_stat("s-link-to-dir-1", &st);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_lstat_relative_path_no_file) {
+		struct stat st;
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
+		EXPECT_EQ(0, ret);
+		ret = tebako_lstat("no_file", &st);
+		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(-1, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_lstat_absolute_path_pass_through) {
+		struct stat st;
+		int ret = tebako_lstat("/usr/bin/sh", &st);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_lstat_relative_path_pass_through) {
+		struct stat st;
+		int ret = tebako_chdir("/usr/bin");
+		EXPECT_EQ(0, ret);
+		ret = tebako_lstat("sh", &st);
+		EXPECT_EQ(0, ret);
+	}
+#endif
 }
