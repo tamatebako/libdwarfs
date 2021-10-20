@@ -55,12 +55,6 @@ namespace {
 		}
 	};
 
-	TEST_F(FileIOTests, tebako_open_null_path) {
-		int ret = tebako_open(2, NULL, O_RDWR);
-		EXPECT_EQ(-1, ret);
-		EXPECT_EQ(ENOENT, errno);
-	}
-
 	TEST_F(FileIOTests, tebako_open_rdwr) {
 		int ret = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDWR);
 		EXPECT_EQ(-1, ret);
@@ -131,7 +125,7 @@ namespace {
 		int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY);
 		EXPECT_LT(0, fh);
 
-		const char* pattern = "This is a file in the first directory";
+		const char* pattern = "This is a file in directory";
 		const int l = strlen(pattern);
 		const int off2move = 10;
 
@@ -159,7 +153,7 @@ namespace {
 		int fh = tebako_open(2, TEBAKIZE_PATH("directory-2/file-in-directory-2.txt"), O_RDONLY);
 		EXPECT_LT(0, fh);
 
-		const char* pattern = "This is a file in the second directory";
+		const char* pattern = "This is a file in a second directory";
 		const int l = strlen(pattern);
 		const int off2move = 10;
 
@@ -206,7 +200,7 @@ namespace {
 		EXPECT_LT(0, fh);
 
 		char readbuf[64];
-		const char* pattern = "This is a file in the second directory";
+		const char* pattern = "This is a file in a second directory";
 		const int l = strlen(pattern);
 		ret = tebako_read(fh, readbuf, sizeof(readbuf)/sizeof(readbuf[0]));
 		EXPECT_EQ(l, ret);
@@ -224,7 +218,7 @@ namespace {
 		EXPECT_LT(0, fh);
 
 		char readbuf[64];
-		const char* pattern = "This is a file in the second directory";
+		const char* pattern = "This is a file in a second directory";
 		const int l = strlen(pattern);
 		const int offset = 10;
 		ret = tebako_pread(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0]), offset);
@@ -240,7 +234,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 
 		char readbuf[64];
-		const char* pattern = "This is a file in the second directory";
+		const char* pattern = "This is a file in a second directory";
 		const int l = strlen(pattern);
 		const int offset = 10;
 		ret = tebako_pread(33, readbuf, sizeof(readbuf) / sizeof(readbuf[0]), offset);

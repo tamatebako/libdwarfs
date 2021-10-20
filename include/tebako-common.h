@@ -34,6 +34,7 @@
 
 #pragma once
 
+#include "tebako-pch.h"
 #include <version.h>
 
 #ifndef __cplusplus
@@ -78,7 +79,7 @@
 			}                                          \
 		}
 #else
-#define TEBAKO_SET_LAST_ERROR(e)  errno = (e)    
+#define TEBAKO_SET_LAST_ERROR(e)  errno = e    
 #endif
 
 #define TEBAKO_PATH_LENGTH ((size_t) PATH_MAX)

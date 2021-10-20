@@ -180,14 +180,14 @@ namespace {
 	TEST_F(DirCtlTests, tebako_dir_ctl_null_ptr) {
 		errno = 0;
 		EXPECT_EQ(-1, tebako_chdir(NULL));
-		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(EFAULT, errno);
 
 		errno = 0;
 		EXPECT_EQ(-1, tebako_mkdir(NULL, S_IRWXU));
-		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(EFAULT, errno);
 
 		errno = 0;
 		EXPECT_EQ(NULL, tebako_getwd(NULL));
-		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(EFAULT, errno);
 	}
 }
