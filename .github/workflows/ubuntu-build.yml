@@ -73,5 +73,10 @@ jobs:
     - name: Running ldd to check that wr-bin has been linked statically 
       run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
       
+    - name: More tests
+      run: | 
+        shopt -s nullglob
+        numfiles=(*)
+        numfiles=${#numfiles[@]}
      
    
