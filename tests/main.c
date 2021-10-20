@@ -326,10 +326,15 @@ static int dlopen_c_test(void) {
 static int link_c_tests(void) {
 	int rOK = true;
 #ifdef WITH_LINK_TESTS
-	struct stat buf;
-	int ret = lstat(TEBAKIZE_PATH("s-link-to-dir-1"), &buf);
+	struct stat st;
+	char buf[256];
+	int ret = lstat(TEBAKIZE_PATH("s-link-to-dir-1"), &st);
 	printf("A call to 'lstat' returned %i (0 expected)\n", ret);
 	rOK &= (ret == 0);
+
+	ret = readlink(TEBAKIZE_PATH("s-link-to-dir-1"), buf, sizeof(buf) / sizeof(buf[0]));
+	printf("A call to 'readlink' returned %i (35 expected)\n", ret);
+	rOK &= (ret == 35);
 #else
 	printf("WITH_LINK_TESTS is undefined, skipping C tests for 'readlink' and 'lstat'\n");
 #endif

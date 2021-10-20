@@ -30,10 +30,6 @@
 #include "tests.h"
 #include <gnu/lib-names.h> 
 
- /*
- *  Unit tests for 'tebako_getcwd', 'tebako_getwd', 'tebako_chdir', 'tebako_mkdir' functions
- */
-
 namespace {
 	class DlTests : public testing::Test {
 	protected:

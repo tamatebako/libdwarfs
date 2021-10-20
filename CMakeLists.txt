@@ -315,6 +315,7 @@ add_executable(wr-tests
   "tests/tests-dir-ctl.cpp"
   "tests/tests-dir-io.cpp"
   "tests/tests-dl.cpp"
+  "tests/tests-ln.cpp"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"

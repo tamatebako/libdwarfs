@@ -185,7 +185,7 @@ int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
         }
     }
     if (ret < 0) {
-        TEBAKO_SET_LAST_ERROR(err);
+        TEBAKO_SET_LAST_ERROR(err < 0 ? -err : err); // dwarfs returns -ERRNO
     }
     return ret;
 }
@@ -223,10 +223,10 @@ int dwarfs_stat(const char* path, struct stat* buf) noexcept {
         path, buf);
 }
 
-int dwarfs_readlink(const char* path, char* buf, size_t bufsize) noexcept {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, char*, size_t)>
-    { [](filesystem_v2* fs, inode_view& inode, char* buf, size_t bufsize) -> int { return -1; } },
-        path, buf, bufsize);
+int dwarfs_readlink(const char* path, std::string& lnk) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, std::string&)>
+    { [](filesystem_v2* fs, inode_view& inode, std::string& lnk) -> int { return fs->readlink(inode, &lnk); } },
+        path, lnk);
 }
 
 int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept {
