@@ -67,3 +67,15 @@ int tebako_stat(const char* path, struct stat* buf) {
 	return ret;
 }
 
+int tebako_lstat(const char* path, struct stat* buf) {
+	int ret = -1;
+	if (path == NULL) {
+		TEBAKO_SET_LAST_ERROR(ENOENT);
+	}
+	else {
+		tebako_path_t t_path;
+		const char* p_path = to_tebako_path(t_path, path);
+		ret = p_path ? dwarfs_stat(p_path, buf) : lstat(path, buf);
+	}
+	return ret;
+}

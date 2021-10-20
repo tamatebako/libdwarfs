@@ -38,8 +38,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 
 enable_testing()
 
-option(SYSTEM_GTESTS "prefer system gtest" ON)
-
 set(Boost_USE_STATIC_LIBS   ON)
 set(BOOST_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
@@ -78,6 +76,37 @@ ExternalProject_Add(${INCBIN_PRJ}
    BUILD_COMMAND ""
    INSTALL_COMMAND ""
 )
+
+# ...................................................................
+# Filesystem locations
+
+# Visual Studio/Windows Subsystem for Linux (WSL) environment requires 
+# source tree to be placed to native Windows partiotion
+# Native Windows partition does not support links
+# So, two options are privided below:
+# -- disable links tests: set WITH_LINK_TEST to OFF
+# -- place the data to create test filesystem to WSL partition
+
+option(WITH_LINK_TESTS "Include tests for hard and symbolic links" ON)
+
+# DATA_TEST_DIR folder contains raw data for filesystem tests 
+if ("-${DATA_TEST_DIR}" STREQUAL "-")
+    set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
+endif()
+
+if (${WITH_LINK_TESTS}) 
+ set(WLT "with link tests")
+ add_compile_definitions("WITH_LINK_TESTS")
+else()
+ set(WLT "without link tests")
+endif()
+
+message("Using test data set ${WLT} from '${DATA_TEST_DIR}'")
+
+# DATA_BIN_DIR folder is used to create packaged filesystem  
+set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
+# DATA_BIN_FILE is packaged filesystem itself
+set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
 
 
 # ...................................................................
@@ -177,17 +206,6 @@ pkg_search_module(GTEST gtest_main)
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 #FetchContent_MakeAvailable(googletest)
-
-
-# ...................................................................
-# Filesystem locations
-
-# DATA_TEST_DIR folder contains raw data for filesystem tests 
-  set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
-# DATA_BIN_DIR folder is used to create packaged filesystem  
-  set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
-# DATA_BIN_FILE is packaged filesystem itself
-  set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
 
 # ...................................................................
 # Packaged filesystem
