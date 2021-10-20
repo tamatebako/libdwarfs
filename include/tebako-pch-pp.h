@@ -33,6 +33,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <set>
 #include <map>

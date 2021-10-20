@@ -29,6 +29,7 @@
 
 #include <tebako-pch.h>
 #include <tebako-common.h>
+#include <tebako-pch-pp.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
