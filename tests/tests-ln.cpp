@@ -50,7 +50,7 @@ namespace {
 		}
 	};
 #ifdef WITH_LINK_TESTS
-	TEST_F(LnTests, tebako_softlink) {
+/*	TEST_F(LnTests, tebako_softlink) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-dir-1"), O_RDONLY);
 		EXPECT_LT(0, fh);
 
@@ -64,6 +64,22 @@ namespace {
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);
 	}
+*/
+	TEST_F(LnTests, tebako_softlink_not_file) {
+		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-dir-1"), O_RDONLY);
+		EXPECT_LT(0, fh);
+
+		char readbuf[32];
+		const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
+
+		int ret = tebako_read(fh, readbuf, num2read);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(EBADF, errno);
+
+		ret = tebako_close(fh);
+		EXPECT_EQ(0, ret);
+	}
+
 
 	TEST_F(LnTests, tebako_hardlink) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("h-link-to-dir-2"), O_RDONLY);
@@ -74,7 +90,7 @@ namespace {
 
 		int ret = tebako_read(fh, readbuf, num2read);
 		EXPECT_EQ(num2read, ret);
-		EXPECT_EQ(0, strncmp(readbuf, "This is a file in the second directory", num2read));
+		EXPECT_TRUE(strncmp(readbuf, "This is a file in the second directory", num2read) == 0);
 
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);

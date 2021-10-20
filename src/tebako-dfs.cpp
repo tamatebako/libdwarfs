@@ -179,9 +179,11 @@ int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
         }
         catch (dwarfs::system_error const& e) {
             err = e.get_errno();
+            ret = -1;
         }
         catch (...) {
             err = EIO;
+            ret = -1;
         }
     }
     if (ret < 0) {
@@ -195,18 +197,28 @@ int safe_dwarfs_call(Functor&& fn, uint32_t inode, Args&&... args) {
     //  [TODO]   LOG_PROXY(LoggerPolicy, userdata->lgr);
     //    LOG_DEBUG << __func__;
     int ret = -1;
+    int err = ENOENT;
     auto locked = usd.rlock();
     auto p = *locked;
     if (p) {
         try {
             ret = fn(&p->fs, inode, std::forward<Args>(args)...);
+            if (ret < 0) {
+                err = -ret;
+                ret = -1;
+            }
         }
         catch (dwarfs::system_error const& e) {
-            TEBAKO_SET_LAST_ERROR(e.get_errno());
+            err = e.get_errno();
+            ret = -1;
         }
         catch (...) {
-            TEBAKO_SET_LAST_ERROR(EIO);
+            err = EIO;
+            ret = -1;
         }
+    }
+    if (ret < 0) {
+        TEBAKO_SET_LAST_ERROR(err < 0 ? -err : err); // dwarfs returns -ERRNO
     }
     return ret;
 }
