@@ -83,7 +83,7 @@ jobs:
     - name: Install and verify installation folders
       run: |
         sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
-        test ${{github.workspace}}/install/bin/dwarfs
+        test -f ${{github.workspace}}/install/bin/dwarfs
         test ${{github.workspace}}/install/bin/dwarfsbench
         test ${{github.workspace}}/install/bin/dwarfsck
         test ${{github.workspace}}/install/bin/dwarfsextract
