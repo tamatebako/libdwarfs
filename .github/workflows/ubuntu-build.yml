@@ -67,17 +67,17 @@ jobs:
     - name: Unit tests
       run: make test
 
-    - name: Running pure "C" program, calling all C API redefines, checking that tmp directory has been cleaned 
+    - name: Check "C" interface bindings in statically linked program, check that tmp directory is cleaned upon shutdown
       run: |
         mkdir ${{github.workspace}}/t_dir
-        ls /tmp/* >> ${{github.workspace}}/t_dir/before
-        ls -l /tmp/*
+        ls /tmp >> ${{github.workspace}}/t_dir/before
+        ls -l /tmp
         ./wr-bin
-        ls /tmp/* >> ${{github.workspace}}/t_dir/after
-        ls -l /tmp/*
+        ls /tmp >> ${{github.workspace}}/t_dir/after
+        ls -l /tmp
         diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
 
-    - name: Running ldd to check that wr-bin has been linked statically 
+    - name: Run ldd to check that wr-bin has been linked statically 
       run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
 
     - name: Install and verify installation folders
