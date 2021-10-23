@@ -97,5 +97,5 @@ jobs:
         test -f ${{github.workspace}}/install/lib/libzstd.a || (echo "File ${{github.workspace}}/install/lib/libzstd.a does not exist" && false)
         test -f ${{github.workspace}}/install/lib/libarchive.a || (echo "File ${{github.workspace}}/install/lib/libarchive.a does not exist" && false)
         test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-defines.h does not exist" && false)
-        test -f ${{github.workspace}}/install/include/include/tebako/tebako-io.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-io.h does not exist" && false)
+        test -f ${{github.workspace}}/install/include/tebako/include/tebako-io.h || (echo "File ${{github.workspace}}/install/tebako/include/tebako-io.h does not exist" && false)
 
