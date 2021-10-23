@@ -59,7 +59,7 @@ jobs:
         libunwind-dev libdwarf-dev libelf-dev libfmt-dev libgoogle-glog-dev libgtest-dev
         
     - name: Configure 
-      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 
 
     - name: Build
       run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
@@ -82,17 +82,17 @@ jobs:
 
     - name: Install and verify installation folders
       run: |
-        cmake --install ${{github.workspace}} 
-        test ${{github.workspace}}/install/lib/libdwarfs-wr.a
-        test ${{github.workspace}}/install/lib/libdwarfs.a
-        test ${{github.workspace}}/install/lib/libfsst.a
-        test ${{github.workspace}}/install/install/lib/libfolly.a
-        test ${{github.workspace}}/install/install/lib/libmetadata_thrift.a
-        test ${{github.workspace}}/install/install/lib/libthrift_light.a
-        test ${{github.workspace}}/install/install/lib/libxxhash.a
-        test ${{github.workspace}}/install/install/lib/libzstd.a
-        test ${{github.workspace}}/install/install/lib/libarchive.a
-        test ${{github.workspace}}/install/install/lib/libdwarfs-wr.a
-        test ${{github.workspace}}/install/install/include/tebako/tebako-defines.h
-        test ${{github.workspace}}/install/install/include/tebako/tebako-io.h
+        sudo cmake --install 
+        test /usr/local/lib/libdwarfs-wr.a
+        test /usr/local/lib/libdwarfs.a
+        test /usr/local/lib/libfsst.a
+        test /usr/local/lib/libfolly.a
+        test /usr/local/lib/libmetadata_thrift.a
+        test /usr/local/lib/libthrift_light.a
+        test /usr/local/lib/libxxhash.a
+        test /usr/local/lib/libzstd.a
+        test /usr/local/lib/libarchive.a
+        test /usr/local/lib/libdwarfs-wr.a
+        test /usr/local/include/tebako/tebako-defines.h
+        test /usr/local/include/include/tebako/tebako-io.h
 
