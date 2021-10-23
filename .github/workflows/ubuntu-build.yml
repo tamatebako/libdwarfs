@@ -87,16 +87,15 @@ jobs:
         test -f ${{github.workspace}}/install/bin/dwarfsck || (echo "File ${{github.workspace}}/install/bin/dwarfsck does not exist" && false)
         test -f ${{github.workspace}}/install/bin/dwarfsextract || (echo "File ${{github.workspace}}/install/bin/dwarfsextract does not exist" && false)
         test -f ${{github.workspace}}/install/bin/mkdwarfs || (echo "File ${{github.workspace}}/install/bin/mkdwarfs does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a
-        test -f ${{github.workspace}}/install/lib/libdwarfs.a
-        test -f ${{github.workspace}}/install/lib/libfsst.a
-        test -f ${{github.workspace}}/install/lib/libfolly.a
-        test -f ${{github.workspace}}/install/lib/libmetadata_thrift.a
-        test -f ${{github.workspace}}/install/lib/libthrift_light.a
-        test -f ${{github.workspace}}/install/lib/libxxhash.a
-        test -f ${{github.workspace}}/install/lib/libzstd.a
-        test -f ${{github.workspace}}/install/lib/libarchive.a
-        test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a
-        test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h
-        test -f ${{github.workspace}}/install/include/include/tebako/tebako-io.h
+        test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs-wr.a does not exist" && false)
+        test -f ${{github.workspace}}/install/lib/libdwarfs.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs.a does not exist" && false)
+        test -f ${{github.workspace}}/install/lib/libfsst.a || (echo "File ${{github.workspace}}/install/lib/libfsst.a does not exist" && false)
+        test -f ${{github.workspace}}/install/lib/libfolly.a || (echo "File ${{github.workspace}}/install/lib/libfolly.a does not exist" && false)
+        test -f ${{github.workspace}}/install/lib/libmetadata_thrift.a || (echo "File ${{github.workspace}}/install/lib/libmetadata_thrift.a does not exist" && false)
+        test -f ${{github.workspace}}/install/lib/libthrift_light.a || (echo "File ${{github.workspace}}/install/lib/libthrift_light.a does not exist" && false)
+        test -f ${{github.workspace}}/install/lib/libxxhash.a || (echo "File ${{github.workspace}}/install/lib/libxxhash.a does not exist" && false)
+        test -f ${{github.workspace}}/install/lib/libzstd.a || (echo "File ${{github.workspace}}/install/lib/libzstd.a does not exist" && false)
+        test -f ${{github.workspace}}/install/lib/libarchive.a || (echo "File ${{github.workspace}}/install/lib/libarchive.a does not exist" && false)
+        test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-defines.h does not exist" && false)
+        test -f ${{github.workspace}}/install/include/include/tebako/tebako-io.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-io.h does not exist" && false)
 
