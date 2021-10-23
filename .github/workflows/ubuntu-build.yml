@@ -83,10 +83,10 @@ jobs:
     - name: Install and verify installation folders
       run: |
         sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
-        test -f ${{github.workspace}}/install/bin/dwarfs
-        test -f ${{github.workspace}}/install/bin/dwarfsck
-        test -f ${{github.workspace}}/install/bin/dwarfsextract
-        test -f ${{github.workspace}}/install/bin/mkdwarfs
+        test -f ${{github.workspace}}/install/bin/dwarfs || (echo "File ${{github.workspace}}/install/bin/dwarfs does not exist" && false)
+        test -f ${{github.workspace}}/install/bin/dwarfsck || (echo "File ${{github.workspace}}/install/bin/dwarfsck does not exist" && false)
+        test -f ${{github.workspace}}/install/bin/dwarfsextract || (echo "File ${{github.workspace}}/install/bin/dwarfsextract does not exist" && false)
+        test -f ${{github.workspace}}/install/bin/mkdwarfs || (echo "File ${{github.workspace}}/install/bin/mkdwarfs does not exist" && false)
         test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a
         test -f ${{github.workspace}}/install/lib/libdwarfs.a
         test -f ${{github.workspace}}/install/lib/libfsst.a
