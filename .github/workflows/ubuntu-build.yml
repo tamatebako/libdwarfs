@@ -82,7 +82,7 @@ jobs:
 
     - name: Install and verify installation folders
       run: |
-        make install prefix=${{github.workspace}}/install
+        cmake --install ${{github.workspace}} 
         test ${{github.workspace}}/install/lib/libdwarfs-wr.a
         test ${{github.workspace}}/install/lib/libdwarfs.a
         test ${{github.workspace}}/install/lib/libfsst.a
