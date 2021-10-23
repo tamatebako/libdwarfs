@@ -84,20 +84,19 @@ jobs:
       run: |
         sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
         test -f ${{github.workspace}}/install/bin/dwarfs
-        test ${{github.workspace}}/install/bin/dwarfsbench
-        test ${{github.workspace}}/install/bin/dwarfsck
-        test ${{github.workspace}}/install/bin/dwarfsextract
-        test ${{github.workspace}}/install/bin/mkdwarfs
-        test ${{github.workspace}}/install/lib/libdwarfs-wr.a
-        test ${{github.workspace}}/install/lib/libdwarfs.a
-        test ${{github.workspace}}/install/lib/libfsst.a
-        test ${{github.workspace}}/install/lib/libfolly.a
-        test ${{github.workspace}}/install/lib/libmetadata_thrift.a
-        test ${{github.workspace}}/install/lib/libthrift_light.a
-        test ${{github.workspace}}/install/lib/libxxhash.a
-        test ${{github.workspace}}/install/lib/libzstd.a
-        test ${{github.workspace}}/install/lib/libarchive.a
-        test ${{github.workspace}}/install/lib/libdwarfs-wr.a
-        test ${{github.workspace}}/install/include/tebako/tebako-defines.h
-        test ${{github.workspace}}/install/include/include/tebako/tebako-io.h
+        test -f ${{github.workspace}}/install/bin/dwarfsck
+        test -f ${{github.workspace}}/install/bin/dwarfsextract
+        test -f ${{github.workspace}}/install/bin/mkdwarfs
+        test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a
+        test -f ${{github.workspace}}/install/lib/libdwarfs.a
+        test -f ${{github.workspace}}/install/lib/libfsst.a
+        test -f ${{github.workspace}}/install/lib/libfolly.a
+        test -f ${{github.workspace}}/install/lib/libmetadata_thrift.a
+        test -f ${{github.workspace}}/install/lib/libthrift_light.a
+        test -f ${{github.workspace}}/install/lib/libxxhash.a
+        test -f ${{github.workspace}}/install/lib/libzstd.a
+        test -f ${{github.workspace}}/install/lib/libarchive.a
+        test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a
+        test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h
+        test -f ${{github.workspace}}/install/include/include/tebako/tebako-io.h
 

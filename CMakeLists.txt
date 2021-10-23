@@ -420,9 +420,12 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )  
 
-install(DIRECTORY
-        ${DEPS_BIN_DIR}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}
+install(FILES
+        ${DEPS_BIN_DIR}/dwarfs
+        ${DEPS_BIN_DIR}/dwarfsck
+        ${DEPS_BIN_DIR}/dwarfsextract
+        ${DEPS_BIN_DIR}/mkdwarfs
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 
