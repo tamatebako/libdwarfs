@@ -7,11 +7,24 @@
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeExecutable": "cmake",
-      "cmakeCommandArgs": "-DWITH_LINK_TESTS:BOOL=OFF -DUSE_TEMP_FS:BOOL=OFF",
+      "cmakeCommandArgs": "-DWITH_TESTS:BOOL=ON -DWITH_LINK_TESTS:BOOL=ON -DUSE_TEMP_FS:BOOL=OFF",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
-      "wslPath": "C:\\Users\\maxirmx\\AppData\\Local\\Microsoft\\WindowsApps\\ubuntu2004.exe"
+      "wslPath": "C:\\Users\\Maxim\\AppData\\Local\\Microsoft\\WindowsApps\\ubuntu2004.exe"
+    },
+    {
+      "name": "WSL-GCC-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeExecutable": "cmake",
+      "cmakeCommandArgs": "-DWITH_TESTS:BOOL=ON -DWITH_LINK_TESTS:BOOL=ON -DUSE_TEMP_FS:BOOL=ON",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "linux_x64" ],
+      "wslPath": "${defaultWSLPath}"
     }
   ]
 }
