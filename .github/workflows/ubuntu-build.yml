@@ -2,7 +2,7 @@ name: Ubuntu build
 
 on:
   push:
-    branches: [ master, issue-1 ]
+    branches: [ master, issue-39 ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -67,18 +67,32 @@ jobs:
     - name: Unit tests
       run: make test
 
-    - name: Running pure "C" program, calling all C API redefines 
-      run:  ./wr-bin
+    - name: Running pure "C" program, calling all C API redefines, checking that tmp directory has been cleaned 
+      run: |
+        mkdir ${{github.workspace}}/t_dir
+        ls /tmp/* >> ${{github.workspace}}/t_dir/before
+        ls -l /tmp/*
+        ./wr-bin
+        ls /tmp/* >> ${{github.workspace}}/t_dir/after
+        ls -l /tmp/*
+        diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
 
     - name: Running ldd to check that wr-bin has been linked statically 
       run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
 
-# [TODO]      
-#    - name: Checking that tmp dir has been cleaned
-#      run: | 
-#        shopt -s nullglob
-#        numfiles=(/tmp/*)
-#        numfiles=${#numfiles[@]}
-#        echo $numfiles
-     
-   
+    - name: Install and verify installation folders
+      run: |
+        make install prefix=${{github.workspace}}/install
+        test ${{github.workspace}}/install/lib/libdwarfs-wr.a
+        test ${{github.workspace}}/install/lib/libdwarfs.a
+        test ${{github.workspace}}/install/lib/libfsst.a
+        test ${{github.workspace}}/install/install/lib/libfolly.a
+        test ${{github.workspace}}/install/install/lib/libmetadata_thrift.a
+        test ${{github.workspace}}/install/install/lib/libthrift_light.a
+        test ${{github.workspace}}/install/install/lib/libxxhash.a
+        test ${{github.workspace}}/install/install/lib/libzstd.a
+        test ${{github.workspace}}/install/install/lib/libarchive.a
+        test ${{github.workspace}}/install/install/lib/libdwarfs-wr.a
+        test ${{github.workspace}}/install/install/include/tebako/tebako-defines.h
+        test ${{github.workspace}}/install/install/include/tebako/tebako-io.h
+

@@ -7,11 +7,11 @@
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeExecutable": "cmake",
-      "cmakeCommandArgs": "-DWITH_LINK_TESTS:BOOL=OFF -DUSE_TEMP_FS:BOOL=OFF",
+      "cmakeCommandArgs": "-DWITH_LINK_TESTS:BOOL=ON -DUSE_TEMP_FS:BOOL=OFF",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
-      "wslPath": "C:\\Users\\maxirmx\\AppData\\Local\\Microsoft\\WindowsApps\\ubuntu2004.exe"
+      "wslPath": "C:\\Users\\Maxim\\AppData\\Local\\Microsoft\\WindowsApps\\ubuntu2004.exe"
     }
   ]
 }

@@ -34,7 +34,9 @@ include(ExternalProject)
 include(FetchContent)
 include(GoogleTest)
 include(CTest)
+include(GNUInstallDirs)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
+
 
 enable_testing()
 
@@ -270,6 +272,10 @@ function(ADD_DWARFS_LIBRARY NAME PRJ APP_NM)
    set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
    add_dependencies(${NAME} ${PRJ})
    target_link_libraries(${APP_NM} ${NAME})
+   install(FILES ${_${NAME}} 
+           DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
 endfunction()
 
 
@@ -311,6 +317,9 @@ endfunction()
  #               (2) it is statically linked
 
 add_executable(wr-bin
+  "include/tebako-pch.h"
+  "include/tebako-defines.h"
+  "include/tebako-io.h"
   "tests/tests-defines-static.c"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
@@ -352,6 +361,8 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
 # Google test
 
 add_executable(wr-tests 
+  "include/tebako-pch.h"
+  "include/tebako-io.h"
   "tests/tests-fs-load.cpp"
   "tests/tests-file-ctl.cpp"
   "tests/tests-file-io.cpp"
@@ -387,6 +398,7 @@ target_link_libraries(wr-tests _LIBARCHIVE)
 #  IMPORTANT !!!
 #  MUST be in this order otherwise link may fail
 #  -static-libgcc and gcc_eh below is all together an ugly trick to enforce static linking
+# [??? this also looked like a requirement but not tests pass withoot libc ] ${_LIBC}  
 
  target_link_libraries(wr-tests                              
    ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}                               
@@ -397,5 +409,14 @@ target_link_libraries(wr-tests _LIBARCHIVE)
    ${_LIBUNWIND}       ${_LIBLZMA}
  )
 
-# ${_LIBC}
+ install(TARGETS 
+         dwarfs-wr
+         DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ ) 
+
+install(FILES 
+        "include/tebako-defines.h"
+        "include/tebako-io.h"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
+)  
 
