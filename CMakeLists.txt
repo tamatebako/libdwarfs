@@ -30,19 +30,31 @@ cmake_policy(SET CMP0048 NEW)
 
 project(libdwarfs-wr VERSION 0.1.0)
 
+option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
+# Visual Studio/Windows Subsystem for Linux (WSL) environment requires 
+# source tree to be placed to native Windows partiotion
+# Native Windows partition does not support links
+# So, two options are privided below:
+# -- disable links tests: set WITH_LINK_TEST to OFF
+# -- place test data to WSL native partition
+
+option(WITH_LINK_TESTS "Include tests for hard and symbolic links" ON)
+option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
+
 include(ExternalProject)
-include(FetchContent)
-include(GoogleTest)
-include(CTest)
+include(GNUInstallDirs)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 
-enable_testing()
+if(${WITH_TESTS})
+ include(GoogleTest)
+ include(CTest)
+ enable_testing()
+endif(${WITH_TESTS})
 
 set(Boost_USE_STATIC_LIBS   ON)
-set(BOOST_LINK_STATIC       ON)
+set(Boost_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
 set(GFLAGS_SHARED          OFF)
-
 
 # Various locations for external projects 
 set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
@@ -54,20 +66,22 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "78401c3")
-def_ext_prj_g(INCBIN "348e36b")
+def_ext_prj_g(DWARFS "78fd324")
+if(${WITH_TESTS})
+ def_ext_prj_g(INCBIN "348e36b")
+endif(${WITH_TESTS})
 
 message("Collecting packages:")
-message("incbin   - " @${INCBIN_TAG}         " at " ${INCBIN_SOURCE_DIR}) 
+if(${WITH_TESTS})
+  message("incbin   - " @${INCBIN_TAG}         " at " ${INCBIN_SOURCE_DIR}) 
+endif(${WITH_TESTS})
 message("dwarfs   - " @${DWARFS_TAG}         " at " ${DWARFS_SOURCE_DIR}) 
 
 # ...................................................................
 # incbin
-# ExternalProject_Add is used for incbin project since we do not need 
-# anything at configure step. We want to fetch some files before the 
-# build, that's it.  
 
-ExternalProject_Add(${INCBIN_PRJ}
+if(${WITH_TESTS})
+ ExternalProject_Add(${INCBIN_PRJ}
    PREFIX ${DEPS}
    GIT_REPOSITORY https://github.com/graphitemaster/incbin.git
    GIT_TAG ${INCBIN_TAG}
@@ -75,46 +89,36 @@ ExternalProject_Add(${INCBIN_PRJ}
    CONFIGURE_COMMAND ""
    BUILD_COMMAND ""
    INSTALL_COMMAND ""
-)
+ )
 
 # ...................................................................
 # Filesystem locations
 
-# Visual Studio/Windows Subsystem for Linux (WSL) environment requires 
-# source tree to be placed to native Windows partiotion
-# Native Windows partition does not support links
-# So, two options are privided below:
-# -- disable links tests: set WITH_LINK_TEST to OFF
-# -- place test data to WSL native partition
-
-option(WITH_LINK_TESTS "Include tests for hard and symbolic links" ON)
-option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
-
 # DATA_TEST_DIR folder contains raw data for filesystem tests 
+ if(${USE_TEMP_FS})
+  string(RANDOM LENGTH 10 TMPNM)
+  set(DATA_TEST_DIR "/tmp/${TMPNM}")
+  set(DATA_TEST_DIR_MSG "at '${DATA_TEST_DIR}'")
+ else()
+  set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
+  set(DATA_TEST_DIR_MSG "")
+ endif()
+ 
+ if (${WITH_LINK_TESTS}) 
+  set(WLT "with link tests")
+  add_compile_definitions("WITH_LINK_TESTS")
+ else()
+  set(WLT "without link tests")
+ endif()
 
-if(${USE_TEMP_FS})
- string(RANDOM LENGTH 10 TMPNM)
- set(DATA_TEST_DIR "/tmp/${TMPNM}")
- set(DATA_TEST_DIR_MSG "at '${DATA_TEST_DIR}'")
-else()
- set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
- set(DATA_TEST_DIR_MSG "")
-endif()
-
-
-if (${WITH_LINK_TESTS}) 
- set(WLT "with link tests")
- add_compile_definitions("WITH_LINK_TESTS")
-else()
- set(WLT "without link tests")
-endif()
-
-message("Using test data set ${WLT} from '${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem' ${DATA_TEST_DIR_MSG}")
+ message("Using test data set ${WLT} from '${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem' ${DATA_TEST_DIR_MSG}")
 
 # DATA_BIN_DIR folder is used to create packaged filesystem  
-set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
+ set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 # DATA_BIN_FILE is packaged filesystem itself
-set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
+ set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
+
+endif(${WITH_TESTS})
 
 
 # ...................................................................
@@ -136,17 +140,17 @@ set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
 set(__LIBARCHIVE "${DWARFS_BINARY_DIR}/libarchive/lib/libarchive.a")
 
 ExternalProject_Add(${DWARFS_PRJ}
-    PREFIX ${DEPS}
-    GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
-    GIT_TAG ${DWARFS_TAG}
-    PATCH_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/patches/2.patch/version.cpp ${DEPS}/src/_dwarfs/src/dwarfs  
-    COMMAND       ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/patches/2.patch/version.h ${DEPS}/src/_dwarfs/include/dwarfs   
-    UPDATE_COMMAND ""
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
-    SOURCE_DIR ${DWARFS_SOURCE_DIR}
-    BINARY_DIR ${DWARFS_BINARY_DIR}
-    BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA} 
-                     ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
+   PREFIX ${DEPS}
+   GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
+   GIT_TAG ${DWARFS_TAG}
+# This patch fixes version.cmake logic so that it works correctly not only for topmost project but for embedded project as well
+   PATCH_COMMAND  sed -i "s/COMMAND git/COMMAND \${CMAKE_COMMAND} -E chdir \${CMAKE_CURRENT_SOURCE_DIR} git/g" ${DWARFS_SOURCE_DIR}/cmake/version.cmake || echo "Never mind" 
+   UPDATE_COMMAND ""
+   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
+   SOURCE_DIR ${DWARFS_SOURCE_DIR}
+   BINARY_DIR ${DWARFS_BINARY_DIR}
+   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA} 
+                    ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
 
 # ...................................................................
@@ -158,9 +162,6 @@ configure_file(
    @ONLY
 )
 
-add_compile_options(-fdiagnostics-color=always)
-#[TODO]
-#add_link_options(-static -static-libgcc)
 add_link_options(-static)
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
@@ -203,15 +204,18 @@ add_dependencies(dwarfs-wr ${DWARFS_PRJ})
 # ...................................................................
 # Tests
 
-find_package(PkgConfig REQUIRED)
-pkg_search_module(GTEST gtest_main)
+if(${WITH_TESTS})
+ find_package(PkgConfig REQUIRED)
+ pkg_search_module(GTEST gtest_main)
 
+# This code may be adopted if we want to build gtest locally. No need so far.
+#include(FetchContent)
 #FetchContent_Declare(
 #   googletest
 # Specify the commit you depend on and update it regularly.
 #   URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
 #)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
+# For Windows: Prevent overwriting the parent project's compiler/linker settings
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 #FetchContent_MakeAvailable(googletest)
 
@@ -219,59 +223,62 @@ pkg_search_module(GTEST gtest_main)
 # Packaged filesystem
 # links for testing are created here to avoid interoperatibility problems Linux/Windows
 
-if (${WITH_LINK_TESTS}) 
- if (${USE_TEMP_FS})
-   add_custom_target(PACKAGED_FILESYSTEM ALL
-     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
-     COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
-     COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
-     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-     COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
-     DEPENDS ${DWARFS_PRJ} 
-     BYPRODUCTS ${DATA_BIN_FILE}
-   )
- else()
-   add_custom_target(PACKAGED_FILESYSTEM ALL
-     COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
-     COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
-     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-     COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/h-link-to-dir-2 
-     COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/s-link-to-dir-1
-     DEPENDS ${DWARFS_PRJ} 
-     BYPRODUCTS ${DATA_BIN_FILE}
-   )
- endif()
-else()
- if (${USE_TEMP_FS})
-   add_custom_target(PACKAGED_FILESYSTEM ALL
-     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
-     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-     COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
-     DEPENDS ${DWARFS_PRJ} 
-     BYPRODUCTS ${DATA_BIN_FILE}
-   )
-  else()
-   add_custom_target(PACKAGED_FILESYSTEM ALL
-     COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-     DEPENDS ${DWARFS_PRJ} 
-     BYPRODUCTS ${DATA_BIN_FILE}
-   )
- endif()
-endif()
+ if (${WITH_LINK_TESTS}) 
+  if (${USE_TEMP_FS})
+    add_custom_target(PACKAGED_FILESYSTEM ALL
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
+      COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+      COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
+      DEPENDS ${DWARFS_PRJ} 
+      BYPRODUCTS ${DATA_BIN_FILE}
+    )
+  else(${USE_TEMP_FS})
+    add_custom_target(PACKAGED_FILESYSTEM ALL
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
+      COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+      COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/h-link-to-dir-2 
+      COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/s-link-to-dir-1
+      DEPENDS ${DWARFS_PRJ} 
+      BYPRODUCTS ${DATA_BIN_FILE}
+    )
+  endif(${USE_TEMP_FS})
+ else(${WITH_LINK_TESTS})
+  if (${USE_TEMP_FS})
+    add_custom_target(PACKAGED_FILESYSTEM ALL
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
+      COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+      COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
+      DEPENDS ${DWARFS_PRJ} 
+      BYPRODUCTS ${DATA_BIN_FILE}
+    )
+  else(${USE_TEMP_FS})
+    add_custom_target(PACKAGED_FILESYSTEM ALL
+      COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+      DEPENDS ${DWARFS_PRJ} 
+      BYPRODUCTS ${DATA_BIN_FILE}
+    )
+  endif(${USE_TEMP_FS})
+ endif(${WITH_LINK_TESTS})
 
-configure_file(
+ configure_file(
    ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs.cpp.in 
    ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
    @ONLY
-)
+ )
 
-function(ADD_DWARFS_LIBRARY NAME PRJ APP_NM)
+ function(ADD_DWARFS_LIBRARY NAME PRJ APP_NM)
    add_library(${NAME} STATIC IMPORTED)
    set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
    add_dependencies(${NAME} ${PRJ})
    target_link_libraries(${APP_NM} ${NAME})
-endfunction()
+   install(FILES ${_${NAME}} 
+           DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   )
 
+ endfunction()
 
 # ...................................................................
 # System libraries
@@ -310,28 +317,31 @@ endfunction()
  # We check that (1) it is possible to compile, build and run program with pure C startup
  #               (2) it is statically linked
 
-add_executable(wr-bin
+ add_executable(wr-bin
+  "include/tebako-pch.h"
+  "include/tebako-defines.h"
+  "include/tebako-io.h"
   "tests/tests-defines-static.c"
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
-)
+ )
  
-target_link_libraries(wr-bin  dwarfs-wr)
-add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
+ target_link_libraries(wr-bin  dwarfs-wr)
+ add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
 
 # ...................................................................
 # The libraries that are build by dwarfs project
 # libdwarfs libfolly libfsst libxxhash libmetadata_thrift libthrift_light libarchive
 
-add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} wr-bin)
-add_dwarfs_library(_LIBFSST ${DWARFS_PRJ} wr-bin)
-add_dwarfs_library(_LIBFOLLY ${DWARFS_PRJ} wr-bin)
-add_dwarfs_library(_LIBT_METADATA ${DWARFS_PRJ} wr-bin)
-add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} wr-bin)
-add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-bin)
-add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-bin)
-add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
+ add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} wr-bin)
+ add_dwarfs_library(_LIBFSST ${DWARFS_PRJ} wr-bin)
+ add_dwarfs_library(_LIBFOLLY ${DWARFS_PRJ} wr-bin)
+ add_dwarfs_library(_LIBT_METADATA ${DWARFS_PRJ} wr-bin)
+ add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} wr-bin)
+ add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-bin)
+ add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-bin)
+ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
 
 # ...................................................................
 #  IMPORTANT !!!
@@ -347,11 +357,12 @@ add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
    ${_LIBUNWIND}       ${_LIBLZMA}
  )
 
-
 # ...................................................................
 # Google test
 
-add_executable(wr-tests 
+ add_executable(wr-tests 
+  "include/tebako-pch.h"
+  "include/tebako-io.h"
   "tests/tests-fs-load.cpp"
   "tests/tests-file-ctl.cpp"
   "tests/tests-file-io.cpp"
@@ -364,29 +375,24 @@ add_executable(wr-tests
   "tests/tests.h"
  )
 
-target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
-target_link_libraries(wr-tests 
+ target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
+ target_link_libraries(wr-tests 
     dwarfs-wr
     ${GTEST_LDFLAGS}
-)
+ )
 
-add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM wr-bin) 
+ add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM wr-bin) 
 
-gtest_add_tests(TARGET wr-tests)
+ gtest_add_tests(TARGET wr-tests)
 
-target_link_libraries(wr-tests _LIBDWARFS)
-target_link_libraries(wr-tests _LIBFSST)
-target_link_libraries(wr-tests _LIBFOLLY)
-target_link_libraries(wr-tests _LIBT_METADATA)
-target_link_libraries(wr-tests _LIBT_LIGHT)
-target_link_libraries(wr-tests _LIBXXHASH)
-target_link_libraries(wr-tests _LIBZSTD)
-target_link_libraries(wr-tests _LIBARCHIVE)
+ target_link_libraries(wr-tests _LIBDWARFS  _LIBFSST   _LIBFOLLY _LIBT_METADATA
+                                _LIBT_LIGHT _LIBXXHASH _LIBZSTD  _LIBARCHIVE)
 
 # ...................................................................
 #  IMPORTANT !!!
 #  MUST be in this order otherwise link may fail
 #  -static-libgcc and gcc_eh below is all together an ugly trick to enforce static linking
+# [??? this also looked like a requirement but all tests pass without libc ] ${_LIBC}  
 
  target_link_libraries(wr-tests                              
    ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}                               
@@ -397,5 +403,31 @@ target_link_libraries(wr-tests _LIBARCHIVE)
    ${_LIBUNWIND}       ${_LIBLZMA}
  )
 
-# ${_LIBC}
+endif(${WITH_TESTS})
+
+ install(TARGETS 
+         dwarfs-wr
+         DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ ) 
+
+ install(FILES 
+         ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA} 
+         ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
+         DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ ) 
+
+install(FILES 
+        "include/tebako-defines.h"
+        "include/tebako-io.h"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
+)  
+
+install(FILES
+        ${DEPS_BIN_DIR}/dwarfs
+        ${DEPS_BIN_DIR}/dwarfsck
+        ${DEPS_BIN_DIR}/dwarfsextract
+        ${DEPS_BIN_DIR}/mkdwarfs
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
 

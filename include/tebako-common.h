@@ -82,6 +82,8 @@
 #endif
 
 #define TEBAKO_PATH_LENGTH ((size_t) PATH_MAX)
+
+/* This shall match tebako TEBAKO_MOUNT_POINT definition at CMakeLists.txt */
 #define TEBAKO_MOINT_POINT "__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_LENGTH  16
  
