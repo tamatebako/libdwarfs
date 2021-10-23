@@ -420,3 +420,9 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )  
 
+install(DIRECTORY
+        ${DEPS_BIN_DIR}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}
+)
+
+
