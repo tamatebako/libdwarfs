@@ -67,7 +67,7 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "78401c3")
+def_ext_prj_g(DWARFS "78fd324")
 if(${WITH_TESTS})
  def_ext_prj_g(INCBIN "348e36b")
 endif(${WITH_TESTS})
@@ -86,7 +86,6 @@ if(${WITH_TESTS})
    PREFIX ${DEPS}
    GIT_REPOSITORY https://github.com/graphitemaster/incbin.git
    GIT_TAG ${INCBIN_TAG}
-   GIT_SHALLOW true
    UPDATE_COMMAND ""
    CONFIGURE_COMMAND ""
    BUILD_COMMAND ""
@@ -146,7 +145,6 @@ ExternalProject_Add(${DWARFS_PRJ}
    PREFIX ${DEPS}
    GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
    GIT_TAG ${DWARFS_TAG}
-   GIT_SHALLOW true
    PATCH_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/patches/2.patch/version.cpp ${DEPS}/src/_dwarfs/src/dwarfs  
    COMMAND       ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/patches/2.patch/version.h ${DEPS}/src/_dwarfs/include/dwarfs   
    UPDATE_COMMAND ""
@@ -166,7 +164,6 @@ configure_file(
    @ONLY
 )
 
-add_compile_options(-fdiagnostics-color=always)
 add_link_options(-static)
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
