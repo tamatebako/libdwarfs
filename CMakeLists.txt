@@ -145,8 +145,8 @@ ExternalProject_Add(${DWARFS_PRJ}
    PREFIX ${DEPS}
    GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
    GIT_TAG ${DWARFS_TAG}
-   PATCH_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/patches/2.patch/version.cpp ${DEPS}/src/_dwarfs/src/dwarfs  
-   COMMAND       ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/patches/2.patch/version.h ${DEPS}/src/_dwarfs/include/dwarfs   
+   PATCH_COMMAND           sed -i "s/if((NOT \"\${REAL_SOURCE_DIR}\" STREQUAL \"\${GIT_TOPLEVEL}\")/if (false) # Patched by libdwarfs build script from: if((NOT \"\${REAL_SOURCE_DIR}\" STREQUAL \"\${GIT_TOPLEVEL}\")/g" ${DWARFS_SOURCE_DIR}/cmake/version.cmake || echo "Never mind"
+   COMMAND                 sed -i "s/OR (\"\${PRJ_GIT_REV}\" STREQUAL \"\"))/ # Patched by libdwarfs build script from: OR (\"\${PRJ_GIT_REV}\" STREQUAL \"\"))/g" ${DWARFS_SOURCE_DIR}/cmake/version.cmake || echo "Never mind" 
    UPDATE_COMMAND ""
    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
    SOURCE_DIR ${DWARFS_SOURCE_DIR}
