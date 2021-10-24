@@ -71,10 +71,8 @@ jobs:
       run: |
         mkdir ${{github.workspace}}/t_dir
         ls /tmp >> ${{github.workspace}}/t_dir/before
-        ls -l /tmp
         ./wr-bin
         ls /tmp >> ${{github.workspace}}/t_dir/after
-        ls -l /tmp
         diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
 
     - name: Run ldd to check that wr-bin has been linked statically 
