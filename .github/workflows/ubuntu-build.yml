@@ -2,7 +2,7 @@ name: Ubuntu build
 
 on:
   push:
-    branches: [ master, issue-39 ]
+    branches: [ master ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
