@@ -175,3 +175,6 @@ extern "C"	int tebako_mkdir(const char* path, mode_t mode) {
 	return ret;
 }
 
+extern "C" int tebako_is(const char* path) {
+	return (is_tebako_path(path) || is_tebako_cwd());
+}

@@ -100,6 +100,7 @@ extern "C" {
 
     void* tebako_dlopen(const char* path, int flags);
 
+    int tebako_is(const char* path);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

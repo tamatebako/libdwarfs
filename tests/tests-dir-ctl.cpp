@@ -190,4 +190,12 @@ namespace {
 		EXPECT_EQ(NULL, tebako_getwd(NULL));
 		EXPECT_EQ(ENOENT, errno);
 	}
+
+	TEST_F(DirCtlTests, tebako_is_test) {
+		EXPECT_NE(0, tebako_is(TEBAKIZE_PATH("directory-1")));
+		EXPECT_EQ(0, tebako_is("/home/maxirmx/directory-1"));
+
+		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("")));
+		EXPECT_NE(0, tebako_is("directory-1"));
+	}
 }
