@@ -111,6 +111,7 @@ namespace {
 			if (entry != NULL) {
 				fname = "file-"; fname += std::to_string(pos + start_fnum - 2 /* for '.' and '..' */); fname += ".txt";
 				EXPECT_TRUE(fname == entry->d_name);
+				EXPECT_TRUE(entry->d_type == DT_REG);
 				EXPECT_EQ(++pos, tebako_telldir(dirp));
 			}
 
@@ -152,6 +153,7 @@ namespace {
 			if (entry != NULL) {
 				fname = ".";
 				EXPECT_TRUE(fname == entry->d_name);
+				EXPECT_TRUE(entry->d_type == DT_DIR);
 				EXPECT_EQ(1, tebako_telldir(dirp));
 			}
 

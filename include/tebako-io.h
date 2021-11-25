@@ -78,6 +78,7 @@ extern "C" {
     int   tebako_stat(const char* path, struct stat* buf);
     int   tebako_fstat(int vfd, struct stat* buf);
     int   tebako_lstat(const char* path, struct stat* buf);
+    int   tebako_fstatat(int fd, const char* path, struct stat* buf, int flag);
 #endif
 
     int   tebako_close(int vfd);

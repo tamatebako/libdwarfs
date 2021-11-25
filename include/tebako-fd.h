@@ -63,6 +63,7 @@ public:
 	int readdir(int vfd, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;
 	ssize_t readv(int vfd, const struct iovec* iov, int iovcnt) noexcept;
 	off_t lseek(int vfd, off_t offset, int whence) noexcept;
+	int fstatat(int vfd, const char* path, struct stat* buf) noexcept;
 
 	static sync_tebako_fdtable fdtable;
 };

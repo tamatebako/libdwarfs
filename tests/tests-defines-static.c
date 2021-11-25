@@ -47,6 +47,7 @@ static int dirio_fd_c_test(void);
 static int scandir_c_test(void);
 static int dlopen_c_test(void);
 static int link_c_tests(void);
+static int fstatat_c_test(void);
 
 int main(int argc, char** argv)
 {
@@ -119,6 +120,8 @@ int main(int argc, char** argv)
 		rOK &= scandir_c_test();
 		rOK &= dlopen_c_test();
 		rOK &= link_c_tests();
+
+		rOK &= fstatat_c_test();
 
 		drop_fs();
 		printf("Filesystem dropped\n");
@@ -338,5 +341,15 @@ static int link_c_tests(void) {
 #else
 	printf("WITH_LINK_TESTS is undefined, skipping C tests for 'readlink' and 'lstat'\n");
 #endif
+	return rOK;
+}
+
+static int fstatat_c_test(void) {
+	int rOK = true;
+	struct stat buf;
+	int ret = chdir(TEBAKIZE_PATH("directory-2"));
+	rOK &= (ret == 0);
+	ret = fstatat(AT_FDCWD, "file-in-directory-2.txt", &buf, 0);
+	rOK &= (ret == 0);
 	return rOK;
 }
