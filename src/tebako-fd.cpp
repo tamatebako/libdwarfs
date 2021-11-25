@@ -286,10 +286,3 @@ int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st) noe
 	}
 	return ret;
 }
-
-
-
-
-
-
-

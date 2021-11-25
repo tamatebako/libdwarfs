@@ -169,4 +169,3 @@ extern "C" int tebako_fstatat(int vfd, const char* path, struct stat* buf, int f
 	}
 	return ret;
 }
-
