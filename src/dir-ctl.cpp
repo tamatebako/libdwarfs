@@ -33,7 +33,7 @@
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
-/*	
+/*
 *   getcwd()
 *   https://pubs.opengroup.org/onlinepubs/9699919799/
 */
@@ -70,7 +70,7 @@ extern "C" char* tebako_getcwd(char* buf, size_t size) {
 				if (!size) {
 					TEBAKO_SET_LAST_ERROR(EINVAL);
 					buf = NULL;
-				} 
+				}
 				else if (len > size-1)
 				{
 					TEBAKO_SET_LAST_ERROR(ERANGE);
@@ -104,11 +104,11 @@ extern "C"	char* tebako_getwd(char* buf) {
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif 
+#endif
 			ret = ::getwd(buf);
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
-#endif 
+#endif
 		}
 	}
 	return ret;
@@ -149,7 +149,7 @@ extern "C"	int tebako_chdir(const char* path) {
 			}
 		}
 	}
-	
+
 	return ret;
 }
 
@@ -175,6 +175,3 @@ extern "C"	int tebako_mkdir(const char* path, mode_t mode) {
 	return ret;
 }
 
-extern "C" int tebako_is(const char* path) {
-	return (is_tebako_path(path) || is_tebako_cwd());
-}

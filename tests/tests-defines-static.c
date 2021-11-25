@@ -24,7 +24,7 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #include <tebako-pch.h>
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 {
 	char p[PATH_MAX];
 	char* r;
-	int rOK = false; 
+	int rOK = false;
 	int fh;
 	struct stat buf;
 
@@ -85,11 +85,11 @@ int main(int argc, char** argv)
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif 
+#endif
 		r = getwd(p);
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
-#endif 
+#endif
 		printf("A call to 'getwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
 
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
 		fh = open(TEBAKIZE_PATH("file.txt"), O_RDONLY);
 		printf("A call to 'open' returned %i (non negative file handle expected)\n", fh);
 		rOK &= (fh >= 0);
-		
+
 		rOK &= lseek_read_c_test(fh);
 		rOK &= readv_c_test(fh);  /* Skipped 'Ju', read 'st', ' a file' remains */
 		rOK &= pread_c_test(fh);
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
 
 		drop_fs();
 		printf("Filesystem dropped\n");
-	
+
 		ret = rOK ? 0 : -1;
 	}
 

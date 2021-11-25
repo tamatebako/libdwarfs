@@ -24,7 +24,7 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #include <tebako-pch.h>
@@ -37,7 +37,7 @@
 #include <tebako-mfs.h>
 
 namespace dwarfs {
- 
+
     template <typename LoggerPolicy>
     static void load_filesystem(dwarfs_userdata* userdata) {
         LOG_PROXY(LoggerPolicy, userdata->lgr);
@@ -89,7 +89,7 @@ extern "C" void drop_fs(void) {
 
 // Loads dwarFS image
 // ["C" wrapper for load_filesystem]
-extern "C" int load_fs( const void* data, 
+extern "C" int load_fs( const void* data,
                         const unsigned int size,
                         const char* debuglevel,
                         const char* cachesize,
@@ -224,8 +224,8 @@ int safe_dwarfs_call(Functor&& fn, uint32_t inode, Args&&... args) {
 }
 
 int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)> 
-           { [](filesystem_v2* fs, inode_view& inode, int amode, uid_t uid, gid_t gid) -> int { return fs->access(inode, amode, uid, gid); } }, 
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)>
+           { [](filesystem_v2* fs, inode_view& inode, int amode, uid_t uid, gid_t gid) -> int { return fs->access(inode, amode, uid, gid); } },
            path, amode, uid, gid);
 }
 
@@ -243,7 +243,7 @@ int dwarfs_readlink(const char* path, std::string& lnk) noexcept {
 
 int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)>
-    { [](filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int { 
+    { [](filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int {
             auto pi = fs->find(inode);
             return pi ? fs->getattr(*pi, buf) : ENOENT;
         } },
@@ -252,7 +252,7 @@ int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* bu
 
 int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, int, uid_t, gid_t)>
-    { [](filesystem_v2* fs, uint32_t inode, int amode, uid_t uid, gid_t gid) -> int { 
+    { [](filesystem_v2* fs, uint32_t inode, int amode, uid_t uid, gid_t gid) -> int {
             auto pi = fs->find(inode);
             return pi ? fs->access(*pi, amode, uid, gid) : ENOENT;
         } },
@@ -261,7 +261,7 @@ int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexce
 
 ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset)  noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, void*, size_t, off_t)>
-    { [](filesystem_v2* fs, uint32_t inode, void* buf, size_t size, off_t offset) -> int { return fs->read(inode, (char*)buf, size, offset); } }, 
+    { [](filesystem_v2* fs, uint32_t inode, void* buf, size_t size, off_t offset) -> int { return fs->read(inode, (char*)buf, size, offset); } },
         inode, buf, size, offset);
 }
 

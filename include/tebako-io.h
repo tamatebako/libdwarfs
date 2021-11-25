@@ -96,11 +96,10 @@ extern "C" {
     int tebako_scandir(const char* dir, struct dirent*** namelist,
         int (*sel)(const struct dirent*),
         int (*compar)(const struct dirent**, const struct dirent**));
-#endif 
+#endif
 
     void* tebako_dlopen(const char* path, int flags);
 
-    int tebako_is(const char* path);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

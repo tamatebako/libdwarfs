@@ -35,14 +35,14 @@
 //  Current working direcory (within tebako memfs)
 //  RW lock implemented with folly tooling
 //  github.com/facebook/folly/blob/master/folly/docs/Synchronized
- 
+
 struct tebako_path_s {
 	tebako_path_t d;
 	tebako_path_s(void) { d[0] = '\0'; }
 };
 static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 
-//	Gets current working directory 
+//	Gets current working directory
 	const char* tebako_get_cwd(tebako_path_t cwd) {
 		auto locked = tebako_cwd.rlock();
 		auto p = *locked;

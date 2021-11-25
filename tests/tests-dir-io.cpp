@@ -29,7 +29,7 @@
 
 #include "tests.h"
 
-/*  
+/*
 *  Unit tests for 'tebako_open', 'tebako_close', 'tebako_read'
 * 'tebako_lseek' and underlying file descriptor implementation
 */
@@ -91,7 +91,7 @@ namespace {
 		EXPECT_EQ(0, tebako_closedir(dirp));
 
 	}
-	
+
 	TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_rewinddir_closedir) {
 		DIR* dirp = tebako_opendir(TEBAKIZE_PATH("directory-with-90-files"));
 		EXPECT_TRUE(dirp != NULL);
@@ -171,14 +171,14 @@ namespace {
 				if (entry != NULL && strcmp(entry->d_name, "bash") == 0) {
 					loc = telldir(dirp) - 1;
 				}
-			} 
+			}
 			EXPECT_NE(-1, loc);
 			EXPECT_EQ(errno, 0);
 
 			tebako_seekdir(dirp, loc);
 			entry = tebako_readdir(dirp);
 			EXPECT_TRUE(strcmp(entry->d_name, "bash"));
-			
+
 			EXPECT_EQ(0, tebako_closedir(dirp));
 		}
 	}
@@ -261,7 +261,7 @@ namespace {
 		EXPECT_EQ(EBADF, errno);
 
 		tebako_seekdir(NULL, 1);   // Just nothing. No error, no SEGFAULT
-		tebako_rewinddir(NULL);    // The same  
+		tebako_rewinddir(NULL);    // The same
 
 		errno = 0;
 		EXPECT_EQ(-1, tebako_dirfd(NULL));
@@ -275,7 +275,7 @@ namespace {
 		EXPECT_EQ(NULL, tebako_readdir(NULL));
 		EXPECT_EQ(EBADF, errno);
 
-		
+
 		struct dirent** namelist;
 
 		errno = 0;
@@ -286,5 +286,5 @@ namespace {
 		EXPECT_EQ(-1, tebako_scandir("somedir", NULL, zero_filter, alphasort));
 		EXPECT_EQ(ENOENT, errno);
 
-	}   
+	}
 }

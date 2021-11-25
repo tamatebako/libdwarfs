@@ -24,7 +24,7 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
  /*
@@ -66,11 +66,11 @@
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif 
+#endif
  #define getwd(...)	tebako_getwd(__VA_ARGS__)
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
-#endif 
+#endif
 
  #define chdir(...) 	tebako_chdir(__VA_ARGS__)
  #define stat(...)	    tebako_stat(__VA_ARGS__)
@@ -95,7 +95,7 @@
  #define readv(...) 	tebako_readv(__VA_ARGS__)
  #define dlopen(...)	tebako_dlopen(__VA_ARGS__)
  #define access(...)	tebako_access(__VA_ARGS__)
- #define mkdir(...)	    tebako_mkdir(__VA_ARGS__)     
+ #define mkdir(...)	    tebako_mkdir(__VA_ARGS__)
 
 #endif // !_WIN32
 

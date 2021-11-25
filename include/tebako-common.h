@@ -24,7 +24,7 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
  /*
@@ -78,7 +78,7 @@
 			}                                          \
 		}
 #else
-#define TEBAKO_SET_LAST_ERROR(e)  errno = (e)    
+#define TEBAKO_SET_LAST_ERROR(e)  errno = (e)
 #endif
 
 #define TEBAKO_PATH_LENGTH ((size_t) PATH_MAX)
@@ -86,7 +86,7 @@
 /* This shall match tebako TEBAKO_MOUNT_POINT definition at CMakeLists.txt */
 #define TEBAKO_MOINT_POINT "__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_LENGTH  16
- 
+
 typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];
 
 void tebako_set_cwd(const char* path);

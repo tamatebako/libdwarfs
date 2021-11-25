@@ -26,6 +26,7 @@
 
 # CMake files
 CMakeCache.txt
+CMakeSettings.json
 CMakeFiles
 Makefile
 cmake_install.cmake

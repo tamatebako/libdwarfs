@@ -41,7 +41,7 @@
 *  tebako_read
 *  tebako_readv
 *  tebako_fstat
-* 
+*
 *  https://pubs.opengroup.org/onlinepubs/9699919799/
 */
 

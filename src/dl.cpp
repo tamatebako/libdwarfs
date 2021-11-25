@@ -110,14 +110,14 @@ public:
 
 sync_tebako_dltable sync_tebako_dltable::dltable;
 
-extern "C"	void* tebako_dlopen(const char* path, int flags) {                                                                                                                                                                                                                                                           
+extern "C"	void* tebako_dlopen(const char* path, int flags) {
 	void* ret = NULL;
 //  ...
 //	If filename is NULL, then the returned handle is for the main program.
 //  ...
 	if (path == NULL) {
 		ret = ::dlopen(path, flags);
-	} 
+	}
 	else {
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, path);

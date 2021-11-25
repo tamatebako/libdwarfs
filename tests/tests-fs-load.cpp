@@ -29,7 +29,7 @@
 
 #include "tests.h"
 
- /** 
+ /**
  *  - Unit tests for 'load_fs/drop_fs' functions
  *  - Unit tests for tebako_xxx functions for the case when dwarfs is not loaded
  *    (placed here since all other test units contain fixture that loads dwarfs)
@@ -43,7 +43,7 @@ namespace {
 
 	TEST(LoadTests, tebako_load_invalid_filesystem) {
 		const unsigned char data[] = "This is broken filesystem image";
-		int ret = load_fs(	&data[0], 
+		int ret = load_fs(	&data[0],
 							sizeof(data)/sizeof(data[0]),
 							"debug" /*debuglevel*/,
 							NULL	/* cachesize*/,
@@ -72,7 +72,7 @@ namespace {
 	}
 
 	TEST(LoadTests, tebako_load_valid_filesystem) {
-		int ret = load_fs(	&gfsData[0], 
+		int ret = load_fs(	&gfsData[0],
 							gfsSize,
 							"debug" /*debuglevel*/,
 							NULL	/* cachesize*/,

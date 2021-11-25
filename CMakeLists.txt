@@ -31,7 +31,7 @@ cmake_policy(SET CMP0048 NEW)
 project(libdwarfs-wr VERSION 0.1.0)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
-# Visual Studio/Windows Subsystem for Linux (WSL) environment requires 
+# Visual Studio/Windows Subsystem for Linux (WSL) environment requires
 # source tree to be placed to native Windows partiotion
 # Native Windows partition does not support links
 # So, two options are privided below:
@@ -56,7 +56,7 @@ set(Boost_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
 set(GFLAGS_SHARED          OFF)
 
-# Various locations for external projects 
+# Various locations for external projects
 set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
 set(DEPS_INCLUDE_DIR ${DEPS}/include)
 set(DEPS_LIB_DIR ${DEPS}/lib)
@@ -73,9 +73,9 @@ endif(${WITH_TESTS})
 
 message("Collecting packages:")
 if(${WITH_TESTS})
-  message("incbin   - " @${INCBIN_TAG}         " at " ${INCBIN_SOURCE_DIR}) 
+  message("incbin   - " @${INCBIN_TAG}         " at " ${INCBIN_SOURCE_DIR})
 endif(${WITH_TESTS})
-message("dwarfs   - " @${DWARFS_TAG}         " at " ${DWARFS_SOURCE_DIR}) 
+message("dwarfs   - " @${DWARFS_TAG}         " at " ${DWARFS_SOURCE_DIR})
 
 # ...................................................................
 # incbin
@@ -94,7 +94,7 @@ if(${WITH_TESTS})
 # ...................................................................
 # Filesystem locations
 
-# DATA_TEST_DIR folder contains raw data for filesystem tests 
+# DATA_TEST_DIR folder contains raw data for filesystem tests
  if(${USE_TEMP_FS})
   string(RANDOM LENGTH 10 TMPNM)
   set(DATA_TEST_DIR "/tmp/${TMPNM}")
@@ -103,8 +103,8 @@ if(${WITH_TESTS})
   set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
   set(DATA_TEST_DIR_MSG "")
  endif()
- 
- if (${WITH_LINK_TESTS}) 
+
+ if (${WITH_LINK_TESTS})
   set(WLT "with link tests")
   add_compile_definitions("WITH_LINK_TESTS")
  else()
@@ -113,7 +113,7 @@ if(${WITH_TESTS})
 
  message("Using test data set ${WLT} from '${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem' ${DATA_TEST_DIR_MSG}")
 
-# DATA_BIN_DIR folder is used to create packaged filesystem  
+# DATA_BIN_DIR folder is used to create packaged filesystem
  set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 # DATA_BIN_FILE is packaged filesystem itself
  set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
@@ -144,12 +144,12 @@ ExternalProject_Add(${DWARFS_PRJ}
    GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
    GIT_TAG ${DWARFS_TAG}
 # This patch fixes version.cmake logic so that it works correctly not only for topmost project but for embedded project as well
-   PATCH_COMMAND  sed -i "s/COMMAND git/COMMAND \${CMAKE_COMMAND} -E chdir \${CMAKE_CURRENT_SOURCE_DIR} git/g" ${DWARFS_SOURCE_DIR}/cmake/version.cmake || echo "Never mind" 
+   PATCH_COMMAND  sed -i "s/COMMAND git/COMMAND \${CMAKE_COMMAND} -E chdir \${CMAKE_CURRENT_SOURCE_DIR} git/g" ${DWARFS_SOURCE_DIR}/cmake/version.cmake || echo "Never mind"
    UPDATE_COMMAND ""
    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
    SOURCE_DIR ${DWARFS_SOURCE_DIR}
    BINARY_DIR ${DWARFS_BINARY_DIR}
-   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA} 
+   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
                     ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
 
@@ -157,7 +157,7 @@ ExternalProject_Add(${DWARFS_PRJ}
 # Library
 
 configure_file(
-   ${CMAKE_CURRENT_SOURCE_DIR}/resources/version.h.in 
+   ${CMAKE_CURRENT_SOURCE_DIR}/resources/version.h.in
    ${CMAKE_CURRENT_SOURCE_DIR}/include/version.h
    @ONLY
 )
@@ -168,11 +168,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${INCBIN_SOURCE_DIR}
-                    ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift 
+                    ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift
                     ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include
 )
 
-add_library(dwarfs-wr STATIC 
+add_library(dwarfs-wr STATIC
     "src/file-ctl.cpp"
     "src/dir-ctl.cpp"
     "src/file-io.cpp"
@@ -191,7 +191,7 @@ add_library(dwarfs-wr STATIC
     "include/tebako-fd.h"
     "include/tebako-dirent.h"
     "include/tebako-mfs.h"
-    "include/tebako-defines.h" 
+    "include/tebako-defines.h"
     "include/version.h"
   )
 
@@ -223,7 +223,7 @@ if(${WITH_TESTS})
 # Packaged filesystem
 # links for testing are created here to avoid interoperatibility problems Linux/Windows
 
- if (${WITH_LINK_TESTS}) 
+ if (${WITH_LINK_TESTS})
   if (${USE_TEMP_FS})
     add_custom_target(PACKAGED_FILESYSTEM ALL
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
@@ -231,7 +231,7 @@ if(${WITH_TESTS})
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
       COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
       COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
-      DEPENDS ${DWARFS_PRJ} 
+      DEPENDS ${DWARFS_PRJ}
       BYPRODUCTS ${DATA_BIN_FILE}
     )
   else(${USE_TEMP_FS})
@@ -239,9 +239,9 @@ if(${WITH_TESTS})
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
       COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-      COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/h-link-to-dir-2 
+      COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/h-link-to-dir-2
       COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/s-link-to-dir-1
-      DEPENDS ${DWARFS_PRJ} 
+      DEPENDS ${DWARFS_PRJ}
       BYPRODUCTS ${DATA_BIN_FILE}
     )
   endif(${USE_TEMP_FS})
@@ -251,20 +251,20 @@ if(${WITH_TESTS})
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
       COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
       COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
-      DEPENDS ${DWARFS_PRJ} 
+      DEPENDS ${DWARFS_PRJ}
       BYPRODUCTS ${DATA_BIN_FILE}
     )
   else(${USE_TEMP_FS})
     add_custom_target(PACKAGED_FILESYSTEM ALL
       COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-      DEPENDS ${DWARFS_PRJ} 
+      DEPENDS ${DWARFS_PRJ}
       BYPRODUCTS ${DATA_BIN_FILE}
     )
   endif(${USE_TEMP_FS})
  endif(${WITH_LINK_TESTS})
 
  configure_file(
-   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs.cpp.in 
+   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs.cpp.in
    ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
    @ONLY
  )
@@ -274,7 +274,7 @@ if(${WITH_TESTS})
    set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
    add_dependencies(${NAME} ${PRJ})
    target_link_libraries(${APP_NM} ${NAME})
-   install(FILES ${_${NAME}} 
+   install(FILES ${_${NAME}}
            DESTINATION ${CMAKE_INSTALL_LIBDIR}
    )
 
@@ -283,9 +283,9 @@ if(${WITH_TESTS})
 # ...................................................................
 # System libraries
 # Each library name given to the NAMES option is first considered
-# as a library file name and then considered with platform-specific 
-# prefixes (e.g. lib) and suffixes (e.g. .so). Therefore one may 
-# specify library file names such as libfoo.a directly. This can be 
+# as a library file name and then considered with platform-specific
+# prefixes (e.g. lib) and suffixes (e.g. .so). Therefore one may
+# specify library file names such as libfoo.a directly. This can be
 # used to locate static libraries on UNIX-like systems.
 #
 
@@ -296,15 +296,15 @@ if(${WITH_TESTS})
  find_library(_LIBDC "libdouble-conversion.a" REQUIRED)
  find_library(_LIBGFLAGS "libgflags.a" REQUIRED)
  find_library(_LIBEVENT "libevent.a" REQUIRED)
- find_library(_LIBACL "libacl.a" REQUIRED) 
- find_library(_LIBCRYPTO "libcrypto.a" REQUIRED) 
- find_library(_LIBLZ4 "liblz4.a" REQUIRED) 
- find_library(_LIBLZMA "liblzma.a" REQUIRED) 
- find_library(_LIBZ "libz.a" REQUIRED) 
- find_library(_LIBLJEMALLOC "libjemalloc.a" REQUIRED) 
- find_library(_LIBPTHREAD "libpthread.a" REQUIRED) 
- find_library(_LIBDL "libdl.a" REQUIRED) 
- find_library(_LIBC "libc.a" REQUIRED)  
+ find_library(_LIBACL "libacl.a" REQUIRED)
+ find_library(_LIBCRYPTO "libcrypto.a" REQUIRED)
+ find_library(_LIBLZ4 "liblz4.a" REQUIRED)
+ find_library(_LIBLZMA "liblzma.a" REQUIRED)
+ find_library(_LIBZ "libz.a" REQUIRED)
+ find_library(_LIBLJEMALLOC "libjemalloc.a" REQUIRED)
+ find_library(_LIBPTHREAD "libpthread.a" REQUIRED)
+ find_library(_LIBDL "libdl.a" REQUIRED)
+ find_library(_LIBC "libc.a" REQUIRED)
  find_library(_LIBM "libm.a" REQUIRED)
  find_library(_LIBRT "librt.a" REQUIRED)
  find_library(_LIBSSL "libssl.a" REQUIRED)
@@ -326,9 +326,9 @@ if(${WITH_TESTS})
   "tests/tebako-fs.h"
   "tests/tests.h"
  )
- 
+
  target_link_libraries(wr-bin  dwarfs-wr)
- add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM) 
+ add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM)
 
 # ...................................................................
 # The libraries that are build by dwarfs project
@@ -348,19 +348,19 @@ if(${WITH_TESTS})
 #  MUST be in this order otherwise link may fail
 #  -static-libgcc and gcc_eh below is all together an ugly trick to enforce static linking
 
- target_link_libraries(wr-bin                              
-   ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}                               
+ target_link_libraries(wr-bin
+   ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}
    ${_LIBGLOG}         ${_LIBGFLAGS}       ${_LIBEVENT}        ${_LIBIBERTY}
    ${_LIBACL}          ${_LIBSSL}          ${_LIBCRYPTO}       ${_LIBLZ4}
-   ${_LIBZ}            ${_LIBJEMALLOC}     ${_LIBPTHREAD}      ${_LIBDL}           
-   ${_LIBM}            ${_LIBRT}           gcc_eh		                 
+   ${_LIBZ}            ${_LIBJEMALLOC}     ${_LIBPTHREAD}      ${_LIBDL}
+   ${_LIBM}            ${_LIBRT}           gcc_eh
    ${_LIBUNWIND}       ${_LIBLZMA}
  )
 
 # ...................................................................
 # Google test
 
- add_executable(wr-tests 
+ add_executable(wr-tests
   "include/tebako-pch.h"
   "include/tebako-io.h"
   "tests/tests-fs-load.cpp"
@@ -376,12 +376,12 @@ if(${WITH_TESTS})
  )
 
  target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
- target_link_libraries(wr-tests 
+ target_link_libraries(wr-tests
     dwarfs-wr
     ${GTEST_LDFLAGS}
  )
 
- add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM wr-bin) 
+ add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM wr-bin)
 
  gtest_add_tests(TARGET wr-tests)
 
@@ -392,35 +392,35 @@ if(${WITH_TESTS})
 #  IMPORTANT !!!
 #  MUST be in this order otherwise link may fail
 #  -static-libgcc and gcc_eh below is all together an ugly trick to enforce static linking
-# [??? this also looked like a requirement but all tests pass without libc ] ${_LIBC}  
+# [??? this also looked like a requirement but all tests pass without libc ] ${_LIBC}
 
- target_link_libraries(wr-tests                              
-   ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}                               
+ target_link_libraries(wr-tests
+   ${_LIBFMT}          ${Boost_LIBRARIES}  ${_LIBDC}
    ${_LIBGLOG}         ${_LIBGFLAGS}       ${_LIBEVENT}        ${_LIBIBERTY}
    ${_LIBACL}          ${_LIBSSL}          ${_LIBCRYPTO}       ${_LIBLZ4}
-   ${_LIBZ}            ${_LIBJEMALLOC}     ${_LIBPTHREAD}      ${_LIBDL}           
-   ${_LIBM}            ${_LIBRT}           gcc_eh		                 
+   ${_LIBZ}            ${_LIBJEMALLOC}     ${_LIBPTHREAD}      ${_LIBDL}
+   ${_LIBM}            ${_LIBRT}           gcc_eh
    ${_LIBUNWIND}       ${_LIBLZMA}
  )
 
 endif(${WITH_TESTS})
 
- install(TARGETS 
+ install(TARGETS
          dwarfs-wr
          DESTINATION ${CMAKE_INSTALL_LIBDIR}
- ) 
+ )
 
- install(FILES 
-         ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA} 
+ install(FILES
+         ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
          ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
          DESTINATION ${CMAKE_INSTALL_LIBDIR}
- ) 
+ )
 
-install(FILES 
+install(FILES
         "include/tebako-defines.h"
         "include/tebako-io.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
-)  
+)
 
 install(FILES
         ${DEPS_BIN_DIR}/dwarfs

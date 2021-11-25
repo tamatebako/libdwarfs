@@ -80,7 +80,7 @@ extern "C" DIR* tebako_opendir(const char* dirname) {
 	DIR* ret = NULL;
 	if (dirname == NULL) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
-	} 
+	}
 	else {
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, dirname);
@@ -92,7 +92,7 @@ extern "C" DIR* tebako_opendir(const char* dirname) {
 			}
 		}
 		else {
-			int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY); 
+			int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY);
 			if (vfd < 0) {
 				if (vfd == DWARFS_INVALID_FD) {
 					TEBAKO_SET_LAST_ERROR(ENOENT);

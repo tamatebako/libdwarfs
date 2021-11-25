@@ -82,4 +82,4 @@ mfs::mfs(const void* addr, size_t size):
       addr_(addr),
       page_size_(::sysconf(_SC_PAGESIZE)) {}
 
-} 
+}

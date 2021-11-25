@@ -29,7 +29,7 @@
 
 #include "tests.h"
 
-/*  
+/*
 *  Unit tests for 'tebako_open', 'tebako_close', 'tebako_read'
 * 'tebako_lseek' and underlying file descriptor implementation
 */
@@ -272,7 +272,7 @@ namespace {
 		char readbuf[32];
 		const char* pattern = "Just a file";
 		const int num2read = strlen(pattern);
-		EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf)/sizeof(readbuf[0]))); 
+		EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf)/sizeof(readbuf[0])));
 		EXPECT_EQ(0, strncmp(readbuf, "Just a file", num2read));
 
 		EXPECT_EQ(0, tebako_close(fh1));

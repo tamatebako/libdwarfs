@@ -24,7 +24,7 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #include <tebako-pch.h>
@@ -104,12 +104,12 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept {
 				TEBAKO_SET_LAST_ERROR(EROFS);
 			}
 			else {
-				//  .... 
-				//  If the access mode of the open file description associated with the file descriptor is not O_SEARCH, the function shall check whether directory searches are 
+				//  ....
+				//  If the access mode of the open file description associated with the file descriptor is not O_SEARCH, the function shall check whether directory searches are
 				//  If the access mode is O_SEARCH, the function shall not perform the check.
-				//	.... 
+				//	....
 				//	However, Linux does not support O_SEARCH (
-				//  So, We will assume that it is not set 
+				//  So, We will assume that it is not set
 				ret = dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid());
 				if (ret == DWARFS_IO_CONTINUE) {
 					try {

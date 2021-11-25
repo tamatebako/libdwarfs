@@ -28,7 +28,7 @@
  */
 
 #include "tests.h"
-#include <gnu/lib-names.h> 
+#include <gnu/lib-names.h>
 
 namespace {
 	class DlTests : public testing::Test {

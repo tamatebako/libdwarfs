@@ -27,9 +27,9 @@
  *
  */
 
-#pragma once	
+#pragma once
 
-/* 
+/*
 * defines below are copied from tebako_common.h
 * They are copied because !!! the client code should not include tebaco_common.h !!!
 */

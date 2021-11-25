@@ -24,7 +24,7 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #include <tebako-pch.h>
@@ -82,7 +82,7 @@ int sync_tebako_dstable::closedir(uintptr_t dirp) noexcept {
 	auto p_dstable = *wlock();
 	auto p_ds = p_dstable->find(dirp);
 	if (p_ds != p_dstable->end()) {
-		ret = sync_tebako_fdtable::fdtable.close(p_ds->second->vfd); 
+		ret = sync_tebako_fdtable::fdtable.close(p_ds->second->vfd);
 		p_dstable->erase(dirp);
 	}
 	return ret;
@@ -170,8 +170,8 @@ int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcep
 }
 
 int tebako_ds::load_cache(int new_cache_start, bool set_pos) noexcept {
-	int ret = sync_tebako_fdtable::fdtable.readdir(vfd, cache, new_cache_start, 
-			                                       TEBAKO_DIR_CACHE_SIZE, cache_size, 
+	int ret = sync_tebako_fdtable::fdtable.readdir(vfd, cache, new_cache_start,
+			                                       TEBAKO_DIR_CACHE_SIZE, cache_size,
 												   dir_size);
 
 	if (ret == DWARFS_IO_CONTINUE) {
