@@ -105,7 +105,7 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept {
 			}
 			else {
 				//  ....
-				//  If the access mode of the open file description associated with the file descriptor is not O_SEARCH, the function shall check whether directory searches are
+				//  If the access mode of the open file description associated with the file descriptor is not O_SEARCH, the function shall check whether directory searches are allowed
 				//  If the access mode is O_SEARCH, the function shall not perform the check.
 				//	....
 				//	However, Linux does not support O_SEARCH (
@@ -265,6 +265,28 @@ off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence)  noexcept {
 	}
 	return ret;
 }
+
+int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st) noexcept {
+	struct stat stfd;
+	int ret = fstat(vfd, &stfd);
+	if (ret == DWARFS_IO_CONTINUE) {
+		ret = DWARFS_IO_ERROR;
+		if (!S_ISDIR(stfd.st_mode)) {
+			TEBAKO_SET_LAST_ERROR(ENOTDIR);
+		}
+		else {
+			ret = dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid());
+			if (ret == DWARFS_IO_CONTINUE) {
+				ret = dwarfs_inode_relative_stat(stfd.st_ino, path, st);
+			}
+			else {
+				TEBAKO_SET_LAST_ERROR(ENOENT);
+			}
+		}
+	}
+	return ret;
+}
+
 
 
 

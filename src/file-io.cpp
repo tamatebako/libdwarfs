@@ -149,3 +149,24 @@ extern "C" int tebako_fstat(int vfd, struct stat* buf) {
 	return (ret == DWARFS_INVALID_FD) ? ::fstat(vfd, buf) : ret;
 }
 
+extern "C" int tebako_fstatat(int vfd, const char* path, struct stat* buf, int flag) {
+	int ret = -1;
+	try {
+		std::filesystem::path std_path(path);
+		if (std_path.is_absolute() || vfd == AT_FDCWD) {
+			ret = (flag== AT_SYMLINK_NOFOLLOW) ? tebako_lstat(path, buf) : tebako_stat(path, buf);
+		}
+		else {
+			ret = sync_tebako_fdtable::fdtable.fstatat(vfd, path, buf);
+			if (ret == DWARFS_INVALID_FD) {
+				ret = ::fstatat(vfd, path, buf, flag);
+			}
+		}
+	}
+	catch (...) {
+		ret = -1;
+		TEBAKO_SET_LAST_ERROR(ENOMEM);
+	}
+	return ret;
+}
+

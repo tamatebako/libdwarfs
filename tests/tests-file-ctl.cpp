@@ -42,7 +42,6 @@ namespace {
 				NULL	/* decompress_ratio*/,
 				NULL    /* image_offset */
 			);
-
 		}
 
 		static void TearDownTestSuite() {
@@ -196,6 +195,54 @@ namespace {
 		ret = tebako_fstat(fh, &st);
 		EXPECT_EQ(0, ret);
 		ret = tebako_close(fh);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_fstatat_relative_path) {
+		struct stat buf;
+		int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
+		EXPECT_LT(0, fd);
+		int ret = tebako_fstatat(fd, "file-in-directory-1.txt", &buf, 0);
+		EXPECT_EQ(0, ret);
+		ret = tebako_close(fd);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_fstatat_absolute_path) {
+		struct stat buf;
+		int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
+		EXPECT_LT(0, fd);
+		int ret = tebako_fstatat(fd, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), &buf, 0);
+		EXPECT_EQ(0, ret);
+		ret = tebako_close(fd);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_fstatat_relative_path_pass_through) {
+		struct stat buf;
+		int fd = tebako_open(2, "/bin", O_RDONLY | O_DIRECTORY);
+		EXPECT_LT(0, fd);
+		int ret = tebako_fstatat(fd, "bash", &buf, 0);
+		EXPECT_EQ(0, ret);
+		ret = tebako_close(fd);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_fstatat_absolute_path_pass_through) {
+		struct stat buf;
+		int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
+		EXPECT_LT(0, fd);
+		int ret = tebako_fstatat(fd, "bin/bash", &buf, 0);
+		EXPECT_EQ(0, ret);
+		ret = tebako_close(fd);
+		EXPECT_EQ(0, ret);
+	}
+
+	TEST_F(FileCtlTests, tebako_fstatat_at_fdcwd) {
+		struct stat buf;
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
+		EXPECT_EQ(0, ret);
+		ret = tebako_fstatat(AT_FDCWD, "file-in-directory-2.txt", &buf, 0);
 		EXPECT_EQ(0, ret);
 	}
 }

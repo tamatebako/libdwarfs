@@ -286,7 +286,7 @@ static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* ca
                     fs->getattr(entry, &st);
                     cache[cache_size].e.d_ino = st.st_ino;
                     cache[cache_size].e.d_off = cache_start + cache_size;
-                    cache[cache_size].e.d_type = DT_UNKNOWN;
+                    cache[cache_size].e.d_type = IFTODT(st.st_mode);
                     strncpy(cache[cache_size].e.d_name, name.c_str(), TEBAKO_PATH_LENGTH);
                     cache[cache_size].e.d_name[TEBAKO_PATH_LENGTH] = '\0';
                     cache[cache_size].e.d_reclen = std::max(sizeof(cache[0]), sizeof(cache[0]) + strlen(cache[cache_size].e.d_name) - 256 + 1);
