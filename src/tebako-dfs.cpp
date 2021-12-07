@@ -287,8 +287,15 @@ static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* ca
                     cache[cache_size].e.d_ino = st.st_ino;
                     cache[cache_size].e.d_off = cache_start + cache_size;
                     cache[cache_size].e.d_type = IFTODT(st.st_mode);
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
                     strncpy(cache[cache_size].e.d_name, name.c_str(), TEBAKO_PATH_LENGTH);
                     cache[cache_size].e.d_name[TEBAKO_PATH_LENGTH] = '\0';
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
                     cache[cache_size].e.d_reclen = std::max(sizeof(cache[0]), sizeof(cache[0]) + strlen(cache[cache_size].e.d_name) - 256 + 1);
                     ++cache_size;
                 }

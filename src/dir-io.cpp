@@ -247,7 +247,7 @@ typedef int(*qsort_compar)(const void*, const void*);
 								 while (--n >= 0) {
 									 delete list[n];
 								 }
-								 delete list;
+								 delete[] list;
 								 list = NULL;
 							 }
 							 else {
