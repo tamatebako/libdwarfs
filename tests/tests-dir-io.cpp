@@ -284,7 +284,7 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 
 		errno = 0;
-		EXPECT_EQ(-1, tebako_scandir("somedir", NULL, zero_filter, alphasort));
+		EXPECT_EQ(-1, tebako_scandir(TEBAKIZE_PATH("directory-3"), NULL, zero_filter, alphasort));
 		EXPECT_EQ(EFAULT, errno);
 	}
 
