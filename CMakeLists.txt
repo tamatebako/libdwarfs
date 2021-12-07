@@ -371,7 +371,6 @@ if(${WITH_TESTS})
   "tests/tests-ln.cpp"
   "tests/tests-dl.cpp"
   "tests/tebako-fs.cpp"
-  "tests/tests-helpers.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
  )
