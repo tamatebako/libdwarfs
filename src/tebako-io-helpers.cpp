@@ -122,7 +122,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 	}
 
 //	Checks if the current cwd path is withing tebako memfs
-    bool is_tebako_cwd(void) {
+	bool is_tebako_cwd(void) {
 		auto locked = tebako_cwd.rlock();
 		return (*locked)->is_in();
 	}
