@@ -28,24 +28,32 @@ env:
 
 jobs:
   Ubuntu-build:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        env:
+          - CC: gcc
+            CXX: g++
+          - CC: clang
+            CXX: clang++
     if: "!contains(github.event.head_commit.message, 'skip ci')"
+    env: ${{ matrix.env }}
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Create deps folder and cache key
+    - name: Create deps folder
       run: |
         mkdir ${{github.workspace}}/${{env.DEPS}}
-        echo "Keys" > key.txt
-        echo  ${{ env.INCBIN_TAG }} >> key.txt
-        echo  ${{ env.DWARFS_TAG }} >> key.txt
       
     - name: Process cache
       uses: actions/cache@v2
       with:
         path: ${{github.workspace}}/${{env.DEPS}}
-        key: ${{ github.workflow }}-${{ hashFiles('key.txt') }}-v2
+        key: ${{ github.workflow }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}
 
     - name: Install packages Ubuntu
 # Already installed: bison flex pkg-config

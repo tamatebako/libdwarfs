@@ -104,6 +104,7 @@ extern "C"	char* tebako_getwd(char* buf) {
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wattribute-warning"
 #endif
 			ret = ::getwd(buf);
 #ifdef __GNUC__
@@ -134,7 +135,10 @@ extern "C"	int tebako_chdir(const char* path) {
 			ret = tebako_stat(p_path, &st);
 			if (ret == 0) {
 				if (S_ISDIR(st.st_mode)) {
-					tebako_set_cwd(p_path);
+					ret = tebako_set_cwd(p_path) ? 0 : -1;
+					if (ret != 0) {
+						TEBAKO_SET_LAST_ERROR(ENOMEM);
+					}
 				}
 				else {
 					ret = -1;
@@ -145,7 +149,10 @@ extern "C"	int tebako_chdir(const char* path) {
 		else {
 			ret = ::chdir(path);
 			if (ret == 0) {
-				tebako_set_cwd(NULL);
+				ret = tebako_set_cwd(NULL) ? 0 : -1;
+				if (ret != 0) {
+					TEBAKO_SET_LAST_ERROR(ENOMEM);
+				}
 			}
 		}
 	}

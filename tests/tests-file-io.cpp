@@ -339,5 +339,19 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+	TEST_F(FileIOTests, tebako_open_read_close_absolute_path_dot_dot) {
+		int fh = tebako_open(2, TEBAKIZE_PATH("directory-3/.//level-1/../../directory-1/file-in-directory-1.txt"), O_RDONLY);
+		EXPECT_LT(0, fh);
+
+		char readbuf[32];
+		const int num2read = 4;
+
+		int ret = tebako_read(fh, readbuf, num2read); readbuf[num2read] = '\0';
+		EXPECT_EQ(num2read, ret);
+		EXPECT_EQ(0, strcmp(readbuf, "This"));
+
+		ret = tebako_close(fh);
+		EXPECT_EQ(0, ret);
+	}
 
 }

@@ -81,7 +81,11 @@
 #define TEBAKO_SET_LAST_ERROR(e)  errno = (e)
 #endif
 
+#ifdef PATH_MAX
 #define TEBAKO_PATH_LENGTH ((size_t) PATH_MAX)
+#else
+#define TEBAKO_PATH_LENGTH 2048
+#endif
 
 /* This shall match tebako TEBAKO_MOUNT_POINT definition at CMakeLists.txt */
 #define TEBAKO_MOINT_POINT "__tebako_memfs__"
@@ -89,10 +93,10 @@
 
 typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];
 
-void tebako_set_cwd(const char* path);
+bool tebako_set_cwd(const char* path);
 const char* tebako_get_cwd(tebako_path_t cwd);
-int is_tebako_path(const char* path);
-int is_tebako_cwd(void);
+bool is_tebako_path(const char* path);
+bool is_tebako_cwd(void);
 const char* tebako_expand_path(tebako_path_t expanded_path, const char* path);
 const char* to_tebako_path(tebako_path_t t_path, const char* path);
 

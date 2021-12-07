@@ -91,7 +91,7 @@ namespace {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
 		r2 = tebako_getcwd(NULL, PATH_MAX);
-		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-2/"));
+		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-2"));
 		free(r2);
 	}
 
@@ -101,7 +101,7 @@ namespace {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-1"));
 		EXPECT_EQ(0, ret);
 		r2 = tebako_getcwd(NULL, 0);
-		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-1/"));
+		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-1"));
 		free(r2);
 	}
 
@@ -123,7 +123,7 @@ namespace {
 		ret = tebako_chdir("directory-2");
 		EXPECT_EQ(0, ret);
 		r = tebako_getwd(p);
-		EXPECT_STREQ(r, TEBAKIZE_PATH("directory-2/"));
+		EXPECT_STREQ(r, TEBAKIZE_PATH("directory-2"));
 	}
 
 	TEST_F(DirCtlTests, tebako_chdir_relative_path_no_directory_getwd) {
@@ -190,4 +190,17 @@ namespace {
 		EXPECT_EQ(NULL, tebako_getwd(NULL));
 		EXPECT_EQ(ENOENT, errno);
 	}
+
+	TEST_F(DirCtlTests, tebako_dir_ctl_dot_dot) {
+		int ret = tebako_chdir(TEBAKIZE_PATH("directory-3/level-1/level-2/level-3/level-4/../.."));
+		EXPECT_EQ(0, ret);
+
+		char* r2 = tebako_getcwd(NULL, 0);
+		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-3/level-1/level-2/"));
+		if (r2) {
+			free(r2);
+		}
+
+	}
+
 }

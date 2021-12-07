@@ -277,7 +277,6 @@ namespace {
 		EXPECT_EQ(NULL, tebako_readdir(NULL));
 		EXPECT_EQ(EBADF, errno);
 
-
 		struct dirent** namelist;
 
 		errno = 0;
@@ -285,8 +284,45 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 
 		errno = 0;
-		EXPECT_EQ(-1, tebako_scandir("somedir", NULL, zero_filter, alphasort));
-		EXPECT_EQ(ENOENT, errno);
+		EXPECT_EQ(-1, tebako_scandir(TEBAKIZE_PATH("directory-3"), NULL, zero_filter, alphasort));
+		EXPECT_EQ(EFAULT, errno);
+	}
 
+	TEST_F(DirIOTests, tebako_opendir_readdir_closedir_dot_dot) {
+		DIR* dirp = tebako_opendir(TEBAKIZE_PATH("directory-3/level-1/.//level-2/level-3/.."));
+		EXPECT_TRUE(dirp != NULL);
+		if (dirp != NULL) {
+			std::string fname;
+			std::string fname_alt;
+			struct dirent* entry = tebako_readdir(dirp);
+			EXPECT_TRUE(entry != NULL);
+			if (entry != NULL) {
+				fname = ".";
+				EXPECT_TRUE(fname == entry->d_name);
+				EXPECT_TRUE(entry->d_type == DT_DIR);
+			}
+			entry = tebako_readdir(dirp);
+			EXPECT_TRUE(entry != NULL);
+			if (entry != NULL) {
+				fname = "..";
+				EXPECT_TRUE(fname == entry->d_name);
+				EXPECT_TRUE(entry->d_type == DT_DIR);
+			}
+			fname = "test-file-at-level-2.txt";
+			fname_alt = "level-3";
+			entry = tebako_readdir(dirp);
+			EXPECT_TRUE(entry != NULL);
+			if (entry != NULL) {
+				EXPECT_TRUE((fname == entry->d_name) || (fname_alt == entry->d_name));
+				EXPECT_TRUE(entry->d_type == (entry->d_name == fname_alt ? DT_DIR : DT_REG));
+			}
+			entry = tebako_readdir(dirp);
+			EXPECT_TRUE(entry != NULL);
+			if (entry != NULL) {
+				EXPECT_TRUE((fname == entry->d_name) || (fname_alt == entry->d_name));
+				EXPECT_TRUE(entry->d_type == (entry->d_name == fname_alt ? DT_DIR : DT_REG));
+			}
+			EXPECT_EQ(0, tebako_closedir(dirp));
+		}
 	}
 }

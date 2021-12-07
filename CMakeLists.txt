@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.0)
+project(libdwarfs-wr VERSION 0.1.1)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -405,16 +405,16 @@ if(${WITH_TESTS})
 
 endif(${WITH_TESTS})
 
- install(TARGETS
+install(TARGETS
          dwarfs-wr
          DESTINATION ${CMAKE_INSTALL_LIBDIR}
- )
+)
 
- install(FILES
+install(FILES
          ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
          ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
          DESTINATION ${CMAKE_INSTALL_LIBDIR}
- )
+)
 
 install(FILES
         "include/tebako-defines.h"
@@ -429,5 +429,3 @@ install(FILES
         ${DEPS_BIN_DIR}/mkdwarfs
         DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-
-
