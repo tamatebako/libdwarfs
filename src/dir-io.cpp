@@ -272,6 +272,10 @@ typedef int(*qsort_compar)(const void*, const void*);
 					 }
 				 }
 			 }
+			 else {
+				 // This is not POSIX but posix does not cover this case (namelist==NULL) at all
+				 TEBAKO_SET_LAST_ERROR(EFAULT);
+			 }
 		 }
 	 }
 	 return ret;

@@ -245,4 +245,12 @@ namespace {
 		ret = tebako_fstatat(AT_FDCWD, "file-in-directory-2.txt", &buf, 0);
 		EXPECT_EQ(0, ret);
 	}
+
+	TEST_F(FileCtlTests, tebako_access_relative_path_dot_dot) {
+		int ret = tebako_chdir(TEBAKIZE_PATH("//directory-3/level-1//"));
+		EXPECT_EQ(0, ret);
+		ret = tebako_access("level-2/../../../directory-2/file-in-directory-2.txt", R_OK);
+		EXPECT_EQ(0, ret);
+	}
+
 }

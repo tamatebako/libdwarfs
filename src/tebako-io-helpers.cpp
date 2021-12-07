@@ -54,7 +54,8 @@ public:
 //	Sets current working directory to lexically normal path
 	void set_cwd(const char* path) {
 		if (path) {
-		    p.assign(path).lexically_normal();
+			p.assign(path);
+			p = p.lexically_normal();
 		}
 		else {
 			p.assign("");
@@ -143,8 +144,8 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 	const char* to_tebako_path(tebako_path_t t_path, const char* path) {
 		const char* p_path = NULL;
 		try {
-		    fs::path p{ path };
-		    p.lexically_normal();
+		    fs::path p = path;
+		    p = p.lexically_normal();
 		    auto locked = tebako_cwd.rlock();
 		    if ((*locked)->is_in() && p.is_relative()) {
 			    p_path = (*locked)->expand_path(t_path, p.c_str());
