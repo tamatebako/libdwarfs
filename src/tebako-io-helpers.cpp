@@ -108,17 +108,17 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 		return (path != NULL &&
 			(strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 #ifdef _WIN32
-				|| strncmp(path, "\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
-				|| strncmp(path + 1, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-				|| strncmp(path + 1, ":\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-				|| strncmp(path, "//?/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
-				|| strncmp(path, "\\\\?\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
-				|| ((strncmp(path, "\\\\?\\", 4) == 0 || strncmp(path, "//?/", 4) == 0) &&
-					(strncmp(path + 5, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0 ||
-						strncmp(path + 5, ":\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-						)
+            || strncmp(path, "\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
+            || strncmp(path + 1, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
+            || strncmp(path + 1, ":\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
+            || strncmp(path, "//?/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
+            || strncmp(path, "\\\\?\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
+            || ((strncmp(path, "\\\\?\\", 4) == 0 || strncmp(path, "//?/", 4) == 0) &&
+                (strncmp(path + 5, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0 ||
+                 strncmp(path + 5, ":\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
+                )
 #endif
-					));
+            ));
 	}
 
 //	Checks if the current cwd path is withing tebako memfs

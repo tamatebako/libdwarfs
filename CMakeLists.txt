@@ -325,7 +325,7 @@ if(${WITH_TESTS})
   "tests/tebako-fs.cpp"
   "tests/tebako-fs.h"
   "tests/tests.h"
-  )
+ )
 
  target_link_libraries(wr-bin  dwarfs-wr)
  add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM)
