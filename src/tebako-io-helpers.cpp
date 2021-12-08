@@ -55,6 +55,7 @@ public:
 	void set_cwd(const char* path) {
 		if (path) {
 			p.assign(path);
+			p += "/";
 			p = p.lexically_normal();
 		}
 		else {
@@ -106,7 +107,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 //  Checks if a path is withing tebako memfs
 	bool is_tebako_path(const char* path) {
           return (path != NULL &&
-            (strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
+            (strncmp((path), "/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 #ifdef _WIN32
             || strncmp(path, "\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
             || strncmp(path + 1, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
