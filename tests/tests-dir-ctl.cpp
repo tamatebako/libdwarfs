@@ -200,7 +200,17 @@ namespace {
 		if (r2) {
 			free(r2);
 		}
-
 	}
+	
+	TEST_F(DirCtlTests, tebako_dir_ctl_root) {
+		//  "/__tebako_memfs__" and not conventional "/__tebako_memfs__/"
+		int ret = tebako_chdir("/__tebako_memfs__");
+		EXPECT_EQ(0, ret);
 
+		char* r2 = tebako_getcwd(NULL, 0);
+		EXPECT_STREQ(r2, TEBAKIZE_PATH(""));
+		if (r2) {
+			free(r2);
+		}
+	}
 }
