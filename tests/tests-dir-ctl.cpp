@@ -91,7 +91,7 @@ namespace {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
 		r2 = tebako_getcwd(NULL, PATH_MAX);
-		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-2"));
+		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-2/"));
 		free(r2);
 	}
 
@@ -101,7 +101,7 @@ namespace {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-1"));
 		EXPECT_EQ(0, ret);
 		r2 = tebako_getcwd(NULL, 0);
-		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-1"));
+		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-1/"));
 		free(r2);
 	}
 
@@ -123,7 +123,7 @@ namespace {
 		ret = tebako_chdir("directory-2");
 		EXPECT_EQ(0, ret);
 		r = tebako_getwd(p);
-		EXPECT_STREQ(r, TEBAKIZE_PATH("directory-2"));
+		EXPECT_STREQ(r, TEBAKIZE_PATH("directory-2/"));
 	}
 
 	TEST_F(DirCtlTests, tebako_chdir_relative_path_no_directory_getwd) {
@@ -200,7 +200,17 @@ namespace {
 		if (r2) {
 			free(r2);
 		}
-
 	}
+	
+	TEST_F(DirCtlTests, tebako_dir_ctl_root) {
+		//  "/__tebako_memfs__" and not conventional "/__tebako_memfs__/"
+		int ret = tebako_chdir("/__tebako_memfs__");
+		EXPECT_EQ(0, ret);
 
+		char* r2 = tebako_getcwd(NULL, 0);
+		EXPECT_STREQ(r2, TEBAKIZE_PATH(""));
+		if (r2) {
+			free(r2);
+		}
+	}
 }

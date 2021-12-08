@@ -45,7 +45,7 @@ public:
 //	Gets current working directory
 	const char* get_cwd(tebako_path_t cwd) {
 		const char* n = p.c_str();
-		size_t len = std::min(strlen(n), TEBAKO_PATH_LENGTH - 1);
+		size_t len = std::min(strlen(n), TEBAKO_PATH_LENGTH);
 		memcpy(cwd, n, len);
 		cwd[len] = '\0';
 		return cwd;
@@ -55,6 +55,7 @@ public:
 	void set_cwd(const char* path) {
 		if (path) {
 			p.assign(path);
+			p += "/";
 			p = p.lexically_normal();
 		}
 		else {
@@ -73,7 +74,7 @@ public:
 		if (path != NULL) {
 			fs::path rpath = (p / path).lexically_normal();
 			const char* rp = rpath.c_str();
-			size_t len = std::min(strlen(rp), TEBAKO_PATH_LENGTH - 1);
+			size_t len = std::min(strlen(rp), TEBAKO_PATH_LENGTH);
 			memcpy(expanded_path, rp, len);
 			expanded_path[len] = '\0';
 			ret = expanded_path;
@@ -106,7 +107,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 //  Checks if a path is withing tebako memfs
 	bool is_tebako_path(const char* path) {
           return (path != NULL &&
-            (strncmp((path), "/" TEBAKO_MOINT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
+            (strncmp((path), "/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
 #ifdef _WIN32
             || strncmp(path, "\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
             || strncmp(path + 1, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
@@ -152,7 +153,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{ new tebako_path_s };
 		    }
 			else if (is_tebako_path(path)) {
 				const char* pp = p.c_str();
-				size_t len = std::min(strlen(pp), TEBAKO_PATH_LENGTH - 1);
+				size_t len = std::min(strlen(pp), TEBAKO_PATH_LENGTH);
 				memcpy(t_path, pp, len);
 				t_path[len] = '\0';
 				p_path = t_path;

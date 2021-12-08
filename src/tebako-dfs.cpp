@@ -169,7 +169,12 @@ int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
     auto p = *locked;
     if (p) {
         try {
-            auto inode = p->fs.find(path + TEBAKO_MOUNT_POINT_LENGTH + 2);
+// Normally we remove '/__tebako_memfs__/'
+// However, there is also a case when it is memfs root and path isn just '/__tebako_memfs__'
+            const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH + 1] == '\0' ?
+                path + TEBAKO_MOUNT_POINT_LENGTH + 1 :
+                path + TEBAKO_MOUNT_POINT_LENGTH + 2;
+            auto inode = p->fs.find(adj);
             if (inode) {
                 err = fn(&p->fs, *inode, std::forward<Args>(args)...);
                 if (err == 0) {
