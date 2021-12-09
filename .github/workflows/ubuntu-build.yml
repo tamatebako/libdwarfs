@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-18.04, ubuntu-latest]
         env:
           - CC: gcc
             CXX: g++
@@ -53,7 +53,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ${{github.workspace}}/${{env.DEPS}}
-        key: ${{ github.workflow }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v02
+        key: ${{ github.workflow }}-${{ env.os }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v02
 
     - name: Install packages Ubuntu
 # Already installed: bison flex pkg-config
@@ -63,7 +63,7 @@ jobs:
         ronn binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev libxml2-dev \
         libdouble-conversion-dev libiberty-dev liblz4-dev liblzma-dev libssl-dev \
         libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
-        libboost-regex-dev libboost-system-dev libboost-thread-dev libfuse3-dev \
+        libboost-regex-dev libboost-system-dev libboost-thread-dev libfuse-dev \
         libunwind-dev libdwarf-dev libelf-dev libfmt-dev libgoogle-glog-dev libgtest-dev
         
     - name: Configure 
