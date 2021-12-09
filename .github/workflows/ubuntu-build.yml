@@ -1,4 +1,29 @@
-name: Ubuntu build
+# Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+# All rights reserved.
+# This file is a part of tamatebako
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+name: Ubuntu
 
 on:
   push:
@@ -20,88 +45,121 @@ on:
 env:
 # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
   DEPS: deps
-# GitHub dependencies' 
+# GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "78fd324"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.3"
+# Ruby  (this is for ronn)
+  RUBY_VER:   "2.7.4"
 
 jobs:
-  Ubuntu-build:
+  build:
     name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ ubuntu-18.04, ubuntu-20.04 ]
         env:
           - CC: gcc
             CXX: g++
-          - CC: clang
-            CXX: clang++
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
+#          - CC: clang
+#            CXX: clang++
     env: ${{ matrix.env }}
-
     steps:
-    - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Create deps folder
-      run: |
-        mkdir ${{github.workspace}}/${{env.DEPS}}
-      
-    - name: Process cache
-      uses: actions/cache@v2
-      with:
-        path: ${{github.workspace}}/${{env.DEPS}}
-        key: ${{ github.workflow }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}
+      - name: Create deps folder
+        run: |
+          mkdir ${{github.workspace}}/${{env.DEPS}}
 
-    - name: Install packages Ubuntu
+      - name: Process cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/${{env.DEPS}}
+          key: ${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v05
+
+# https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
+# https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1804-README.md
 # Already installed: bison flex pkg-config
-      run: |
-        sudo apt-get update
-        sudo apt-get install \
-        ronn binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev libxml2-dev \
-        libdouble-conversion-dev libiberty-dev liblz4-dev liblzma-dev libssl-dev \
-        libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
-        libboost-regex-dev libboost-system-dev libboost-thread-dev libfuse3-dev \
-        libunwind-dev libdwarf-dev libelf-dev libfmt-dev libgoogle-glog-dev libgtest-dev
-        
-    - name: Configure 
-      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 
 
-    - name: Build
-      run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
+# gcc/g++ 9 is also there otherwise we would need:
+# sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+# sudo apt update
+# sudo apt install gcc-9 g++-9
 
-    - name: Unit tests
-      run: make test
+# cmake good enough is also at GHA. Otherswise:
+# sudo apt-get remove --purge --auto-remove cmake
+# sudo apt-get update
+# sudo apt-get install -y software-properties-common lsb-release
+# sudo apt-get clean all
+# wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+# sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+# sudo apt update
+# sudo apt install kitware-archive-keyring
+# sudo rm /etc/apt/trusted.gpg.d/kitware.gpg
+# sudo apt update
+# sudo apt install cmake
 
-    - name: Check "C" interface bindings in statically linked program, check that tmp directory is cleaned upon shutdown
-      run: |
-        mkdir ${{github.workspace}}/t_dir
-        ls /tmp >> ${{github.workspace}}/t_dir/before
-        ./wr-bin
-        ls /tmp >> ${{github.workspace}}/t_dir/after
-        diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
+      - name: Switch to gcc-9
+        if: ${{ matrix.env.CC == 'gcc' }}
+        run: |
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100 --slave /usr/bin/g++ g++ /usr/bin/g++-9 --slave /usr/bin/gcov gcov /usr/bin/gcov-9
+          sudo update-alternatives --set gcc /usr/bin/gcc-9
 
-    - name: Run ldd to check that wr-bin has been linked statically 
-      run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
+      - name: Install packages
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install \
+          binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev \
+          libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev \
+          libfuse-dev libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libgtest-dev \
+          libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
+          libboost-regex-dev libboost-system-dev libboost-thread-dev
 
-    - name: Install and verify installation folders
-      run: |
-        sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
-        test -f ${{github.workspace}}/install/bin/dwarfs || (echo "File ${{github.workspace}}/install/bin/dwarfs does not exist" && false)
-        test -f ${{github.workspace}}/install/bin/dwarfsck || (echo "File ${{github.workspace}}/install/bin/dwarfsck does not exist" && false)
-        test -f ${{github.workspace}}/install/bin/dwarfsextract || (echo "File ${{github.workspace}}/install/bin/dwarfsextract does not exist" && false)
-        test -f ${{github.workspace}}/install/bin/mkdwarfs || (echo "File ${{github.workspace}}/install/bin/mkdwarfs does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs-wr.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libdwarfs.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libfsst.a || (echo "File ${{github.workspace}}/install/lib/libfsst.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libfolly.a || (echo "File ${{github.workspace}}/install/lib/libfolly.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libmetadata_thrift.a || (echo "File ${{github.workspace}}/install/lib/libmetadata_thrift.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libthrift_light.a || (echo "File ${{github.workspace}}/install/lib/libthrift_light.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libxxhash.a || (echo "File ${{github.workspace}}/install/lib/libxxhash.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libzstd.a || (echo "File ${{github.workspace}}/install/lib/libzstd.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libarchive.a || (echo "File ${{github.workspace}}/install/lib/libarchive.a does not exist" && false)
-        test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-defines.h does not exist" && false)
-        test -f ${{github.workspace}}/install/include/tebako/tebako-io.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-io.h does not exist" && false)
+      - name: Update libfmt, googletest (bionic)
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        run: |
+          sudo apt-get -y remove libfmt-dev googletest libgtest-dev
+          sudo apt-get -y install software-properties-common
+          sudo add-apt-repository ppa:team-xbmc/ppa
+          sudo apt-get -y update
+          sudo apt-get -y install libfmt-dev googletest libgtest-dev
 
+      - name: Install libfmt, googletest (focal)
+        if: ${{ matrix.os == 'ubuntu-20.04' }}
+        run: sudo apt-get install libfmt-dev googletest libgtest-dev
+
+# sudo apt install ronn does not work for bionic
+# On focal  it cannot process one of the files, so we do it natively
+# Note that libruby-dev is required under the hood
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VER }}
+
+      - name: Install ronn
+        run: sudo gem install ronn
+
+      - name: Configure
+        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=ON
+
+      - name: Build
+        run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
+
+      - name: Run unit tests
+        run: make test
+
+      - name: Checkout shell test framework
+        uses: actions/checkout@v2
+        with:
+          repository: kward/shunit2
+          path: ${{github.workspace}}/tests/shunit2
+          fetch-depth: 1
+
+      - name: Run additional tests
+        run:  ${{github.workspace}}/tests/scripts/tests.sh

@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.2)
+project(libdwarfs-wr VERSION 0.1.3)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -66,7 +66,7 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "78fd324")
+def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.3")
 if(${WITH_TESTS})
  def_ext_prj_g(INCBIN "348e36b")
 endif(${WITH_TESTS})
@@ -139,14 +139,18 @@ set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
 set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
 set(__LIBARCHIVE "${DWARFS_BINARY_DIR}/libarchive/lib/libarchive.a")
 
+# -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON  - static build for all dwarfs utilities
+# -DTEBAKO_PREFERRED_CFG:BOOL=ON     - limited set of shared libraries  
+#  (en par with tebako linking as described here https://github.com/tamatebako/tebako/issues/42)
+# Pls note that we do static linkage within additional tests anyway for the case when this library 
+# is applied for some different reason
+
 ExternalProject_Add(${DWARFS_PRJ}
    PREFIX ${DEPS}
    GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
    GIT_TAG ${DWARFS_TAG}
-# This patch fixes version.cmake logic so that it works correctly not only for topmost project but for embedded project as well
-   PATCH_COMMAND  sed -i "s/COMMAND git/COMMAND \${CMAKE_COMMAND} -E chdir \${CMAKE_CURRENT_SOURCE_DIR} git/g" ${DWARFS_SOURCE_DIR}/cmake/version.cmake || echo "Never mind"
    UPDATE_COMMAND ""
-   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
+   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DTEBAKO_PREFERRED_CFG:BOOL=ON
    SOURCE_DIR ${DWARFS_SOURCE_DIR}
    BINARY_DIR ${DWARFS_BINARY_DIR}
    BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
@@ -205,8 +209,8 @@ add_dependencies(dwarfs-wr ${DWARFS_PRJ})
 # Tests
 
 if(${WITH_TESTS})
- find_package(PkgConfig REQUIRED)
- pkg_search_module(GTEST gtest_main)
+  find_package(PkgConfig REQUIRED)
+  pkg_search_module(GTEST gtest_main)
 
 # This code may be adopted if we want to build gtest locally. No need so far.
 #include(FetchContent)
@@ -227,6 +231,7 @@ if(${WITH_TESTS})
   if (${USE_TEMP_FS})
     add_custom_target(PACKAGED_FILESYSTEM ALL
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-dir-2 s-link-to-dir-1
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
       COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
@@ -236,6 +241,7 @@ if(${WITH_TESTS})
     )
   else(${USE_TEMP_FS})
     add_custom_target(PACKAGED_FILESYSTEM ALL
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-dir-2 s-link-to-dir-1
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
       COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
@@ -289,7 +295,7 @@ if(${WITH_TESTS})
 # used to locate static libraries on UNIX-like systems.
 #
 
- find_package(Boost 1.67 REQUIRED COMPONENTS context regex thread atomic date_time filesystem)
+ find_package(Boost 1.65 REQUIRED COMPONENTS context regex thread atomic date_time filesystem)
 
  find_library(_LIBGLOG "libglog.a" REQUIRED)
  find_library(_LIBFMT "libfmt.a" REQUIRED)
@@ -423,7 +429,7 @@ install(FILES
 )
 
 install(FILES
-        ${DEPS_BIN_DIR}/dwarfs
+        ${DEPS_BIN_DIR}/dwarfs2
         ${DEPS_BIN_DIR}/dwarfsck
         ${DEPS_BIN_DIR}/dwarfsextract
         ${DEPS_BIN_DIR}/mkdwarfs

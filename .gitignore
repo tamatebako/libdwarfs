@@ -34,12 +34,14 @@ install_manifest.txt
 
 # Build files
 out
+build
 
 # External dependencies
 deps
 
 # Generated files
 tests/tebako-fs.cpp
+tests/shunit2
 include/version.h
 *.bin
 

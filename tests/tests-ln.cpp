@@ -203,7 +203,7 @@ namespace {
 
 	TEST_F(LnTests, tebako_lstat_absolute_path_pass_through) {
 		struct stat st;
-		int ret = tebako_lstat("/usr/bin/sh", &st);
+		int ret = tebako_lstat("/usr/bin/gcc", &st);
 		EXPECT_EQ(0, ret);
 	}
 
@@ -211,7 +211,7 @@ namespace {
 		struct stat st;
 		int ret = tebako_chdir("/usr/bin");
 		EXPECT_EQ(0, ret);
-		ret = tebako_lstat("sh", &st);
+		ret = tebako_lstat("gcc", &st);
 		EXPECT_EQ(0, ret);
 	}
 #endif
