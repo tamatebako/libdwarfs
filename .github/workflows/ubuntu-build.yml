@@ -61,13 +61,15 @@ jobs:
     - name: Install packages Ubuntu
 # Already installed: bison flex pkg-config
       run: |
+        sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
         sudo apt-get install \
         binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev libxml2-dev \
         libdouble-conversion-dev libiberty-dev liblz4-dev liblzma-dev libssl-dev \
-        libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
-        libboost-regex-dev libboost-system-dev libboost-thread-dev libfuse-dev \
-        libunwind-dev libdwarf-dev libelf-dev libfmt-dev libgoogle-glog-dev libgtest-dev
+        libboost1.67-dev \
+        libboost-context1.67-dev libboost-filesystem1.67-dev libboost-program-options1.67-dev \
+        libboost-regex1.67-dev libboost-system1.67-dev libboost-thread1.67-dev  \
+        libfuse-dev libunwind-dev libdwarf-dev libelf-dev libfmt-dev libgoogle-glog-dev libgtest-dev
 
     - name: Install Ruby
       uses: ruby/setup-ruby@v1
@@ -78,22 +80,6 @@ jobs:
 
     - name: Install ronn
       run: sudo gem install ronn
-
-    - name: Install boost
-      uses: MarkusJx/install-boost@v2.0.0
-      id: install-boost
-      with:
-    # REQUIRED: Specify the required boost version
-    # A list of supported versions can be found here:
-    # https://github.com/actions/boost-versions/blob/main/versions-manifest.json
-        boost_version: 1.73.0
-    # OPTIONAL: Specify a platform version
-    #    platform_version: 18.04
-    # OPTIONAL: Specify a custom install location
-    #    boost_install_dir: /home/runner/some_directory
-
-    # NOTE: If a boost version matching all requirements cannot be found,
-    # this build step will fail
 
     - name: Configure
       run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -118,7 +104,7 @@ jobs:
     - name: Install and verify installation folders
       run: |
         sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
-        test -f ${{github.workspace}}/install/bin/dwarfs || (echo "File ${{github.workspace}}/install/bin/dwarfs does not exist" && false)
+        test -f ${{github.workspace}}/install/bin/dwarfs2 || (echo "File ${{github.workspace}}/install/bin/dwarfs2 does not exist" && false)
         test -f ${{github.workspace}}/install/bin/dwarfsck || (echo "File ${{github.workspace}}/install/bin/dwarfsck does not exist" && false)
         test -f ${{github.workspace}}/install/bin/dwarfsextract || (echo "File ${{github.workspace}}/install/bin/dwarfsextract does not exist" && false)
         test -f ${{github.workspace}}/install/bin/mkdwarfs || (echo "File ${{github.workspace}}/install/bin/mkdwarfs does not exist" && false)
