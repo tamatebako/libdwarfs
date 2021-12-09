@@ -146,7 +146,7 @@ ExternalProject_Add(${DWARFS_PRJ}
 # This patch fixes version.cmake logic so that it works correctly not only for topmost project but for embedded project as well
    PATCH_COMMAND  sed -i "s/COMMAND git/COMMAND \${CMAKE_COMMAND} -E chdir \${CMAKE_CURRENT_SOURCE_DIR} git/g" ${DWARFS_SOURCE_DIR}/cmake/version.cmake || echo "Never mind"
    UPDATE_COMMAND ""
-   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
+   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON --target mkdwarfs
    SOURCE_DIR ${DWARFS_SOURCE_DIR}
    BINARY_DIR ${DWARFS_BINARY_DIR}
    BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
