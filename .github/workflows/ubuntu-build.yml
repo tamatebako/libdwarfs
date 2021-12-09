@@ -1,4 +1,4 @@
-name: Ubuntu build
+name: Ubuntu
 
 on:
   push:
@@ -22,7 +22,7 @@ env:
   BUILD_TYPE: Release
 # The folder for dwarfs and other dependenies
   DEPS: deps
-# GitHub dependencies' 
+# GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "78fd324"
 # Ruby  (this for ronn on Ubuntu 18)
@@ -30,7 +30,7 @@ env:
   BUNDLER_VER: "2.2.3"
 
 jobs:
-  Ubuntu-build:
+  build:
     name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -51,7 +51,7 @@ jobs:
     - name: Create deps folder
       run: |
         mkdir ${{github.workspace}}/${{env.DEPS}}
-      
+
     - name: Process cache
       uses: actions/cache@v2
       with:
@@ -75,28 +75,28 @@ jobs:
         ruby-version: ${{ env.RUBY_VER }}
         bundler: ${{ env.BUNDLER_VER }}
         bundler-cache: true
-        
+
     - name: Install ronn
-      run: sudo gem install ronn 
+      run: sudo gem install ronn
 
     - name: Install boost
       uses: MarkusJx/install-boost@v2.0.0
       id: install-boost
       with:
     # REQUIRED: Specify the required boost version
-    # A list of supported versions can be found here: 
+    # A list of supported versions can be found here:
     # https://github.com/actions/boost-versions/blob/main/versions-manifest.json
         boost_version: 1.73.0
     # OPTIONAL: Specify a platform version
     #    platform_version: 18.04
     # OPTIONAL: Specify a custom install location
     #    boost_install_dir: /home/runner/some_directory
-    
+
     # NOTE: If a boost version matching all requirements cannot be found,
     # this build step will fail
 
-    - name: Configure 
-      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 
+    - name: Configure
+      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
       run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
@@ -112,7 +112,7 @@ jobs:
         ls /tmp >> ${{github.workspace}}/t_dir/after
         diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
 
-    - name: Run ldd to check that wr-bin has been linked statically 
+    - name: Run ldd to check that wr-bin has been linked statically
       run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
 
     - name: Install and verify installation folders
