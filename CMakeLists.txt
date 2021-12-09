@@ -146,6 +146,8 @@ ExternalProject_Add(${DWARFS_PRJ}
 # This patch fixes version.cmake logic so that it works correctly not only for topmost project but for embedded project as well
    PATCH_COMMAND  sed -i "s/COMMAND git/COMMAND \${CMAKE_COMMAND} -E chdir \${CMAKE_CURRENT_SOURCE_DIR} git/g" ${DWARFS_SOURCE_DIR}/cmake/version.cmake || echo "Never mind"
          COMMAND  sed -i "s/message\(FATAL_ERROR \"No FUSE or FUSE3 library found\"\)/message(WARNING \"No FUSE or FUSE3 library found\")/g" ${DWARFS_SOURCE_DIR}/CMakeLists.txt
+         COMMAND  sed -i "s/pkg_check_modules(LIBLZMA IMPORTED_TARGET liblzma>=5.2.4)/pkg_check_modules(LIBLZMA IMPORTED_TARGET liblzma>=5.2.2)/g" ${DWARFS_SOURCE_DIR}/CMakeLists.txt
+         COMMAND  sed -i "s/find_package(Boost 1.67 REQUIRED COMPONENTS \${DWARFS_BOOST_MODULES})/find_package(Boost 1.65 REQUIRED COMPONENTS \${DWARFS_BOOST_MODULES})/g" ${DWARFS_SOURCE_DIR}/CMakeLists.txt
    UPDATE_COMMAND ""
    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
    SOURCE_DIR ${DWARFS_SOURCE_DIR}
@@ -290,7 +292,7 @@ if(${WITH_TESTS})
 # used to locate static libraries on UNIX-like systems.
 #
 
- find_package(Boost 1.67 REQUIRED COMPONENTS context regex thread atomic date_time filesystem)
+ find_package(Boost 1.65 REQUIRED COMPONENTS context regex thread atomic date_time filesystem)
 
  find_library(_LIBGLOG "libglog.a" REQUIRED)
  find_library(_LIBFMT "libfmt.a" REQUIRED)

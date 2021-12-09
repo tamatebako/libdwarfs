@@ -61,41 +61,26 @@ jobs:
     - name: Install packages Ubuntu
 # Already installed: bison flex pkg-config
       run: |
-        sudo apt-get -y install software-properties-common
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0E98404D386FA1D9        
-        sudo apt-add-repository "deb http://deb.debian.org/debian bullseye-backports main"
-        sudo apt-get -y update 
-        sudo apt-get install -t bullseye-backports liblzma5_5.2.5-2_arm64.deb
-        sudo apt install libfuse-dev -t bullseye-backports
         sudo apt-get -y install \
         binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev libxml2-dev \
         libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev \
         libfuse-dev libunwind-dev libdwarf-dev libelf-dev libfmt-dev libgoogle-glog-dev libgtest-dev
+        sudo apt-get -y install \
+        libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
+        libboost-regex-dev libboost-system-dev libboost-thread-dev  
 
-
-#        sudo apt-get -y install software-properties-common
-#        sudo add-apt-repository -y ppa:mhier/libboost-latest
-#        sudo apt-get -y update
-#        sudo apt-get -y install libboost1.67-dev
-
-
-#        sudo apt-get -y install \
-#        libboost-context1.67-dev libboost-filesystem1.67-dev libboost-program-options1.67-dev \
-#        libboost-regex1.67-dev libboost-system1.67-dev libboost-thread1.67-dev  
-
-    - name: Install boost
-      uses: MarkusJx/install-boost@v2.0.0
-      id: install-boost
-      with:
+#    - name: Install boost
+#      uses: MarkusJx/install-boost@v2.0.0
+#      id: install-boost
+#      with:
     # REQUIRED: Specify the required boost version
     # A list of supported versions can be found here: 
     # https://github.com/actions/boost-versions/blob/main/versions-manifest.json
-         boost_version: 1.72.0
+#         boost_version: 1.72.0
     # OPTIONAL: Specify a platform version
     #     platform_version: 18.06
     # OPTIONAL: Specify a custom install location
-         boost_install_dir: /home/runner
+#         boost_install_dir: /home/runner
     # NOTE: If a boost version matching all requirements cannot be found,
     # this build step will fail
     
