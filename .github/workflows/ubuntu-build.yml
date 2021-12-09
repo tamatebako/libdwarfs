@@ -53,7 +53,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ${{github.workspace}}/${{env.DEPS}}
-        key: ${{ github.workflow }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}
+        key: ${{ github.workflow }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v02
 
     - name: Install packages Ubuntu
 # Already installed: bison flex pkg-config
