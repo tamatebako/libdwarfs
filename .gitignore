@@ -41,6 +41,7 @@ deps
 
 # Generated files
 tests/tebako-fs.cpp
+tests/shunit2
 include/version.h
 *.bin
 

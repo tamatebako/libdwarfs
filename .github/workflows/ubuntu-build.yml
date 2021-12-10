@@ -20,6 +20,7 @@ on:
 env:
 # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
   DEPS: deps
 # GitHub dependencies'
@@ -129,6 +130,13 @@ jobs:
 
       - name: Unit tests
         run: make test
+
+      - name: Checkout shell test framework
+        uses: actions/checkout@v2
+        with:
+          repository: kward/shunit2
+          path: ${{github.workspace}}/tests/shunit2
+          fetch-depth: 1
 
       - name: Check "C" interface bindings in statically linked program, check that tmp directory is cleaned upon shutdown
         run: |

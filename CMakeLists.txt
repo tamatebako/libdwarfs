@@ -421,7 +421,7 @@ install(FILES
 )
 
 install(FILES
-        ${DEPS_BIN_DIR}/dwarfs
+        ${DEPS_BIN_DIR}/dwarfs2
         ${DEPS_BIN_DIR}/dwarfsck
         ${DEPS_BIN_DIR}/dwarfsextract
         ${DEPS_BIN_DIR}/mkdwarfs
