@@ -30,14 +30,12 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ${{ matrix.mode }}]
+    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ ubuntu-18.04, ubuntu-latest ]
-# GTest does not allow static builds so we do it twice
-        mode: [ static, tests ]
         env:
           - CC: gcc
             CXX: g++
@@ -56,7 +54,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ github.workflow }}-${{ env.os }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v03
+          key: ${{ github.workflow }}-${{ env.os }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v04
     
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md    
