@@ -27,115 +27,138 @@ env:
   DWARFS_TAG: "78fd324"
 # Ruby  (this for ronn on Ubuntu 18)
   RUBY_VER:   "2.7.4"
-  BUNDLER_VER: "2.2.3"
 
 jobs:
   build:
-    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}]
+    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ${{ matrix.mode }}]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, ubuntu-latest]
+        os: [ ubuntu-18.04, ubuntu-latest ]
+# GTest does not allow static builds so we do it twice
+        mode: [ static, tests ]
         env:
           - CC: gcc
             CXX: g++
-          - CC: clang
-            CXX: clang++
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
+#          - CC: clang
+#            CXX: clang++
     env: ${{ matrix.env }}
-
     steps:
-    - uses: actions/checkout@v2
+      - name: Checkout 
+        uses: actions/checkout@v2
 
-    - name: Create deps folder
-      run: |
-        mkdir ${{github.workspace}}/${{env.DEPS}}
+      - name: Create deps folder
+        run: |
+          mkdir ${{github.workspace}}/${{env.DEPS}}
 
-    - name: Process cache
-      uses: actions/cache@v2
-      with:
-        path: ${{github.workspace}}/${{env.DEPS}}
-        key: ${{ github.workflow }}-${{ env.os }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v02
-
-    - name: Install packages Ubuntu
-# Already installed: bison flex pkg-config
-      run: |
-        sudo apt-get -y install \
-        binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev libxml2-dev \
-        libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev \
-        libfuse-dev libunwind-dev libdwarf-dev libelf-dev libfmt-dev libgoogle-glog-dev libgtest-dev
-        sudo apt-get -y install \
-        libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
-        libboost-regex-dev libboost-system-dev libboost-thread-dev  
-
-#    - name: Install boost
-#      uses: MarkusJx/install-boost@v2.0.0
-#      id: install-boost
-#      with:
-    # REQUIRED: Specify the required boost version
-    # A list of supported versions can be found here: 
-    # https://github.com/actions/boost-versions/blob/main/versions-manifest.json
-#         boost_version: 1.72.0
-    # OPTIONAL: Specify a platform version
-    #     platform_version: 18.06
-    # OPTIONAL: Specify a custom install location
-#         boost_install_dir: /home/runner
-    # NOTE: If a boost version matching all requirements cannot be found,
-    # this build step will fail
+      - name: Process cache
+          uses: actions/cache@v2
+          with:
+            path: ${{github.workspace}}/${{env.DEPS}}
+            key: ${{ github.workflow }}-${{ env.os }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v03
     
-    - name: Install Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ env.RUBY_VER }}
-        bundler: ${{ env.BUNDLER_VER }}
-        bundler-cache: true
 
-    - name: Install ronn
-      run: sudo gem install ronn
+# https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md    
+# https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1804-README.md     
+# Already installed: bison flex pkg-config
 
-    - name: Configure
-      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBOOST_ROOT=${{ env.BOOST_ROOT }}
-      env:
-        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-        INCLUDE: ${{ steps.install-boost.outputs.BOOST_ROOT }}\include:${{ env.INCLUDE }}
+# gcc/g++ 9 is also there otherwise we would need:
+# sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+# sudo apt update
+# sudo apt install gcc-9 g++-9
 
-    - name: Build
-      run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
-      env:
-        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-        INCLUDE: ${{ steps.install-boost.outputs.BOOST_ROOT }}\include:${{ env.INCLUDE }}
+# cmake good enough is also at GHA. Otherswise:
+# sudo apt-get remove --purge --auto-remove cmake
+# sudo apt-get update 
+# sudo apt-get install -y software-properties-common lsb-release 
+# sudo apt-get clean all
+# wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+# sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+# sudo apt update
+# sudo apt install kitware-archive-keyring
+# sudo rm /etc/apt/trusted.gpg.d/kitware.gpg
+# sudo apt update
+# sudo apt install cmake
 
-    - name: Unit tests
-      run: make test
+      - name: Switch to gcc-9
+        if: ${{ matrix.env.CC == 'gcc' }}
+        run: |
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100 --slave /usr/bin/g++ g++ /usr/bin/g++-9 --slave /usr/bin/gcov gcov /usr/bin/gcov-9
+          sudo update-alternatives --set gcc /usr/bin/gcc-9    
 
-    - name: Check "C" interface bindings in statically linked program, check that tmp directory is cleaned upon shutdown
-      run: |
-        mkdir ${{github.workspace}}/t_dir
-        ls /tmp >> ${{github.workspace}}/t_dir/before
-        ./wr-bin
-        ls /tmp >> ${{github.workspace}}/t_dir/after
-        diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
+      - name: Install packages Ubuntu
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install \
+          binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev \
+          libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev \
+          libfuse-dev libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libgtest-dev \
+          libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
+          libboost-regex-dev libboost-system-dev libboost-thread-dev  
 
-    - name: Run ldd to check that wr-bin has been linked statically
-      run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
+      - name: Install libfmt 6 (bionic)
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        run: |
+          sudo apt-get remove libfmt-dev
+          sudo apt-get install software-properties-common
+          sudo add-apt-repository ppa:team-xbmc/ppa 
+          sudo apt-get update
+          sudo apt-get install libfmt-dev
 
-    - name: Install and verify installation folders
-      run: |
-        sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
-        test -f ${{github.workspace}}/install/bin/dwarfs2 || (echo "File ${{github.workspace}}/install/bin/dwarfs2 does not exist" && false)
-        test -f ${{github.workspace}}/install/bin/dwarfsck || (echo "File ${{github.workspace}}/install/bin/dwarfsck does not exist" && false)
-        test -f ${{github.workspace}}/install/bin/dwarfsextract || (echo "File ${{github.workspace}}/install/bin/dwarfsextract does not exist" && false)
-        test -f ${{github.workspace}}/install/bin/mkdwarfs || (echo "File ${{github.workspace}}/install/bin/mkdwarfs does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs-wr.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libdwarfs.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libfsst.a || (echo "File ${{github.workspace}}/install/lib/libfsst.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libfolly.a || (echo "File ${{github.workspace}}/install/lib/libfolly.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libmetadata_thrift.a || (echo "File ${{github.workspace}}/install/lib/libmetadata_thrift.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libthrift_light.a || (echo "File ${{github.workspace}}/install/lib/libthrift_light.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libxxhash.a || (echo "File ${{github.workspace}}/install/lib/libxxhash.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libzstd.a || (echo "File ${{github.workspace}}/install/lib/libzstd.a does not exist" && false)
-        test -f ${{github.workspace}}/install/lib/libarchive.a || (echo "File ${{github.workspace}}/install/lib/libarchive.a does not exist" && false)
-        test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-defines.h does not exist" && false)
-        test -f ${{github.workspace}}/install/include/tebako/tebako-io.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-io.h does not exist" && false)
+      - name: Install libfmt 6 (focal)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: sudo apt-get install libfmt-dev
+
+# sudo apt install ronn does not work for bionic
+# On focal  it cannot process one of files, so we do it natively
+# Note that libruby-dev is required under the hood
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VER }}
+
+      - name: Install ronn
+        run: sudo gem install ronn
+
+
+      - name: Configure
+        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 
+
+      - name: Build
+        run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
+
+      - name: Unit tests
+        run: make test
+
+      - name: Check "C" interface bindings in statically linked program, check that tmp directory is cleaned upon shutdown
+        run: |
+          mkdir ${{github.workspace}}/t_dir
+          ls /tmp >> ${{github.workspace}}/t_dir/before
+          ./wr-bin
+          ls /tmp >> ${{github.workspace}}/t_dir/after
+          diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
+
+      - name: Run ldd to check that wr-bin has been linked statically
+        run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
+
+      - name: Install and verify installation folders
+        run: |
+          sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
+          test -f ${{github.workspace}}/install/bin/dwarfs2 || (echo "File ${{github.workspace}}/install/bin/dwarfs2 does not exist" && false)
+          test -f ${{github.workspace}}/install/bin/dwarfsck || (echo "File ${{github.workspace}}/install/bin/dwarfsck does not exist" && false)
+          test -f ${{github.workspace}}/install/bin/dwarfsextract || (echo "File ${{github.workspace}}/install/bin/dwarfsextract does not exist" && false)
+          test -f ${{github.workspace}}/install/bin/mkdwarfs || (echo "File ${{github.workspace}}/install/bin/mkdwarfs does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs-wr.a does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libdwarfs.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs.a does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libfsst.a || (echo "File ${{github.workspace}}/install/lib/libfsst.a does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libfolly.a || (echo "File ${{github.workspace}}/install/lib/libfolly.a does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libmetadata_thrift.a || (echo "File ${{github.workspace}}/install/lib/libmetadata_thrift.a does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libthrift_light.a || (echo "File ${{github.workspace}}/install/lib/libthrift_light.a does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libxxhash.a || (echo "File ${{github.workspace}}/install/lib/libxxhash.a does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libzstd.a || (echo "File ${{github.workspace}}/install/lib/libzstd.a does not exist" && false)
+          test -f ${{github.workspace}}/install/lib/libarchive.a || (echo "File ${{github.workspace}}/install/lib/libarchive.a does not exist" && false)
+          test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-defines.h does not exist" && false)
+          test -f ${{github.workspace}}/install/include/tebako/tebako-io.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-io.h does not exist" && false)
 

@@ -34,6 +34,7 @@ install_manifest.txt
 
 # Build files
 out
+build
 
 # External dependencies
 deps
