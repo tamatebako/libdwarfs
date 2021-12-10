@@ -53,10 +53,10 @@ jobs:
           mkdir ${{github.workspace}}/${{env.DEPS}}
 
       - name: Process cache
-          uses: actions/cache@v2
-          with:
-            path: ${{github.workspace}}/${{env.DEPS}}
-            key: ${{ github.workflow }}-${{ env.os }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v03
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/${{env.DEPS}}
+          key: ${{ github.workflow }}-${{ env.os }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v03
     
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md    
