@@ -140,7 +140,10 @@ set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
 set(__LIBARCHIVE "${DWARFS_BINARY_DIR}/libarchive/lib/libarchive.a")
 
 # -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON  - static build for all dwarfs utilities
-# -DTEBAKO_PREFERRED_CFG:BOOL=ON     - limited set of share libraries
+# -DTEBAKO_PREFERRED_CFG:BOOL=ON     - limited set of shared libraries  
+#  (en par with tebako linking as described here https://github.com/tamatebako/tebako/issues/42)
+# Pls note that we do static linkage within additional tests anyway for the case when this library 
+# is applied for some different reason
 
 ExternalProject_Add(${DWARFS_PRJ}
    PREFIX ${DEPS}

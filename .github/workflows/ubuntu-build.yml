@@ -134,7 +134,7 @@ jobs:
         run: sudo apt-get install libfmt-dev googletest libgtest-dev
 
 # sudo apt install ronn does not work for bionic
-# On focal  it cannot process one of files, so we do it natively
+# On focal  it cannot process one of the files, so we do it natively
 # Note that libruby-dev is required under the hood
 
       - name: Install Ruby
