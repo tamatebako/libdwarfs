@@ -151,7 +151,7 @@ jobs:
       - name: Build
         run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
 
-      - name: Unit tests
+      - name: Run unit tests
         run: make test
 
       - name: Checkout shell test framework
