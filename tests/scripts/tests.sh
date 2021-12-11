@@ -25,6 +25,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# More safety, by turning some bugs into errors.
+# Without `errexit` you don’t need ! and can replace
+# PIPESTATUS with a simple $?
+set -o errexit -o pipefail -o noclobber -o nounset
+
+
 # ......................................................................
 #  --  
 test_smoke_test() {
@@ -33,13 +39,50 @@ test_smoke_test() {
    assertEquals 0 $v
 }
 
+# ......................................................................
+# Run ldd to check that wr-bin has been linked statically
+test_static_link() {
+   echo "==> Static linkage test"
+   result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"  
+   assertEquals 1 ${PIPESTATUS[0]}
+   assertContains "not a dynamic executable"
+}
+
+# ......................................................................
+# Check that libdwarfs_wr, dwarfs utilities and all dependencies are installed as expected
+test_install_script() {
+   echo "==> Install script test"
+   cmake --install  "$DIR_ROOT" --prefix "$DIR_INSTALL"
+   assertEquals 1 ${PIPESTATUS[0]}
+
+   DIR_INSTALL="$( cd "$DIR_ROOT"/install && pwd )"
+   DIR_INS_B="$( cd "$DIR_INSTALL"/bin && pwd )"
+   DIR_INS_L="$( cd "$DIR_INSTALL"/lib && pwd )"
+   DIR_INS_I="$( cd "$DIR_INSTALL"/include/tebako && pwd )"
+
+   assertTrue "[ -f "$DIR_INSTALL"/bin/dwarfs2 ]"
+   assertTrue "[ -f "$DIR_INS_B"/dwarfs2 ]"
+   assertTrue "[ -f "$DIR_INS_B"/dwarfsck ]"
+   assertTrue "[ -f "$DIR_INS_B"/dwarfsextract ]"
+   assertTrue "[ -f "$DIR_INS_B"/mkdwarfs ]"
+   assertTrue "[ -f "$DIR_INS_L"/libdwarfs-wr.a ]"
+   assertTrue "[ -f "$DIR_INS_L"/libdwarfs.a ]"
+   assertTrue "[ -f "$DIR_INS_L"/libfsst.a ]"
+   assertTrue "[ -f "$DIR_INS_L"/libfolly.a ]"
+   assertTrue "[ -f "$DIR_INS_L"/libmetadata_thrift.a ]"
+   assertTrue "[ -f "$DIR_INS_L"/libthrift_light.a ]"
+   assertTrue "[ -f "$DIR_INS_L"/libxxhash.a ]"
+   assertTrue "[ -f "$DIR_INS_L"/libzstd.a ]"
+   assertTrue "[ -f "$DIR_INS_L"/libarchive.a ]"
+   assertTrue "[ -f "$DIR_INS_I"/tebako-defines.h ]"
+   assertTrue "[ -f "$DIR_INS_I"/tebako-io.h ]"
+}
 
 # ......................................................................
 # main
-
 DIR0="$( cd "$( dirname "$0" )" && pwd )"
-DIR_ROOT="$( cd $DIR0/../.. && pwd )"
-DIR_TESTS="$( cd $DIR_ROOT/tests && pwd )"
+DIR_ROOT="$( cd "$DIR0"/../.. && pwd )"
+DIR_TESTS="$( cd "$DIR_ROOT"/tests && pwd )"
 
 echo "Running libdwarfs additional tests"
-. $DIR_TESTS/shunit2/shunit2
+. "$DIR_TESTS"/shunit2/shunit2

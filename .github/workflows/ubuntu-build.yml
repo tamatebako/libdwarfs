@@ -173,9 +173,6 @@ jobs:
 #          ls /tmp >> ${{github.workspace}}/t_dir/after
 #          diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
 
-#      - name: Run ldd to check that wr-bin has been linked statically
-#        run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
-
 #      - name: Install and verify installation folders
 #        run: |
 #          sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
