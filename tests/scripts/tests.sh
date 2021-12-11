@@ -30,35 +30,48 @@
 # PIPESTATUS with a simple $?
 set -o errexit -o pipefail -o noclobber -o nounset
 
-
 # ......................................................................
-#  --  
-test_smoke_test() {
-   echo "==> smoke test"
-   v=0
-   assertEquals 0 $v
+# Run ldd to check that wr-bin has been linked statically
+test_static_linkage() {
+   echo "==> Static linkage test"
+   result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
+   assertEquals 1 ${PIPESTATUS[0]}
+   assertContains "not a dynamic executable" $result
 }
 
 # ......................................................................
-# Run ldd to check that wr-bin has been linked statically
-test_static_link() {
-   echo "==> Static linkage test"
-   result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"  
-   assertEquals 1 ${PIPESTATUS[0]}
-   assertContains "not a dynamic executable"
+# Check "C" interface bindings in statically linked program
+# Check that tmp directory is cleaned upon shutdown
+test_C_bindings+and_temp_dir() {
+   echo "==> C bindings and temp dir handling combined test"
+   mkdir "$DIR_TESTS"/temp
+   assertEquals 0 ${PIPESTATUS[0]}
+
+   ls /tmp > "$DIR_TESTS"/temp/before
+   assertEquals 0 ${PIPESTATUS[0]}
+
+   "$DIR_ROOT"/wr-bin
+   assertEquals 0 ${PIPESTATUS[0]}
+
+   ls /tmp > "$DIR_TESTS"/temp/after
+   assertEquals 0 ${PIPESTATUS[0]}
+
+   diff "$DIR_TESTS"/temp/before "$DIR_TESTS"/temp/after
+   assertEquals 0 ${PIPESTATUS[0]}
 }
 
 # ......................................................................
 # Check that libdwarfs_wr, dwarfs utilities and all dependencies are installed as expected
 test_install_script() {
    echo "==> Install script test"
-   cmake --install  "$DIR_ROOT" --prefix "$DIR_INSTALL"
-   assertEquals 1 ${PIPESTATUS[0]}
 
    DIR_INSTALL="$( cd "$DIR_ROOT"/install && pwd )"
    DIR_INS_B="$( cd "$DIR_INSTALL"/bin && pwd )"
    DIR_INS_L="$( cd "$DIR_INSTALL"/lib && pwd )"
    DIR_INS_I="$( cd "$DIR_INSTALL"/include/tebako && pwd )"
+
+   cmake --install  "$DIR_ROOT" --prefix "$DIR_INSTALL"
+   assertEquals 0 ${PIPESTATUS[0]}
 
    assertTrue "[ -f "$DIR_INSTALL"/bin/dwarfs2 ]"
    assertTrue "[ -f "$DIR_INS_B"/dwarfs2 ]"
