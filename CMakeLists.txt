@@ -139,6 +139,9 @@ set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
 set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
 set(__LIBARCHIVE "${DWARFS_BINARY_DIR}/libarchive/lib/libarchive.a")
 
+# -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON  - static build for all dwarfs utilities
+# -DTEBAKO_PREFERRED_CFG:BOOL=ON     - limited set of share libraries
+
 ExternalProject_Add(${DWARFS_PRJ}
    PREFIX ${DEPS}
    GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
@@ -150,8 +153,6 @@ ExternalProject_Add(${DWARFS_PRJ}
    BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
                     ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
-
-#-DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
 
 # ...................................................................
 # Library

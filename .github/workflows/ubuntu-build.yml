@@ -152,8 +152,8 @@ jobs:
       - name: Build
         run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
 
-#      - name: Unit tests
-#        run: make test
+      - name: Unit tests
+        run: make test
 
       - name: Checkout shell test framework
         uses: actions/checkout@v2
