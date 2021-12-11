@@ -96,11 +96,6 @@ jobs:
           libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
           libboost-regex-dev libboost-system-dev libboost-thread-dev  
 
-      - name: Update GTest (bionic)
-        if: ${{ matrix.os == 'ubuntu-18.04' }}
-        run: |
-          sudo apt-get -y install googletest libgtest-dev
-
       - name: Install libfmt 6 (bionic)
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         run: |
@@ -109,6 +104,12 @@ jobs:
           sudo add-apt-repository ppa:team-xbmc/ppa 
           sudo apt-get -y update
           sudo apt-get -y install libfmt-dev
+
+      - name: Update GTest (bionic)
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        run: |
+          sudo apt-get -y remove googletest libgtest-dev
+          sudo apt-get -y install googletest=1.10.0-2~18.04.sav0 libgtest-dev=1.10.0-2~18.04.sav0
 
       - name: Install libfmt 6 (focal)
         if: ${{ matrix.os == 'ubuntu-latest' }}

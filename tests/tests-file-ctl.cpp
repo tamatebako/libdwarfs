@@ -82,7 +82,7 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_access_absolute_path_pass_through) {
-		int ret = tebako_access("/usr/bin/bash", F_OK);
+		int ret = tebako_access("/bin/bash", F_OK);
 		EXPECT_EQ(0, ret);
 	}
 
@@ -138,13 +138,13 @@ namespace {
 
 	TEST_F(FileCtlTests, tebako_stat_absolute_path_pass_through) {
 		struct stat st;
-		int ret = tebako_stat("/usr/bin/bash", &st);
+		int ret = tebako_stat("/bin/bash", &st);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(FileCtlTests, tebako_stat_relative_path_pass_through) {
 		struct stat st;
-		int ret = tebako_chdir("/usr/bin");
+		int ret = tebako_chdir("/bin");
 		EXPECT_EQ(0, ret);
 		ret = tebako_stat("sh", &st);
 		EXPECT_EQ(0, ret);

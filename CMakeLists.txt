@@ -205,41 +205,8 @@ add_dependencies(dwarfs-wr ${DWARFS_PRJ})
 # Tests
 
 if(${WITH_TESTS})
-  if(NOT PREFER_SYSTEM_GTEST)
-    # Download and unpack googletest at configure time
-    configure_file(CMakeLists.txt.gtest googletest-download/CMakeLists.txt)
-    execute_process(
-      COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-      RESULT_VARIABLE result
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download)
-    if(result)
-      message(FATAL_ERROR "CMake step for googletest failed: ${result}")
-    endif()
-    execute_process(
-      COMMAND ${CMAKE_COMMAND} --build .
-      RESULT_VARIABLE result
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download)
-    if(result)
-      message(FATAL_ERROR "Build step for googletest failed: ${result}")
-    endif()
-
-    # Prevent overriding the parent project's compiler/linker settings on
-    # Windows
-    set(gtest_force_shared_crt
-        ON
-        CACHE BOOL "" FORCE)
-
-    # Add googletest directly to our build. This defines the gtest and
-    # gtest_main targets.
-    add_subdirectory(
-      ${CMAKE_CURRENT_BINARY_DIR}/googletest-src
-      ${CMAKE_CURRENT_BINARY_DIR}/googletest-build EXCLUDE_FROM_ALL)
-  endif(NOT PREFER_SYSTEM_GTEST)
-
-  enable_testing()
-  include(GoogleTest)
-#  find_package(PkgConfig REQUIRED)
-#  pkg_search_module(GTEST gtest_main)
+  find_package(PkgConfig REQUIRED)
+  pkg_search_module(GTEST gtest_main)
 
 # This code may be adopted if we want to build gtest locally. No need so far.
 #include(FetchContent)
