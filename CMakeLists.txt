@@ -144,12 +144,14 @@ ExternalProject_Add(${DWARFS_PRJ}
    GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
    GIT_TAG ${DWARFS_TAG}
    UPDATE_COMMAND ""
-   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
+   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} 
    SOURCE_DIR ${DWARFS_SOURCE_DIR}
    BINARY_DIR ${DWARFS_BINARY_DIR}
    BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
                     ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
+
+#-DSTATIC_BUILD_DO_NOT_USE:BOOL=ON
 
 # ...................................................................
 # Library
