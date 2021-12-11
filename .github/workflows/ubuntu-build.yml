@@ -147,13 +147,13 @@ jobs:
 
 
       - name: Configure
-        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF
+        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=ON
 
       - name: Build
         run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
 
-      - name: Unit tests
-        run: make test
+#      - name: Unit tests
+#        run: make test
 
       - name: Checkout shell test framework
         uses: actions/checkout@v2
