@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ github.workflow }}-${{ env.os }}-${{ env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v05
+          key: ${{ github.workflow }}-${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v05
     
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md    
@@ -96,14 +96,19 @@ jobs:
           libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
           libboost-regex-dev libboost-system-dev libboost-thread-dev  
 
+      - name: Update GTest (bionic)
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        run: |
+          sudo apt-get -y install googletest libgtest-dev
+
       - name: Install libfmt 6 (bionic)
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         run: |
-          sudo apt-get remove libfmt-dev
-          sudo apt-get install software-properties-common
+          sudo apt-get -y remove libfmt-dev
+          sudo apt-get -y install software-properties-common
           sudo add-apt-repository ppa:team-xbmc/ppa 
-          sudo apt-get update
-          sudo apt-get install libfmt-dev
+          sudo apt-get -y update
+          sudo apt-get -y install libfmt-dev
 
       - name: Install libfmt 6 (focal)
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -137,6 +142,9 @@ jobs:
           repository: kward/shunit2
           path: ${{github.workspace}}/tests/shunit2
           fetch-depth: 1
+
+      - name: Run additional tests
+        run:  ${{github.workspace}}/tests/scripts/tests.sh
 
 #      - name: Check "C" interface bindings in statically linked program, check that tmp directory is cleaned upon shutdown
 #        run: |
