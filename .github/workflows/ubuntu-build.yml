@@ -123,13 +123,13 @@ jobs:
 
 
       - name: Configure
-        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 
+        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
 
-      - name: Unit tests
-        run: make test
+#      - name: Unit tests
+#        run: make test
 
       - name: Checkout shell test framework
         uses: actions/checkout@v2
@@ -138,33 +138,33 @@ jobs:
           path: ${{github.workspace}}/tests/shunit2
           fetch-depth: 1
 
-      - name: Check "C" interface bindings in statically linked program, check that tmp directory is cleaned upon shutdown
-        run: |
-          mkdir ${{github.workspace}}/t_dir
-          ls /tmp >> ${{github.workspace}}/t_dir/before
-          ./wr-bin
-          ls /tmp >> ${{github.workspace}}/t_dir/after
-          diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
+#      - name: Check "C" interface bindings in statically linked program, check that tmp directory is cleaned upon shutdown
+#        run: |
+#          mkdir ${{github.workspace}}/t_dir
+#          ls /tmp >> ${{github.workspace}}/t_dir/before
+#          ./wr-bin
+#          ls /tmp >> ${{github.workspace}}/t_dir/after
+#          diff ${{github.workspace}}/t_dir/before ${{github.workspace}}/t_dir/after
 
-      - name: Run ldd to check that wr-bin has been linked statically
-        run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
+#      - name: Run ldd to check that wr-bin has been linked statically
+#        run:  ldd wr-bin 2>&1 >/dev/null | grep -i 'not a dynamic executable'
 
-      - name: Install and verify installation folders
-        run: |
-          sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
-          test -f ${{github.workspace}}/install/bin/dwarfs2 || (echo "File ${{github.workspace}}/install/bin/dwarfs2 does not exist" && false)
-          test -f ${{github.workspace}}/install/bin/dwarfsck || (echo "File ${{github.workspace}}/install/bin/dwarfsck does not exist" && false)
-          test -f ${{github.workspace}}/install/bin/dwarfsextract || (echo "File ${{github.workspace}}/install/bin/dwarfsextract does not exist" && false)
-          test -f ${{github.workspace}}/install/bin/mkdwarfs || (echo "File ${{github.workspace}}/install/bin/mkdwarfs does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs-wr.a does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libdwarfs.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs.a does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libfsst.a || (echo "File ${{github.workspace}}/install/lib/libfsst.a does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libfolly.a || (echo "File ${{github.workspace}}/install/lib/libfolly.a does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libmetadata_thrift.a || (echo "File ${{github.workspace}}/install/lib/libmetadata_thrift.a does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libthrift_light.a || (echo "File ${{github.workspace}}/install/lib/libthrift_light.a does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libxxhash.a || (echo "File ${{github.workspace}}/install/lib/libxxhash.a does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libzstd.a || (echo "File ${{github.workspace}}/install/lib/libzstd.a does not exist" && false)
-          test -f ${{github.workspace}}/install/lib/libarchive.a || (echo "File ${{github.workspace}}/install/lib/libarchive.a does not exist" && false)
-          test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-defines.h does not exist" && false)
-          test -f ${{github.workspace}}/install/include/tebako/tebako-io.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-io.h does not exist" && false)
+#      - name: Install and verify installation folders
+#        run: |
+#          sudo cmake --install ${{github.workspace}} --prefix ${{github.workspace}}/install
+#          test -f ${{github.workspace}}/install/bin/dwarfs2 || (echo "File ${{github.workspace}}/install/bin/dwarfs2 does not exist" && false)
+#          test -f ${{github.workspace}}/install/bin/dwarfsck || (echo "File ${{github.workspace}}/install/bin/dwarfsck does not exist" && false)
+#          test -f ${{github.workspace}}/install/bin/dwarfsextract || (echo "File ${{github.workspace}}/install/bin/dwarfsextract does not exist" && false)
+#          test -f ${{github.workspace}}/install/bin/mkdwarfs || (echo "File ${{github.workspace}}/install/bin/mkdwarfs does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libdwarfs-wr.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs-wr.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libdwarfs.a || (echo "File ${{github.workspace}}/install/lib/libdwarfs.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libfsst.a || (echo "File ${{github.workspace}}/install/lib/libfsst.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libfolly.a || (echo "File ${{github.workspace}}/install/lib/libfolly.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libmetadata_thrift.a || (echo "File ${{github.workspace}}/install/lib/libmetadata_thrift.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libthrift_light.a || (echo "File ${{github.workspace}}/install/lib/libthrift_light.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libxxhash.a || (echo "File ${{github.workspace}}/install/lib/libxxhash.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libzstd.a || (echo "File ${{github.workspace}}/install/lib/libzstd.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/lib/libarchive.a || (echo "File ${{github.workspace}}/install/lib/libarchive.a does not exist" && false)
+#          test -f ${{github.workspace}}/install/include/tebako/tebako-defines.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-defines.h does not exist" && false)
+#          test -f ${{github.workspace}}/install/include/tebako/tebako-io.h || (echo "File ${{github.workspace}}/install/include/tebako/tebako-io.h does not exist" && false)
 
