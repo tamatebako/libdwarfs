@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-18.04, ubuntu-latest ]
+        os: [ ubuntu-18, ubuntu-20 ]
         env:
           - CC: gcc
             CXX: g++
@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ github.workflow }}-${{ runner.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v05
+          key: ${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v05
     
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md    
