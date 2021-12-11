@@ -61,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-18, ubuntu-20 ]
+        os: [ ubuntu-18.04, ubuntu-20.04 ]
         env:
           - CC: gcc
             CXX: g++
@@ -120,7 +120,7 @@ jobs:
           libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
           libboost-regex-dev libboost-system-dev libboost-thread-dev  
 
-      - name: Update libfmt --> 6, googletest --> 1.10 (bionic)
+      - name: Update libfmt, googletest (bionic)
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         run: |
           sudo apt-get -y remove libfmt-dev googletest libgtest-dev
@@ -130,7 +130,7 @@ jobs:
           sudo apt-get -y install libfmt-dev googletest libgtest-dev
 
       - name: Install libfmt, googletest (focal)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.os == 'ubuntu-20.04' }}
         run: sudo apt-get install libfmt-dev googletest libgtest-dev
 
 # sudo apt install ronn does not work for bionic
