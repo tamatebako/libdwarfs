@@ -35,8 +35,8 @@ set -o errexit -o pipefail -o noclobber -o nounset
 test_static_linkage() {
    echo "==> Static linkage test"
    result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
-   assertEquals 1 ${PIPESTATUS[0]}
-   assertContains "not a dynamic executable" $result
+   assertEquals 1 "${PIPESTATUS[0]}"
+   assertContains "$result" "not a dynamic executable"
 }
 
 # ......................................................................
@@ -45,19 +45,19 @@ test_static_linkage() {
 test_C_bindings+and_temp_dir() {
    echo "==> C bindings and temp dir handling combined test"
    mkdir "$DIR_TESTS"/temp
-   assertEquals 0 ${PIPESTATUS[0]}
+   assertEquals 0 "${PIPESTATUS[0]}"
 
    ls /tmp > "$DIR_TESTS"/temp/before
-   assertEquals 0 ${PIPESTATUS[0]}
+   assertEquals 0 "${PIPESTATUS[0]}"
 
    "$DIR_ROOT"/wr-bin
-   assertEquals 0 ${PIPESTATUS[0]}
+   assertEquals 0 "${PIPESTATUS[0]}"
 
    ls /tmp > "$DIR_TESTS"/temp/after
-   assertEquals 0 ${PIPESTATUS[0]}
+   assertEquals 0 "${PIPESTATUS[0]}"
 
    diff "$DIR_TESTS"/temp/before "$DIR_TESTS"/temp/after
-   assertEquals 0 ${PIPESTATUS[0]}
+   assertEquals 0 "${PIPESTATUS[0]}"
 }
 
 # ......................................................................
@@ -65,15 +65,14 @@ test_C_bindings+and_temp_dir() {
 test_install_script() {
    echo "==> Install script test"
 
-   DIR_INSTALL="$( cd "$DIR_ROOT"/install && pwd )"
-   DIR_INS_B="$( cd "$DIR_INSTALL"/bin && pwd )"
-   DIR_INS_L="$( cd "$DIR_INSTALL"/lib && pwd )"
-   DIR_INS_I="$( cd "$DIR_INSTALL"/include/tebako && pwd )"
+   DIR_INSTALL="$DIR_ROOT"/install
+   DIR_INS_B="$DIR_INSTALL"/bin
+   DIR_INS_L="$DIR_INSTALL"/lib
+   DIR_INS_I="$DIR_INSTALL"/include/tebako
 
    cmake --install  "$DIR_ROOT" --prefix "$DIR_INSTALL"
-   assertEquals 0 ${PIPESTATUS[0]}
+   assertEquals 0 "${PIPESTATUS[0]}"
 
-   assertTrue "[ -f "$DIR_INSTALL"/bin/dwarfs2 ]"
    assertTrue "[ -f "$DIR_INS_B"/dwarfs2 ]"
    assertTrue "[ -f "$DIR_INS_B"/dwarfsck ]"
    assertTrue "[ -f "$DIR_INS_B"/dwarfsextract ]"
