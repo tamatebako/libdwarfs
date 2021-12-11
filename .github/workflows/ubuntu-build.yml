@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ github.workflow }}-${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v05
+          key: ${{ github.workflow }}-${{ runner.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v05
     
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md    
@@ -96,24 +96,18 @@ jobs:
           libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
           libboost-regex-dev libboost-system-dev libboost-thread-dev  
 
-      - name: Install libfmt 6 (bionic)
+      - name: Update libfmt --> 6, googletest --> 1.10 (bionic)
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         run: |
-          sudo apt-get -y remove libfmt-dev
+          sudo apt-get -y remove libfmt-dev googletest libgtest-dev
           sudo apt-get -y install software-properties-common
           sudo add-apt-repository ppa:team-xbmc/ppa 
           sudo apt-get -y update
-          sudo apt-get -y install libfmt-dev
+          sudo apt-get -y install libfmt-dev googletest libgtest-dev
 
-      - name: Update GTest (bionic)
-        if: ${{ matrix.os == 'ubuntu-18.04' }}
-        run: |
-          sudo apt-get -y remove googletest libgtest-dev
-          sudo apt-get -y install googletest=1.10.0-2~18.04.sav0 libgtest-dev=1.10.0-2~18.04.sav0
-
-      - name: Install libfmt 6 (focal)
+      - name: Install libfmt, googletest (focal)
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sudo apt-get install libfmt-dev
+        run: sudo apt-get install libfmt-dev googletest libgtest-dev
 
 # sudo apt install ronn does not work for bionic
 # On focal  it cannot process one of files, so we do it natively
