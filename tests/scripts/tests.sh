@@ -42,7 +42,7 @@ test_static_linkage() {
 # ......................................................................
 # Check "C" interface bindings in statically linked program
 # Check that tmp directory is cleaned upon shutdown
-test_C_bindings+and_temp_dir() {
+test_C_bindings_and_temp_dir() {
    echo "==> C bindings and temp dir handling combined test"
    mkdir "$DIR_TESTS"/temp
    assertEquals 0 "${PIPESTATUS[0]}"
