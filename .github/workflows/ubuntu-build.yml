@@ -182,10 +182,10 @@ jobs:
           name: tests
 
       - name: Provision execute permissions
-        run: | 
+        run: |
           chmod +x wr-bin
           chmod +x wr-tests
-      
+
       - name: Run statically linked application
         run: ./wr-bin
 
