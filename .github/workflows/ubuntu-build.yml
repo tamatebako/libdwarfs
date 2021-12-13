@@ -27,7 +27,6 @@ name: Ubuntu
 
 on:
   push:
-    branches: [ master ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -163,3 +162,32 @@ jobs:
 
       - name: Run additional tests
         run:  ${{github.workspace}}/tests/scripts/tests.sh
+
+      - name: Upload tests
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: tests
+          path: |
+            ${{github.workspace}}/wr-bin
+            ${{github.workspace}}/wr-tests
+
+  cross-test-ubuntu-18-to-ubuntu-20:
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Download tests
+        uses: actions/download-artifact@v2
+        with:
+          name: tests
+
+      - name: Provision execute permissions
+        run: |
+          chmod +x wr-bin
+          chmod +x wr-tests
+
+      - name: Run statically linked application
+        run: ./wr-bin
+
+      - name: Run unit tests
+        run: ./wr-tests
