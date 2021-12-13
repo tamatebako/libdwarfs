@@ -172,7 +172,7 @@ jobs:
             ${{github.workspace}}/wr-bin
             ${{github.workspace}}/wr-tests
 
-  cross-test-18-20:
+  cross-test-ubuntu-18-to-ubuntu-20:
     needs: build
     runs-on: ubuntu-20.04
     steps:
@@ -186,6 +186,8 @@ jobs:
           chmod +x wr-bin
           chmod +x wr-tests
       
-      - run: ./wr-bin
+      - name: Run statically linked application
+        run: ./wr-bin
 
-      - run: ./wr-tests
+      - name: Run unit tests
+        run: ./wr-tests
