@@ -181,7 +181,10 @@ jobs:
         with:
           name: tests
 
-      - run: ls -l
+      - name: Provision execute permissions
+        run: | 
+          chmod +x wr-bin
+          chmod +x wr-tests
       
       - run: ./wr-bin
 
