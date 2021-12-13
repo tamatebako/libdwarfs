@@ -172,7 +172,7 @@ jobs:
             ${{github.workspace}}/wr-bin
             ${{github.workspace}}/wr-tests
 
-  18to20-cross-test:
+  cross-test-18-20:
     needs: build
     runs-on: ubuntu-20.04
     steps:
