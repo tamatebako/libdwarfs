@@ -49,7 +49,8 @@ env:
   DEPS: deps
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "libdwarfs_wr_v0.1.3"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.4"
+  LIBARCHIVE_TAG: "v3.2.1"
 # Ruby  (this is for ronn)
   RUBY_VER:   "2.7.4"
 
@@ -79,7 +80,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-v05
+          key: ${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-${{ env.LIBARCHIVE_TAG }}-v05
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1804-README.md

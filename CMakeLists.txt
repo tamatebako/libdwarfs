@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.3)
+project(libdwarfs-wr VERSION 0.1.4)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -66,16 +66,19 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.3")
+def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.4")
+def_ext_prj_g(LIBARCHIVE "v3.5.1")
+
 if(${WITH_TESTS})
  def_ext_prj_g(INCBIN "348e36b")
 endif(${WITH_TESTS})
 
 message("Collecting packages:")
+message("dwarfs     - " @${DWARFS_TAG}  " at " ${DWARFS_SOURCE_DIR})
+message("libarchive - " @${LIBARCHIVE_TAG} " at " ${LIBARCHIVE_SOURCE_DIR})
 if(${WITH_TESTS})
-  message("incbin   - " @${INCBIN_TAG}         " at " ${INCBIN_SOURCE_DIR})
+  message("incbin     - " @${INCBIN_TAG} " at " ${INCBIN_SOURCE_DIR})
 endif(${WITH_TESTS})
-message("dwarfs   - " @${DWARFS_TAG}         " at " ${DWARFS_SOURCE_DIR})
 
 # ...................................................................
 # incbin
@@ -137,25 +140,43 @@ set(__LIBT_METADATA "${DWARFS_BINARY_DIR}/libmetadata_thrift.a")
 set(__LIBT_LIGHT "${DWARFS_BINARY_DIR}/libthrift_light.a")
 set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
 set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
-set(__LIBARCHIVE "${DWARFS_BINARY_DIR}/libarchive/lib/libarchive.a")
+set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
 
-# -DSTATIC_BUILD_DO_NOT_USE:BOOL=ON  - static build for all dwarfs utilities
-# -DTEBAKO_PREFERRED_CFG:BOOL=ON     - limited set of shared libraries  
-#  (en par with tebako linking as described here https://github.com/tamatebako/tebako/issues/42)
-# Pls note that we do static linkage within additional tests anyway for the case when this library 
-# is applied for some different reason
+# Static build for dwarfs core is broken again
+# It is mot an issue any way since we agreed to limited set of shared libraries  
+# as described here https://github.com/tamatebako/tebako/issues/42
+# We do static linkage within additional tests anyway. 
+# Practically it is possible to build it static, th eissue is related to
+# dwarfs build scripts
+# Newer version of dwarfs has new issues
+# https://github.com/tamatebako/libdwarfs/issues/43
 
 ExternalProject_Add(${DWARFS_PRJ}
    PREFIX ${DEPS}
    GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
    GIT_TAG ${DWARFS_TAG}
    UPDATE_COMMAND ""
-   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} -DTEBAKO_PREFERRED_CFG:BOOL=ON
+   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS} 
    SOURCE_DIR ${DWARFS_SOURCE_DIR}
    BINARY_DIR ${DWARFS_BINARY_DIR}
    BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
-                    ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
+                    ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD}
 )
+
+ExternalProject_Add(${LIBARCHIVE_PRJ}
+   PREFIX "${DEPS}"
+   GIT_REPOSITORY "https://github.com/libarchive/libarchive.git"
+   GIT_TAG ${LIBARCHIVE_TAG}
+   UPDATE_COMMAND ""
+   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+              -DCMAKE_BUILD_TYPE=Release
+              -DENABLE_ICONV:BOOL=OFF
+              -DENABLE_LIBXML2:BOOL=OFF
+   SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
+   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
+   BUILD_BYPRODUCTS ${__LIBARCHIVE}
+)
+
 
 # ...................................................................
 # Library
@@ -171,6 +192,7 @@ set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
+                    ${DEPS}/include
                     ${INCBIN_SOURCE_DIR}
                     ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift
                     ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include
@@ -203,7 +225,7 @@ set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
 set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET dwarfs-wr PROPERTY CXX_EXTENSIONS OFF)
 
-add_dependencies(dwarfs-wr ${DWARFS_PRJ})
+add_dependencies(dwarfs-wr ${DWARFS_PRJ} ${LIBARCHIVE_PRJ})
 
 # ...................................................................
 # Tests
@@ -280,10 +302,6 @@ if(${WITH_TESTS})
    set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
    add_dependencies(${NAME} ${PRJ})
    target_link_libraries(${APP_NM} ${NAME})
-   install(FILES ${_${NAME}}
-           DESTINATION ${CMAKE_INSTALL_LIBDIR}
-   )
-
  endfunction()
 
 # ...................................................................
@@ -347,8 +365,9 @@ if(${WITH_TESTS})
  add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} wr-bin)
  add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-bin)
  add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-bin)
- add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
 
+ add_dwarfs_library(_LIBARCHIVE ${LIBARCHIVE_PRJ} wr-bin)
+ 
 # ...................................................................
 #  IMPORTANT !!!
 #  MUST be in this order otherwise link may fail
