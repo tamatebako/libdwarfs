@@ -37,14 +37,11 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 env:
 # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
   DEPS: deps
 # GitHub dependencies'

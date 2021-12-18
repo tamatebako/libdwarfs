@@ -73,7 +73,10 @@ test_install_script() {
    cmake --install  "$DIR_ROOT" --prefix "$DIR_INSTALL"
    assertEquals 0 "${PIPESTATUS[0]}"
 
-   assertTrue "[ -f "$DIR_INS_B"/dwarfs2 ]"
+# We do not test fuse driver since we may operate in the environment 
+# where fuse is not vailable at all
+#   assertTrue "[ -f "$DIR_INS_B"/dwarfs2 ]"
+
    assertTrue "[ -f "$DIR_INS_B"/dwarfsck ]"
    assertTrue "[ -f "$DIR_INS_B"/dwarfsextract ]"
    assertTrue "[ -f "$DIR_INS_B"/mkdwarfs ]"
