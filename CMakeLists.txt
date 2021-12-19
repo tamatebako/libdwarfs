@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.4)
+project(libdwarfs-wr VERSION 0.1.5)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -447,8 +447,9 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 
+# We do not attempt to install fuse driver since we may operate in the environment 
+# where fuse is not vailable at all
 install(FILES
-        ${DEPS_BIN_DIR}/dwarfs2
         ${DEPS_BIN_DIR}/dwarfsck
         ${DEPS_BIN_DIR}/dwarfsextract
         ${DEPS_BIN_DIR}/mkdwarfs
