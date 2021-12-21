@@ -50,8 +50,8 @@ namespace {
 		}
 	};
 #ifdef WITH_LINK_TESTS
-/*	TEST_F(LnTests, tebako_softlink) {
-		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-dir-1"), O_RDONLY);
+	TEST_F(LnTests, tebako_softlink) {
+		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-file-1"), O_RDONLY);
 		EXPECT_LT(0, fh);
 
 		char readbuf[32];
@@ -64,7 +64,7 @@ namespace {
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);
 	}
-*/
+
 	TEST_F(LnTests, tebako_softlink_not_file) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-dir-1"), O_RDONLY);
 		EXPECT_LT(0, fh);
@@ -82,7 +82,7 @@ namespace {
 
 
 	TEST_F(LnTests, tebako_hardlink) {
-		int fh = tebako_open(2, TEBAKIZE_PATH("h-link-to-dir-2"), O_RDONLY);
+		int fh = tebako_open(2, TEBAKIZE_PATH("h-link-to-file-2"), O_RDONLY);
 		EXPECT_LT(0, fh);
 
 		char readbuf[32];
@@ -133,7 +133,7 @@ namespace {
 	TEST_F(LnTests, tebako_readlink_absolute_path) {
 		char readbuf[32];
 		const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
-		int ret = tebako_readlink(TEBAKIZE_PATH("s-link-to-dir-1"), readbuf, num2read);
+		int ret = tebako_readlink(TEBAKIZE_PATH("s-link-to-file-1"), readbuf, num2read);
 		EXPECT_EQ(num2read, ret);
 		EXPECT_TRUE(strncmp(readbuf, "directory-1/file-in-directory-1.txt", num2read) == 0);
 	}
@@ -142,7 +142,7 @@ namespace {
 		char readbuf[32];
 		const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
 		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("")));
-		int ret = tebako_readlink("s-link-to-dir-1", readbuf, num2read);
+		int ret = tebako_readlink("s-link-to-file-1", readbuf, num2read);
 		EXPECT_EQ(num2read, ret);
 		EXPECT_TRUE(strncmp(readbuf, "directory-1/file-in-directory-1.txt", num2read) == 0);
 	}
@@ -166,8 +166,13 @@ namespace {
 
 	TEST_F(LnTests, tebako_lstat_absolute_path) {
 		struct stat st;
-		int ret = tebako_lstat(TEBAKIZE_PATH("s-link-to-dir-1"), &st);
+		int ret = tebako_lstat(TEBAKIZE_PATH("s-link-to-file-1"), &st);
 		EXPECT_EQ(0, ret);
+		EXPECT_EQ(35, st.st_size);
+
+		ret = tebako_stat(TEBAKIZE_PATH("s-link-to-file-1"), &st);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(37, st.st_size);
 	}
 
 	TEST_F(LnTests, tebako_lstat_absolute_path_no_file) {
@@ -188,7 +193,7 @@ namespace {
 		struct stat st;
 		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
-		ret = tebako_stat("s-link-to-dir-1", &st);
+		ret = tebako_stat("s-link-to-file-1", &st);
 		EXPECT_EQ(0, ret);
 	}
 

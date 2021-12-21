@@ -37,6 +37,7 @@ union tebako_dirent;
 
 int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept;
 int dwarfs_stat(const char* path, struct stat* buf) noexcept ;
+int dwarfs_lstat(const char* path, struct stat* buf) noexcept;
 int dwarfs_readlink(const char* path, std::string& lnk) noexcept;
 
 int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept;

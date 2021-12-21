@@ -31,10 +31,13 @@
 #include <tebako-common.h>
 #include <tebako-pch-pp.h>
 #include <tebako-dfs.h>
+#include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
 #include <tebako-dirent.h>
 #include <tebako-mfs.h>
+
+namespace fs = std::filesystem;
 
 namespace dwarfs {
 
@@ -152,10 +155,10 @@ extern "C" int load_fs( const void* data,
     }
 
     catch (...) {
-        return -1;
+        return DWARFS_IO_ERROR;
     }
 
-    return 0;
+    return DWARFS_IO_CONTINUE;
 }
 
 
@@ -164,7 +167,7 @@ int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
 //  [TODO]   LOG_PROXY(LoggerPolicy, userdata->lgr);
 //    LOG_DEBUG << __func__;
     int err = ENOENT;
-    int ret = -1;
+    int ret = DWARFS_IO_ERROR;
     auto locked = usd.rlock();
     auto p = *locked;
     if (p) {
@@ -178,20 +181,20 @@ int safe_dwarfs_call(Functor&& fn, const char* path, Args&&... args) {
             if (inode) {
                 err = fn(&p->fs, *inode, std::forward<Args>(args)...);
                 if (err == 0) {
-                    ret = 0;
+                    ret = DWARFS_IO_CONTINUE;
                 }
             }
         }
         catch (dwarfs::system_error const& e) {
             err = e.get_errno();
-            ret = -1;
+            ret = DWARFS_IO_ERROR;
         }
         catch (...) {
             err = EIO;
-            ret = -1;
+            ret = DWARFS_IO_ERROR;
         }
     }
-    if (ret < 0) {
+    if (ret < DWARFS_IO_CONTINUE) {
         TEBAKO_SET_LAST_ERROR(err < 0 ? -err : err); // dwarfs returns -ERRNO
     }
     return ret;
@@ -201,7 +204,7 @@ template <typename Functor, class... Args>
 int safe_dwarfs_call(Functor&& fn, uint32_t inode, Args&&... args) {
     //  [TODO]   LOG_PROXY(LoggerPolicy, userdata->lgr);
     //    LOG_DEBUG << __func__;
-    int ret = -1;
+    int ret = DWARFS_IO_ERROR;
     int err = ENOENT;
     auto locked = usd.rlock();
     auto p = *locked;
@@ -210,35 +213,68 @@ int safe_dwarfs_call(Functor&& fn, uint32_t inode, Args&&... args) {
             ret = fn(&p->fs, inode, std::forward<Args>(args)...);
             if (ret < 0) {
                 err = -ret;
-                ret = -1;
+                ret = DWARFS_IO_ERROR;
             }
         }
         catch (dwarfs::system_error const& e) {
             err = e.get_errno();
-            ret = -1;
+            ret = DWARFS_IO_ERROR;
         }
         catch (...) {
             err = EIO;
-            ret = -1;
+            ret = DWARFS_IO_ERROR;
         }
     }
-    if (ret < 0) {
+    if (ret < DWARFS_IO_CONTINUE) {
         TEBAKO_SET_LAST_ERROR(err < 0 ? -err : err); // dwarfs returns -ERRNO
     }
     return ret;
 }
 
 int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, int, uid_t, gid_t)>
-           { [](filesystem_v2* fs, inode_view& inode, int amode, uid_t uid, gid_t gid) -> int { return fs->access(inode, amode, uid, gid); } },
-           path, amode, uid, gid);
+    struct stat st;
+    int ret = dwarfs_stat(path, &st);
+    if (ret == DWARFS_IO_CONTINUE) {
+        ret = dwarfs_inode_access(st.st_ino, amode, uid, gid);
+    }
+    return ret;
 }
 
-int dwarfs_stat(const char* path, struct stat* buf) noexcept {
+int dwarfs_lstat(const char* path, struct stat* buf) noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
     { [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
         path, buf);
 }
+
+int dwarfs_stat(const char* path, struct stat* buf) noexcept {
+    int ret = safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
+              { [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
+                  path, buf);
+    try {
+        if (ret == DWARFS_IO_CONTINUE && S_ISLNK(buf->st_mode)) {
+            std::string lnk;
+            ret = dwarfs_readlink(path, lnk);
+            if (ret == DWARFS_IO_CONTINUE) {
+                fs::path p_new = path;
+                fs::path p_lnk = lnk;
+                if (p_lnk.is_relative()) {
+                    p_new.replace_filename(lnk);
+                }
+                else {
+                    p_new = lnk;
+                }
+                p_new = p_new.lexically_normal();
+                ret = tebako_stat(p_new.c_str(), buf);
+           }
+        }
+    }
+    catch (...) {
+        ret = DWARFS_IO_ERROR;
+        TEBAKO_SET_LAST_ERROR(ENOMEM);
+    }
+    return ret;
+}
+
 
 int dwarfs_readlink(const char* path, std::string& lnk) noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, std::string&)>
