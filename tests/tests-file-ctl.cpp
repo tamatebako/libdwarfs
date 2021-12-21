@@ -93,12 +93,6 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
-	TEST_F(FileCtlTests, tebako_access_absolute_path_no_access) {
-		int ret = tebako_access(TEBAKIZE_PATH("restricted-do-not-touch.txt"), W_OK);
-		EXPECT_EQ(EACCES, errno);
-		EXPECT_EQ(-1, ret);
-	}
-
 	TEST_F(FileCtlTests, tebako_stat_absolute_path) {
 		struct stat st;
 		int ret = tebako_stat(TEBAKIZE_PATH("file.txt"), &st);

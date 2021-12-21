@@ -209,7 +209,7 @@ static int readv_c_test(int fh) {
 	printf("A call to 'readv' returned %li (7 expected)\n", s);      /* Skipped 'Ju', read 'st', ' a file' remains */
 	rOK &= (s == 7);
 
-	printf("buf0 = '%.*s'(' a fi' expected); buf1 = '%.*s'('le' expected)", buflen, buf0, l-buflen, buf1);
+	printf("buf0 = '%.*s'(' a fi' expected); buf1 = '%.*s'('le' expected)\n", buflen, buf0, l-buflen, buf1);
 	rOK &= (strncmp(buf0, pattern, buflen)==0);
 	rOK &= (strncmp(buf1, pattern + buflen, l-buflen)==0);
 
@@ -331,11 +331,11 @@ static int link_c_tests(void) {
 #ifdef WITH_LINK_TESTS
 	struct stat st;
 	char buf[256];
-	int ret = lstat(TEBAKIZE_PATH("s-link-to-dir-1"), &st);
+	int ret = lstat(TEBAKIZE_PATH("s-link-to-file-1"), &st);
 	printf("A call to 'lstat' returned %i (0 expected)\n", ret);
 	rOK &= (ret == 0);
 
-	ret = readlink(TEBAKIZE_PATH("s-link-to-dir-1"), buf, sizeof(buf) / sizeof(buf[0]));
+	ret = readlink(TEBAKIZE_PATH("s-link-to-file-1"), buf, sizeof(buf) / sizeof(buf[0]));
 	printf("A call to 'readlink' returned %i (35 expected)\n", ret);
 	rOK &= (ret == 35);
 #else

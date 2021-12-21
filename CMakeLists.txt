@@ -253,9 +253,10 @@ if(${WITH_TESTS})
   if (${USE_TEMP_FS})
     add_custom_target(PACKAGED_FILESYSTEM ALL
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-dir-2 s-link-to-dir-1
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-file-2 s-link-to-file-1 s-link-to-dir-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
       COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
       COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
       DEPENDS ${DWARFS_PRJ}
@@ -263,12 +264,12 @@ if(${WITH_TESTS})
     )
   else(${USE_TEMP_FS})
     add_custom_target(PACKAGED_FILESYSTEM ALL
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-dir-2 s-link-to-dir-1
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-dir-2
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-dir-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-file-2 s-link-to-file-1 s-link-to-dir-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
       COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-      COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/h-link-to-dir-2
-      COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/s-link-to-dir-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-file-2 s-link-to-file-1 s-link-to-dir-1
       DEPENDS ${DWARFS_PRJ}
       BYPRODUCTS ${DATA_BIN_FILE}
     )
