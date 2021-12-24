@@ -66,7 +66,7 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.4")
+def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.6")
 def_ext_prj_g(LIBARCHIVE "v3.5.1")
 
 if(${WITH_TESTS})
