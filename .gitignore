@@ -47,6 +47,7 @@ include/version.h
 
 # VS files
 .vs
+.vscode
 
 #
 

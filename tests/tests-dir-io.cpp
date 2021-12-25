@@ -162,6 +162,11 @@ namespace {
 	}
 
 	TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_rewinddir_closedir_pass_through) {
+#if __MACH__
+#define NM "zsh"
+#else
+#define NM "bash"
+#endif
 		DIR* dirp = tebako_opendir("/bin");
 		EXPECT_TRUE(dirp != NULL);
 		if (dirp != NULL) {
@@ -169,17 +174,20 @@ namespace {
 			errno = 0;
 			struct dirent* entry = tebako_readdir(dirp);
 			while (entry != NULL) {
+				long l = telldir(dirp);
 				entry = tebako_readdir(dirp);
-				if (entry != NULL && strcmp(entry->d_name, "bash") == 0) {
-					loc = telldir(dirp) - 1;
+				if (entry != NULL && strcmp(entry->d_name, NM) == 0) {
+					loc = l;
 				}
 			}
 			EXPECT_NE(-1, loc);
 			EXPECT_EQ(errno, 0);
 
-			tebako_seekdir(dirp, loc);
-			entry = tebako_readdir(dirp);
-			EXPECT_TRUE(strcmp(entry->d_name, "bash"));
+            if (loc !=-1) {
+			  tebako_seekdir(dirp, loc);
+			  entry = tebako_readdir(dirp);
+			  EXPECT_TRUE(strcmp(entry->d_name, NM)==0);
+			}
 
 			EXPECT_EQ(0, tebako_closedir(dirp));
 		}

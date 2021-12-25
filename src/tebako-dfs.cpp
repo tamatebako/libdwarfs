@@ -326,7 +326,11 @@ static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* ca
                     std::string name(name_view);
                     fs->getattr(entry, &st);
                     cache[cache_size].e.d_ino = st.st_ino;
+#if __MACH__
+                    cache[cache_size].e.d_seekoff = cache_start + cache_size;
+#else
                     cache[cache_size].e.d_off = cache_start + cache_size;
+#endif
                     cache[cache_size].e.d_type = IFTODT(st.st_mode);
 #ifdef __GNUC__
 #pragma GCC diagnostic push

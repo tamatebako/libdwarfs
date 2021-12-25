@@ -104,7 +104,6 @@ extern "C"	char* tebako_getwd(char* buf) {
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#pragma GCC diagnostic ignored "-Wattribute-warning"
 #endif
 			ret = ::getwd(buf);
 #ifdef __GNUC__

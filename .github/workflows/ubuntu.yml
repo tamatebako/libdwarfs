@@ -31,16 +31,17 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/macos.yml'      
   pull_request:
     branches: [ master ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/macos.yml'     
   workflow_dispatch:
 
 env:
-# Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
   MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
@@ -61,8 +62,8 @@ jobs:
         env:
           - CC: gcc
             CXX: g++
-#          - CC: clang
-#            CXX: clang++
+          - CC: clang
+            CXX: clang++
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
@@ -110,7 +111,7 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt-get -y install \
-          binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev \
+          binutils-dev libarchive-dev libevent-dev acl-dev \
           libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev \
           libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libgtest-dev \
           libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
@@ -128,6 +129,21 @@ jobs:
       - name: Install libfmt, googletest (focal)
         if: ${{ matrix.os == 'ubuntu-20.04' }}
         run: sudo apt-get install libfmt-dev googletest libgtest-dev
+
+      - name: Install libjemalloc (not bionic or not clang)
+        if: ${{ matrix.os != 'ubuntu-18.04' || matrix.env.CC != 'clang' }}
+        run: sudo apt-get -y install libjemalloc-dev
+        
+      - name: Install libjemalloc 5 (bionic and clang)
+        if: ${{ matrix.os == 'ubuntu-18.04' && matrix.env.CC == 'clang' }}
+        run: |
+          sudo apt-get remove libjemalloc-dev
+          wget -q https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
+          tar -xf jemalloc-5.2.1.tar.bz2
+          cd jemalloc-5.2.1
+          ./configure --prefix='/usr'
+          make
+          sudo make install
 
       - name: Configure
         run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=ON
@@ -152,19 +168,24 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         uses: actions/upload-artifact@v2
         with:
-          name: tests
+          name: tests-${{ matrix.env.CC }}
           path: |
             ${{github.workspace}}/wr-bin
             ${{github.workspace}}/wr-tests
 
   cross-test-ubuntu-18-to-ubuntu-20:
     needs: build
+    name: Run Ubuntu-18.04 binaries on Ubuntu-20.04 [CC ${{ matrix.env }}]
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [ gcc, clang ]
     steps:
       - name: Download tests
         uses: actions/download-artifact@v2
         with:
-          name: tests
+          name: tests-${{ matrix.env }}
 
       - name: Provision execute permissions
         run: |
