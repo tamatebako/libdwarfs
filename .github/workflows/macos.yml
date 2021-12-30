@@ -89,7 +89,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ matrix.os }}-${{ hashFiles('key.txt') }}-v01
+          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v01
 
       - name: Install packages
 # Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz
