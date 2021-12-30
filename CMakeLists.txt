@@ -47,12 +47,6 @@ include(GNUInstallDirs)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
 
-if(${WITH_TESTS})
-  include(GoogleTest)
-  include(CTest)
-  enable_testing()
-endif(${WITH_TESTS})
-
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
@@ -307,23 +301,22 @@ endif(${WITH_GFLAGS_BUILD})
 # Tests
 
 if(${WITH_TESTS})
-  find_package(PkgConfig REQUIRED)
-  pkg_search_module(GTEST gtest_main)
+  message("Fetching googletest")
+  include(FetchContent)
 
-# This code may be adopted if we want to build gtest locally. No need so far.
-#  message("Fetching googletest")
-#  include(FetchContent)
-#  set(FETCHCONTENT_QUIET OFF)
-#  FetchContent_Declare(googletest
-#    GIT_REPOSITORY  https://github.com/google/googletest.git
-#    GIT_TAG         release-1.11.0
-#  )
-  # maintain compiler/linker settings on Windows
-#  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  # explicitely disable unneeded gmock build
-# set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
-#  FetchContent_MakeAvailable(googletest)
-#  set(GTestMain gtest_main)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        main
+  )
+# maintain compiler/linker settings on Windows
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+# explicitely disable unneeded gmock build
+  set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+
+  FetchContent_MakeAvailable(googletest)
+  enable_testing()
+  include(GoogleTest)
 
 # ...................................................................
 # Packaged filesystem
@@ -331,7 +324,7 @@ if(${WITH_TESTS})
 
   add_library(empty MODULE tests/empty/empty.c)
   set_target_properties(empty PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  set_target_properties(empty PROPERTIES CXX_VISIBILITY_PRESET hidden)
+  set_target_properties(empty PROPERTIES C_VISIBILITY_PRESET hidden)
 
   add_custom_target(PREPACKAGED_FILESYSTEM ALL
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
@@ -501,51 +494,30 @@ if(${WITH_TESTS})
     add_dwarfs_library(_LIBGLOG ${GLOG_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBGLOG)
   else(${WITH_GLOG_BUILD})
-    target_link_libraries(wr-bin ${_LIBGLOG})
-    target_link_libraries(wr-tests ${_LIBGLOG})
+    list(APPEND _LIBRARIES ${_LIBGLOG})
   endif(${WITH_GLOG_BUILD})
 
   if(${WITH_GFLAGS_BUILD})
     add_dwarfs_library(_LIBGFLAGS ${GFLAGS_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBGFLAGS)
   else(${WITH_GFLAGS_BUILD})
-    target_link_libraries(wr-bin ${_LIBGFLAGS})
-    target_link_libraries(wr-tests ${_LIBGFLAGS})
+    list(APPEND _LIBRARIES ${_LIBGFLAGS})
   endif(${WITH_GFLAGS_BUILD})
 
   list(APPEND _LIBRARIES ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
 
-  target_link_libraries(wr-bin ${_LIBRARIES})
-  target_link_libraries(wr-tests ${_LIBRARIES})
-
   if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(wr-bin
-      ${_LIBLZ4}   ${_LIBZ}
-      ${_LIBSSL}   ${_LIBCRYPTO}       ${_LIBJEMALLOC}
-      ${_LIBLZMA}
-    )
-    target_link_libraries(wr-tests
-      ${_LIBLZ4}    ${_LIBZ}
-      ${_LIBSSL}   ${_LIBCRYPTO}       ${_LIBJEMALLOC}
-      ${_LIBLZMA}
-    )
+    list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBJEMALLOC} ${_LIBLZMA})
   else()
-    target_link_libraries(wr-bin
-      ${_LIBIBERTY}
-      ${_LIBACL}          ${_LIBSSL}          ${_LIBCRYPTO}       ${_LIBLZ4}
-      ${_LIBZ}            ${_LIBJEMALLOC}     ${_LIBPTHREAD}      ${_LIBDL}
-      ${_LIBM}            ${_LIBRT}           gcc_eh
-      ${_LIBUNWIND}       ${_LIBLZMA}
-    )
-
-    target_link_libraries(wr-tests
-      ${_LIBIBERTY}
-      ${_LIBACL}          ${_LIBSSL}          ${_LIBCRYPTO}       ${_LIBLZ4}
-      ${_LIBZ}            ${_LIBJEMALLOC}     ${_LIBPTHREAD}      ${_LIBDL}
-      ${_LIBM}            ${_LIBRT}            gcc_eh
-      ${_LIBUNWIND}       ${_LIBLZMA}
+    list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
+                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBPTHREAD}  ${_LIBDL}      ${_LIBM}
+                           ${_LIBRT}     gcc_eh          ${_LIBUNWIND}   ${_LIBLZMA}
     )
   endif()
+
+  target_link_libraries(wr-bin ${_LIBRARIES})
+  target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
+
 endif(${WITH_TESTS})
 
 install(TARGETS

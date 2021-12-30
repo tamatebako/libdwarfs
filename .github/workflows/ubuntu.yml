@@ -50,6 +50,8 @@ env:
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.6"
   LIBARCHIVE_TAG: "v3.2.1"
+  GLOG_TAG: "v0.5.0"
+  GFLAGS_TAG: "v2.2.2"
 
 jobs:
   build:
@@ -72,12 +74,18 @@ jobs:
       - name: Create deps folder
         run: |
           mkdir ${{github.workspace}}/${{env.DEPS}}
+          echo "Keys" > key.txt
+          echo ${{ env.DWARFS_TAG }} >> key.txt
+          echo ${{ env.INCBIN_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_TAG }} >> key.txt
+          echo ${{ env.GLOG_TAG }} >> key.txt
+          echo ${{ env.GFLAGS_TAG }} >> key.txt
 
       - name: Process cache
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-${{ env.LIBARCHIVE_TAG }}-v05
+          key: ${{ matrix.os }}-${{ hashFiles('key.txt') }}-v01
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1804-README.md

@@ -56,6 +56,9 @@ env:
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.6"
   LIBARCHIVE_TAG: "v3.2.1"
+  GLOG_TAG: "v0.5.0"
+  GFLAGS_TAG: "v2.2.2"
+
 
 
 jobs:
@@ -72,11 +75,21 @@ jobs:
         with:
           submodules: true
 
+      - name: Create deps folder
+        run: |
+          mkdir ${{github.workspace}}/${{env.DEPS}}
+          echo "Keys" > key.txt
+          echo ${{ env.DWARFS_TAG }} >> key.txt
+          echo ${{ env.INCBIN_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_TAG }} >> key.txt
+          echo ${{ env.GLOG_TAG }} >> key.txt
+          echo ${{ env.GFLAGS_TAG }} >> key.txt
+
       - name: Process cache
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-${{ env.LIBARCHIVE_TAG }}-v01
+          key: ${{ matrix.os }}-${{ hashFiles('key.txt') }}-v01
 
       - name: Install packages
 # Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz
