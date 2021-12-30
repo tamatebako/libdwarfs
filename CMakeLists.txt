@@ -51,6 +51,9 @@ set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
 set(GFLAGS_SHARED          OFF)
+set(CMAKE_CXX_STANDARD      17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS   OFF)
 
 # Various locations for external projects
 set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
@@ -284,10 +287,6 @@ add_library(dwarfs-wr STATIC
     "include/tebako-defines.h"
     "include/version.h"
   )
-
-set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD 17)
-set_property(TARGET dwarfs-wr PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET dwarfs-wr PROPERTY CXX_EXTENSIONS OFF)
 
 add_dependencies(dwarfs-wr ${DWARFS_PRJ} ${LIBARCHIVE_PRJ})
 if(${WITH_GLOG_BUILD})
