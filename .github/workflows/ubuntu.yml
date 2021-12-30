@@ -85,7 +85,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key:  ${{ matrix.os }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v01
+          key:  ${{ matrix.os }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v02
 
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md

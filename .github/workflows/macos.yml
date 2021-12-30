@@ -89,7 +89,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v01
+          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v02
 
       - name: Install packages
 # Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz
@@ -105,15 +105,15 @@ jobs:
       - name: Build
         run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
 
-#      - name: Run unit tests
-#        run: make test
+      - name: Run unit tests
+        run: make test
 
-#      - name: Checkout shell test framework
-#        uses: actions/checkout@v2
-#        with:
-#          repository: kward/shunit2
-#          path: ${{github.workspace}}/tests/shunit2
-#          fetch-depth: 1
+      - name: Checkout shell test framework
+        uses: actions/checkout@v2
+        with:
+          repository: kward/shunit2
+          path: ${{github.workspace}}/tests/shunit2
+          fetch-depth: 1
 
-#      - name: Run additional tests
-#        run:  ${{github.workspace}}/tests/scripts/tests.sh    
+      - name: Run additional tests
+        run:  ${{github.workspace}}/tests/scripts/tests.sh    
