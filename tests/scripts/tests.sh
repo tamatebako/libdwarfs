@@ -34,9 +34,23 @@ set -o errexit -o pipefail -o noclobber -o nounset
 # Run ldd to check that wr-bin has been linked statically
 test_static_linkage() {
    echo "==> Static linkage test"
-   result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
-   assertEquals 1 "${PIPESTATUS[0]}"
-   assertContains "$result" "not a dynamic executable"
+   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+      result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
+      assertEquals 1 "${PIPESTATUS[0]}"
+      assertContains "$result" "not a dynamic executable"
+   elif [[ "$OSTYPE" == "darwin"* ]]; then
+      echo "... MacOS ... skipping"
+   elif [[ "$OSTYPE" == "cygwin" ]]; then
+      echo "... cygwin ... skipping"
+   elif [[ "$OSTYPE" == "msys" ]]; then
+      echo "... msys ... skipping"  
+   elif [[ "$OSTYPE" == "win32" ]]; then
+      echo "... win32 ... skipping"
+   elif [[ "$OSTYPE" == "freebsd"* ]]; then
+      echo "... freebsd ... skipping"
+   else
+      echo "... unknown - $OSTYPE ... skipping"
+   fi  
 }
 
 # ......................................................................

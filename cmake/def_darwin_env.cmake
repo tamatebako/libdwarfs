@@ -36,10 +36,5 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 
     message("Using homebrew environment at ${BREW_PREFIX}")
 
-#    set(ENV{OPENSSL_ROOT_DIR} "${BREW_PREFIX}/opt/openssl@1.1")
-
     set(CMAKE_PREFIX_PATH "${BREW_PREFIX};${BREW_PREFIX}/opt/openssl@1.1;${BREW_PREFIX}/opt/zlib")
-    set(ENV{CXXFLAGS} "-DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0 $ENV{CXXFLAGS}")
-    set(CMAKE_CXX_FLAGS "-DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0 ${CMAKE_CXX_FLAGS}")
-#    set(ENV{CPATH} "${BREW_PREFIX}/include:$ENV{CPATH}")
 endif()
