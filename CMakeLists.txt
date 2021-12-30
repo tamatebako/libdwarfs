@@ -513,8 +513,10 @@ if(${WITH_TESTS})
     target_link_libraries(wr-tests ${_LIBGFLAGS})
   endif(${WITH_GFLAGS_BUILD})
 
-  target_link_libraries(wr-bin ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
-  target_link_libraries(wr-tests ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
+  list(APPEND _LIBRARIES ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
+
+  target_link_libraries(wr-bin ${_LIBRARIES})
+  target_link_libraries(wr-tests ${_LIBRARIES})
 
   if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(wr-bin
