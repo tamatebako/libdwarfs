@@ -335,11 +335,6 @@ static int scandir_c_test(void) {
 }
 
 static int dlopen_c_test(void) {
-#ifdef __MACH__
-#define NM "directory-1/libempty.dylib"
-#else
-#define NM "directory-1/libempty.so"
-#endif
 	int rOK = true;
 	void* handle = dlopen(TEBAKIZE_PATH("directory-1/libempty.so"), RTLD_LAZY | RTLD_GLOBAL);
 	rOK &= (handle != NULL);

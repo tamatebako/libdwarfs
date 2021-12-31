@@ -29,11 +29,8 @@
 
 #include "tests.h"
 
-#ifdef __MACH__
-#define NM "libempty.dylib"
-#else
+#if not __MACH__
 #include <gnu/lib-names.h>
-#define NM "libempty.so"
 #endif
 
 namespace {
@@ -72,7 +69,7 @@ namespace {
 
 	TEST_F(DlTests, tebako_dlopen_absolute_path) {
 		void *handle;
-		handle = tebako_dlopen(TEBAKIZE_PATH("directory-1/" NM), RTLD_LAZY | RTLD_GLOBAL);
+		handle = tebako_dlopen(TEBAKIZE_PATH("directory-1/libempty.so"), RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_TRUE(handle != NULL);
         if (handle != NULL) {
 			EXPECT_EQ(0, dlclose(handle));
@@ -82,7 +79,7 @@ namespace {
 	TEST_F(DlTests, tebako_dlopen_relative_path) {
 		EXPECT_EQ(0,tebako_chdir(TEBAKIZE_PATH("directory-1")));
 		void* handle;
-		handle = tebako_dlopen(NM, RTLD_LAZY | RTLD_GLOBAL);
+		handle = tebako_dlopen("libempty.so", RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_TRUE(handle != NULL);
 		if (handle != NULL) {
 			EXPECT_EQ(0, dlclose(handle));
@@ -92,7 +89,7 @@ namespace {
 	TEST_F(DlTests, tebako_dlopen_relative_path_dot_dot) {
 		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-3/level-1/level-2///")));
 		void* handle;
-		handle = tebako_dlopen("../../../directory-1/" NM, RTLD_LAZY | RTLD_GLOBAL);
+		handle = tebako_dlopen("../../../directory-1/libempty.so", RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_TRUE(handle != NULL);
 		if (handle != NULL) {
 			EXPECT_EQ(0, dlclose(handle));

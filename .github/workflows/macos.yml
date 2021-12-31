@@ -49,7 +49,7 @@ env:
   BUILD_TYPE: Release  
   CC: clang
   CXX: clang++
-  CXXFLAGS: -std=gnu++14 -DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0
+  CXXFLAGS: -DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0
 # The folder for dwarfs and other dependenies
   DEPS: deps
 # GitHub dependencies'
@@ -87,7 +87,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v01
+          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v02
 
       - name: Install packages
 # Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz
@@ -111,3 +111,6 @@ jobs:
           repository: kward/shunit2
           path: ${{github.workspace}}/tests/shunit2
           fetch-depth: 1
+
+      - name: Run additional tests
+        run:  ${{github.workspace}}/tests/scripts/tests.sh    

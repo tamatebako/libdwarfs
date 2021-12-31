@@ -53,6 +53,7 @@ set(GFLAGS_SHARED          OFF)
 set(CMAKE_CXX_STANDARD      17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS   OFF)
+set(DWARFS_CXX_FLAGS       "")
 
 # Various locations for external projects
 set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
@@ -174,30 +175,33 @@ set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
 # https://github.com/tamatebako/libdwarfs/issues/43
 
 ExternalProject_Add(${DWARFS_PRJ}
-   PREFIX ${DEPS}
-   GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
-   GIT_TAG ${DWARFS_TAG}
-   UPDATE_COMMAND ""
-   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
-   SOURCE_DIR ${DWARFS_SOURCE_DIR}
-   BINARY_DIR ${DWARFS_BINARY_DIR}
-   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
-                    ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD}
+  PREFIX ${DEPS}
+  GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
+  GIT_TAG ${DWARFS_TAG}
+  UPDATE_COMMAND ""
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+             -DCMAKE_CXX_STANDARD=14
+             -DCMAKE_CXX_STANDARD_REQUIRED=ON 
+             -DCMAKE_CXX_EXTENSIONS=OFF
+  SOURCE_DIR ${DWARFS_SOURCE_DIR}
+  BINARY_DIR ${DWARFS_BINARY_DIR}
+  BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
+                   ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD}
 )
 
 ExternalProject_Add(${LIBARCHIVE_PRJ}
-   PREFIX "${DEPS}"
-   GIT_REPOSITORY "https://github.com/libarchive/libarchive.git"
-   GIT_TAG ${LIBARCHIVE_TAG}
-   UPDATE_COMMAND ""
-   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
-              -DCMAKE_BUILD_TYPE=Release
-              -DENABLE_ICONV:BOOL=OFF
-              -DENABLE_LIBXML2:BOOL=OFF
-              -DENABLE_TEST:BOOL=OFF
-   SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
-   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
-   BUILD_BYPRODUCTS ${__LIBARCHIVE}
+  PREFIX "${DEPS}"
+  GIT_REPOSITORY "https://github.com/libarchive/libarchive.git"
+  GIT_TAG ${LIBARCHIVE_TAG}
+  UPDATE_COMMAND ""
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+             -DCMAKE_BUILD_TYPE=Release
+             -DENABLE_ICONV:BOOL=OFF
+             -DENABLE_LIBXML2:BOOL=OFF
+             -DENABLE_TEST:BOOL=OFF
+  SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
+  BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
+  BUILD_BYPRODUCTS ${__LIBARCHIVE}
 )
 
 # ...................................................................
@@ -305,7 +309,7 @@ if(${WITH_TESTS})
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        main
+    GIT_TAG        release-1.11.0
   )
 # maintain compiler/linker settings on Windows
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -452,10 +456,6 @@ if(${WITH_TESTS})
     "tests/tebako-fs.h"
     "tests/tests.h"
   )
-
-  set_property(TARGET wr-tests PROPERTY CXX_STANDARD 17)
-  set_property(TARGET wr-tests PROPERTY CXX_STANDARD_REQUIRED ON)
-  set_property(TARGET wr-tests PROPERTY CXX_EXTENSIONS OFF)
 
 # ...................................................................
 #  IMPORTANT !!!
