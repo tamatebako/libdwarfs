@@ -75,7 +75,7 @@ jobs:
 
       - name: Create deps folder
         run: |
-          mkdir ${{github.workspace}}/${{env.DEPS}}
+          mkdir ${{ github.workspace }}/${{ env.DEPS }}
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
@@ -86,21 +86,21 @@ jobs:
       - name: Process cache
         uses: actions/cache@v2
         with:
-          path: ${{github.workspace}}/${{env.DEPS}}
+          path: ${{ github.workspace }}/${{ env.DEPS }}
           key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v02
 
       - name: Install packages
 # Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz
-# Not installing [comparint to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
+# Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
           brew install \
           bison flex binutils libarchive double-conversion boost jemalloc fmt glog zlib
 
       - name: Configure
-        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=ON
+        run: cmake -B ${{ github.workspace }} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON
 
       - name: Build
-        run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
+        run: cmake --build ${{ github.workspace }} --config ${{ env.BUILD_TYPE }}
 
       - name: Run unit tests
         run: make test
@@ -109,8 +109,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: kward/shunit2
-          path: ${{github.workspace}}/tests/shunit2
+          path: ${{ github.workspace }}/tests/shunit2
           fetch-depth: 1
 
       - name: Run additional tests
-        run:  ${{github.workspace}}/tests/scripts/tests.sh    
+        run:  ${{ github.workspace }}/tests/scripts/tests.sh    
