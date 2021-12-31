@@ -59,8 +59,6 @@ env:
   GLOG_TAG: "v0.5.0"
   GFLAGS_TAG: "v2.2.2"
 
-
-
 jobs:
   build:
     name: ${{ matrix.os }}
@@ -93,11 +91,10 @@ jobs:
 
       - name: Install packages
 # Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz
-# Not installing [if ubuntu is considered the baseline] libiberty, libunwind, libdwarf, libelf
+# Not installing [comparint to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
           brew install \
-          bison flex binutils libarchive double-conversion boost jemalloc fmt \
-          glog googletest zlib
+          bison flex binutils libarchive double-conversion boost jemalloc fmt glog zlib
 
       - name: Configure
         run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=ON

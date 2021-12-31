@@ -122,22 +122,22 @@ jobs:
           sudo apt-get -y install \
           binutils-dev libarchive-dev libevent-dev acl-dev \
           libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev \
-          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libgtest-dev \
+          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev \
           libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
           libboost-regex-dev libboost-system-dev libboost-thread-dev
 
-      - name: Update libfmt, googletest (bionic)
+      - name: Update libfmt (bionic)
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         run: |
-          sudo apt-get -y remove libfmt-dev googletest libgtest-dev
+          sudo apt-get -y remove libfmt-dev
           sudo apt-get -y install software-properties-common
           sudo add-apt-repository ppa:team-xbmc/ppa
           sudo apt-get -y update
-          sudo apt-get -y install libfmt-dev googletest libgtest-dev
+          sudo apt-get -y install libfmt-dev
 
-      - name: Install libfmt, googletest (focal)
+      - name: Install libfmt (focal)
         if: ${{ matrix.os == 'ubuntu-20.04' }}
-        run: sudo apt-get install libfmt-dev googletest libgtest-dev
+        run: sudo apt-get install libfmt-dev
 
       - name: Install libjemalloc (not bionic or not clang)
         if: ${{ matrix.os != 'ubuntu-18.04' || matrix.env.CC != 'clang' }}

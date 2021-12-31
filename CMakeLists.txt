@@ -42,7 +42,6 @@ option(WITH_LINK_TESTS "Include tests for hard and symbolic links" ON)
 option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
 
 include(ExternalProject)
-# include(FetchContent)
 include(GNUInstallDirs)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
