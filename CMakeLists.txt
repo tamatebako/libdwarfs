@@ -407,7 +407,7 @@ if(${WITH_TESTS})
   find_library(_LIBLZ4 "liblz4.a" REQUIRED)
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
   find_library(_LIBZ "libz.a" REQUIRED)
-  find_library(_LIBLJEMALLOC "libjemalloc.a" REQUIRED)
+  find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
   find_library(_LIBSSL "libssl.a" REQUIRED)
 
   find_library(_LIBACL "libacl.a")
@@ -505,7 +505,7 @@ if(${WITH_TESTS})
   list(APPEND _LIBRARIES ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
 
   if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
-    list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBJEMALLOC} ${_LIBLZMA})
+    list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBLZMA})
   else()
     list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
                            ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBPTHREAD}  ${_LIBDL}      ${_LIBM}
@@ -513,6 +513,7 @@ if(${WITH_TESTS})
     )
   endif()
 
+  message ( ${_LIBRARIES} )
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
 
