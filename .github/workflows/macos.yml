@@ -132,8 +132,6 @@ jobs:
     needs: build
     name: Run MacOS-10.15 binaries on MacOS-11.0 [CC ${{ env.CC }}]
     runs-on: macos-11.0
-    env:
-      CC: clang
     strategy:
       fail-fast: false
     steps:
