@@ -113,7 +113,7 @@ int main(int argc, char** argv)
         if (!rOK) printf("failing\n");
 
 		rOK &= lseek_read_c_test(fh);
-		printf(rOK ? "passing\n":"failing\n");
+		if (!rOK) printf("failing\n");
 		rOK &= readv_c_test(fh);  /* Skipped 'Ju', read 'st', ' a file' remains */
         if (!rOK) printf("failing\n");
 		rOK &= pread_c_test(fh);

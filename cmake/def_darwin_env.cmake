@@ -23,6 +23,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+set(WITH_JEMALLOC_BUILD OFF)
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     execute_process(
         COMMAND brew --prefix
@@ -37,4 +38,5 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     message("Using homebrew environment at ${BREW_PREFIX}")
 
     set(CMAKE_PREFIX_PATH "${BREW_PREFIX};${BREW_PREFIX}/opt/openssl@1.1;${BREW_PREFIX}/opt/zlib")
+    set(WITH_JEMALLOC_BUILD ON)
 endif()
