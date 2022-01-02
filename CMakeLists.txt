@@ -95,7 +95,7 @@ if(${WITH_JEMALLOC_BUILD})
   message("Building jemalloc since homebrew version lacks support of weak symbols")
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
 else(${WITH_JEMALLOC_BUILD})
-  find_library(_LIBJEMALLOC "jemalloc" REQUIRED)  
+  find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)  
 endif(${WITH_JEMALLOC_BUILD})
 
 message("Collecting packages:")
