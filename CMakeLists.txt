@@ -290,8 +290,8 @@ configure_file(
    @ONLY
 )
 
-check_symbol_exists(getattrlist "sys/attr.h" TEBAKO_HAS_GETATTRLIST)
-check_symbol_exists(fgetattrlist "sys/attr.h" TEBAKO_HAS_FGETATTRLIST)
+check_symbol_exists(getattrlist "unistd.h" TEBAKO_HAS_GETATTRLIST)
+check_symbol_exists(fgetattrlist "unistd.h" TEBAKO_HAS_FGETATTRLIST)
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-config.h.in
   ${CMAKE_CURRENT_SOURCE_DIR}/include/tebako-config.h

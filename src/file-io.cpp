@@ -174,11 +174,11 @@ extern "C" int tebako_fstatat(int vfd, const char* path, struct stat* buf, int f
 }
 
 #ifdef TEBAKO_HAS_FGETATTRLIST
-extern "C" int tebako_fgetattrlist (int fd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options) {
+extern "C" int tebako_fgetattrlist (int vfd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options) {
 	struct stat stfd;
-	int ret = fstat(vfd, &stfd);
-	if (ret == DWARFS_IO_ERROR) {
-		ret = ::fgetattrlist (fd, attrList, attrBuf, attrBufSize, options);
+	int ret = sync_tebako_fdtable::fdtable.fstat(vfd, &stfd);
+	if (ret == DWARFS_INVALID_FD) {
+		ret = ::fgetattrlist(vfd, attrList, attrBuf, attrBufSize, options);	
 	}
 	else {
 		ret = -1;

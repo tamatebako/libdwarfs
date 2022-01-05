@@ -111,8 +111,9 @@ extern "C" int tebako_getattrlist (const char* path, struct attrlist * attrList,
 		TEBAKO_SET_LAST_ERROR(EFAULT);
 	}
 	else {
+		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, path);
-        if (path) {
+        if (p_path) {
 		    TEBAKO_SET_LAST_ERROR(ENOTSUP);
 		}
 		else {

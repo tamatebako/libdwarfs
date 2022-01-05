@@ -45,9 +45,9 @@
 #include <stdarg.h>
 #include <errno.h>
 
-#if TEBAKO_HAS_GETATTRLIST || TEBAKO_HAS_FGETATTRLIST
+//#if TEBAKO_HAS_GETATTRLIST || TEBAKO_HAS_FGETATTRLIST
   #include <sys/attr.h>
-#endif
+//#endif
 
 #ifdef _WIN32
  #include <direct.h>
