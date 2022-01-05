@@ -204,79 +204,79 @@ extern "C" int tebako_dirfd(DIR * dirp) {
 
 typedef int(*qsort_compar)(const void*, const void*);
 
- static struct dirent* internal_readdir(DIR* dirp) {
-	 struct dirent* entry = NULL;
-	 sync_tebako_dstable::dstable.readdir(reinterpret_cast<uintptr_t>(dirp), entry);
-	 return entry;
- }
+static struct dirent* internal_readdir(DIR* dirp) {
+	struct dirent* entry = NULL;
+	sync_tebako_dstable::dstable.readdir(reinterpret_cast<uintptr_t>(dirp), entry);
+	return entry;
+}
 
- extern "C" int tebako_scandir(const char* dirname, struct dirent*** namelist,
-	 int (*sel)(const struct dirent*),
-	 int (*compar)(const struct dirent**, const struct dirent**)) {
+extern "C" int tebako_scandir(const char* dirname, struct dirent*** namelist,
+    int (*sel)(const struct dirent*),
+	int (*compar)(const struct dirent**, const struct dirent**)) {
 
-	 int ret = DWARFS_IO_ERROR;
-	 if (dirname == NULL) {
-		 TEBAKO_SET_LAST_ERROR(ENOENT);
-	 }
-	 else {
-		 DIR* dirp = NULL;
-		 tebako_path_t t_path;
-		 const char* p_path = to_tebako_path(t_path, dirname);
+	int ret = DWARFS_IO_ERROR;
+	if (dirname == NULL) {
+		TEBAKO_SET_LAST_ERROR(ENOENT);
+	}
+	else {
+		DIR* dirp = NULL;
+		tebako_path_t t_path;
+		const char* p_path = to_tebako_path(t_path, dirname);
 
-		 if (!p_path) {
-			 ret = ::scandir(dirname, namelist, sel, compar);
-		 }
-		 else {
-			 if (namelist != NULL) {
-				 int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY);
-				 if (vfd == DWARFS_INVALID_FD) {
-					 TEBAKO_SET_LAST_ERROR(ENOENT);
-					 vfd = DWARFS_IO_ERROR;
-				 }
-				 if (vfd >= DWARFS_IO_CONTINUE) {
-					 size_t size;
-					 dirp = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd, size));
-					 if (dirp != NULL) {
-						 int n = 0;
-						 struct dirent** list = (dirent**) malloc( sizeof(struct dirent) *size);
-						 struct dirent* ent = 0, * p = 0;
-						 while (list != NULL && (ent = internal_readdir(dirp)) != NULL) {
-							 if (sel && !sel(ent)) continue;
-							 p = (struct dirent*)malloc(ent->d_reclen);
-							 if (p == NULL) {
-								 while (--n >= 0) {
-									 delete list[n];
-								 }
-								 delete[] list;
-								 list = NULL;
-							 }
-							 else {
-								 memcpy((void*)p, (void*)ent, ent->d_reclen);
-								 list[n++] = p;
-							 }
-						 }
-						 sync_tebako_dstable::dstable.closedir(reinterpret_cast<uintptr_t>(dirp));
-						 if (list == NULL) {
-							 TEBAKO_SET_LAST_ERROR(ENOMEM);
-						 }
-						 else {
-							 *namelist = (struct dirent**)realloc((void*)list, std::max(n, 1) * sizeof(struct dirent*));
-							 if (*namelist == NULL) {
-								 *namelist = list;
-							 }
-							 if (compar && n > 0) {
-								 qsort((void*)*namelist, n, sizeof(struct dirent*), (qsort_compar)compar);
-							 }
-							 ret = n;
-						 }
-					 }
-				 }
-			 }
-			 else {
-				 // This is not POSIX but posix does not cover this case (namelist==NULL) at all
-				 TEBAKO_SET_LAST_ERROR(EFAULT);
-			 }
-		 }
-	 }
-	 return ret;
- }
+		if (!p_path) {
+			ret = ::scandir(dirname, namelist, sel, compar);
+		}
+		else {
+			if (namelist != NULL) {
+				int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY);
+				if (vfd == DWARFS_INVALID_FD) {
+					TEBAKO_SET_LAST_ERROR(ENOENT);
+					vfd = DWARFS_IO_ERROR;
+				}
+				if (vfd >= DWARFS_IO_CONTINUE) {
+					size_t size;
+					dirp = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd, size));
+					if (dirp != NULL) {
+						int n = 0;
+						struct dirent** list = (dirent**) malloc( sizeof(struct dirent) *size);
+						struct dirent* ent = 0, * p = 0;
+						while (list != NULL && (ent = internal_readdir(dirp)) != NULL) {
+							if (sel && !sel(ent)) continue;
+							p = (struct dirent*)malloc(ent->d_reclen);
+							if (p == NULL) {
+								while (--n >= 0) {
+									delete list[n];
+								}
+								delete[] list;
+								list = NULL;
+							}
+							else {
+								memcpy((void*)p, (void*)ent, ent->d_reclen);
+								list[n++] = p;
+							}
+						}
+						sync_tebako_dstable::dstable.closedir(reinterpret_cast<uintptr_t>(dirp));
+						if (list == NULL) {
+							TEBAKO_SET_LAST_ERROR(ENOMEM);
+						}
+						else {
+							*namelist = (struct dirent**)realloc((void*)list, std::max(n, 1) * sizeof(struct dirent*));
+							if (*namelist == NULL) {
+								*namelist = list;
+							}
+							if (compar && n > 0) {
+								qsort((void*)*namelist, n, sizeof(struct dirent*), (qsort_compar)compar);
+							}
+							ret = n;
+						}
+					}
+				}
+			}
+			else {
+				// This is not POSIX but posix does not cover this case (namelist==NULL) at all
+				TEBAKO_SET_LAST_ERROR(EFAULT);
+			}
+		}
+	}
+	return ret;
+}

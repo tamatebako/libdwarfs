@@ -247,4 +247,50 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+#ifdef TEBAKO_HAS_GETATTRLIST
+	TEST_F(FileCtlTests, tebako_getattrlist_absolute_path) {
+		attrlist_t      attrList;
+        VolAttrBuf      attrBuf;
+
+        memset(&attrList, 0, sizeof(attrList));
+        attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
+        attrList.volattr =  ATTR_VOL_INFO
+                          | ATTR_VOL_FILECOUNT
+                          | ATTR_VOL_DIRCOUNT
+                          | ATTR_VOL_MOUNTPOINT
+                          | ATTR_VOL_NAME;
+
+		int ret = tebako_getattrlist(TEBAKIZE_PATH("file.txt"), &attrList, &attrBuf, sizeof(attrBuf), 0);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(ENOTSUP, errno);
+	}
+#endif
+
+
+#ifdef TEBAKO_HAS_GETATTRLIST
+	TEST_F(FileCtlTests, tebako_fgetattrlist_absolute_path) {
+		attrlist_t      attrList;
+        VolAttrBuf      attrBuf;
+
+        memset(&attrList, 0, sizeof(attrList));
+        attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
+        attrList.volattr =  ATTR_VOL_INFO
+                          | ATTR_VOL_FILECOUNT
+                          | ATTR_VOL_DIRCOUNT
+                          | ATTR_VOL_MOUNTPOINT
+                          | ATTR_VOL_NAME;
+
+		int ret = tebako_chdir(TEBAKIZE_PATH(""));
+		EXPECT_EQ(0, ret);
+		int fh = tebako_open(2, "directory-1/file-in-directory-1.txt", O_RDONLY);
+		EXPECT_LT(0, fh);
+		ret = tebako_getattrlist(fh, &attrList, &attrBuf, sizeof(attrBuf), 0);
+		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(ENOTSUP, errno);
+		ret = tebako_close(fh);
+		EXPECT_EQ(0, ret);
+	}
+#endif
+
+
 }

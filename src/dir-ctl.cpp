@@ -180,4 +180,3 @@ extern "C"	int tebako_mkdir(const char* path, mode_t mode) {
 	}
 	return ret;
 }
-

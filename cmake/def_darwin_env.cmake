@@ -38,5 +38,13 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     message("Using homebrew environment at ${BREW_PREFIX}")
 
     set(CMAKE_PREFIX_PATH "${BREW_PREFIX};${BREW_PREFIX}/opt/openssl@1.1;${BREW_PREFIX}/opt/zlib")
+
+# Suppress superfluous randlib warnings about "*.a" having no symbols on MacOSX.
+    set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+    set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+
+# Force local jemalloc rebuild since homebrew version does something wrong with weak symbols
     set(WITH_JEMALLOC_BUILD ON)
 endif()

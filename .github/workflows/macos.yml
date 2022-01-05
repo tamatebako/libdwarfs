@@ -52,6 +52,7 @@ env:
   CXXFLAGS: -DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0
 # The folder for dwarfs and other dependenies
   DEPS: deps
+  CACHE_VER: "04"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.6"
@@ -71,6 +72,18 @@ jobs:
       matrix:
         os: [ macos-10.15 , macos-11.0 ]
     steps:
+      - name: Select XCode 12.1.1 & SDK 10.15 for macos-10.15
+        if: ${{ matrix.os == 'macos-10.15' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '12.1.1'
+
+      - name: Select XCode 12.4 & SDK 11.1 for macos-11.0
+        if: ${{ matrix.os == 'macos-11.0' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '12.4'
+
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -91,7 +104,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ github.workspace }}/${{ env.DEPS }}
-          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v03
+          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
       - name: Install packages
 # Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz, zlib
