@@ -238,7 +238,7 @@ typedef int(*qsort_compar)(const void*, const void*);
 					 dirp = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd, size));
 					 if (dirp != NULL) {
 						 int n = 0;
-						 struct dirent** list = new struct dirent* [size];
+						 struct dirent** list = (dirent**) malloc( sizeof(struct dirent) *size);
 						 struct dirent* ent = 0, * p = 0;
 						 while (list != NULL && (ent = internal_readdir(dirp)) != NULL) {
 							 if (sel && !sel(ent)) continue;

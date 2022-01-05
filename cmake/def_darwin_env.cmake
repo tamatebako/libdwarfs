@@ -23,6 +23,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+set(WITH_JEMALLOC_BUILD OFF)
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     execute_process(
         COMMAND brew --prefix
@@ -44,4 +45,6 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
     set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
 
+# Force local jemalloc rebuild since homebrew version does something wrong with weak symbols
+    set(WITH_JEMALLOC_BUILD ON)
 endif()

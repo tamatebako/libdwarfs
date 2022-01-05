@@ -50,8 +50,6 @@ env:
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.6"
   LIBARCHIVE_TAG: "v3.2.1"
-  GLOG_TAG: "v0.5.0"
-  GFLAGS_TAG: "v2.2.2"
 
 jobs:
   build:
@@ -78,14 +76,12 @@ jobs:
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
           echo ${{ env.LIBARCHIVE_TAG }} >> key.txt
-          echo ${{ env.GLOG_TAG }} >> key.txt
-          echo ${{ env.GFLAGS_TAG }} >> key.txt
 
       - name: Process cache
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key:  ${{ matrix.os }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v02
+          key:  ${{ matrix.os }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v04
 
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
@@ -126,6 +122,10 @@ jobs:
           libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
           libboost-regex-dev libboost-system-dev libboost-thread-dev
 
+      - name: Install libfmt and libjemalloc (focal)
+        if: ${{ matrix.os == 'ubuntu-20.04' }}
+        run: sudo apt-get install libfmt-dev libjemalloc-dev
+
       - name: Update libfmt (bionic)
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         run: |
@@ -135,16 +135,8 @@ jobs:
           sudo apt-get -y update
           sudo apt-get -y install libfmt-dev
 
-      - name: Install libfmt (focal)
-        if: ${{ matrix.os == 'ubuntu-20.04' }}
-        run: sudo apt-get install libfmt-dev
-
-      - name: Install libjemalloc (not bionic or not clang)
-        if: ${{ matrix.os != 'ubuntu-18.04' || matrix.env.CC != 'clang' }}
-        run: sudo apt-get -y install libjemalloc-dev
-        
-      - name: Install libjemalloc 5 (bionic and clang)
-        if: ${{ matrix.os == 'ubuntu-18.04' && matrix.env.CC == 'clang' }}
+      - name: Install libjemalloc 5 (bionic)
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
         run: |
           sudo apt-get remove libjemalloc-dev
           wget -q https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2

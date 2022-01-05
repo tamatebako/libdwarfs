@@ -91,6 +91,13 @@ else()
   set(WITH_GFLAGS_BUILD OFF)
 endif()
 
+if(${WITH_JEMALLOC_BUILD})
+  message("Building jemalloc since homebrew version lacks support of weak symbols")
+  def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
+else(${WITH_JEMALLOC_BUILD})
+  find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)  
+endif(${WITH_JEMALLOC_BUILD})
+
 message("Collecting packages:")
 message("dwarfs     - " @${DWARFS_TAG}  " at " ${DWARFS_SOURCE_DIR})
 message("libarchive - " @${LIBARCHIVE_TAG} " at " ${LIBARCHIVE_SOURCE_DIR})
@@ -103,6 +110,9 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   message("gflags     - " @${GFLAGS_TAG} " at " ${GFLAGS_SOURCE_DIR})
 endif(${WITH_GFLAGS_BUILD})
+if(${WITH_JEMALLOC_BUILD})
+  message("jemalloc   - " v${JEMALLOC_VER} " at " ${JEMALLOC_SOURCE_DIR})
+endif(${WITH_JEMALLOC_BUILD})
 
 # ...................................................................
 # incbin
@@ -227,7 +237,7 @@ if(${WITH_GLOG_BUILD})
 endif(${WITH_GLOG_BUILD})
 
 # ...................................................................
-# glog
+# gflags
 
 if(${WITH_GFLAGS_BUILD})
   set(__LIBGFLAGS "${DEPS}/lib/libgflags.a")
@@ -247,6 +257,28 @@ if(${WITH_GFLAGS_BUILD})
     BUILD_BYPRODUCTS ${__LIBGFLAGS}
   )
 endif(${WITH_GFLAGS_BUILD})
+
+# ...................................................................
+# jemalloc
+
+if(${WITH_JEMALLOC_BUILD})
+  set(__LIBJEMALLOC "${DEPS}/lib/libjemalloc.a")
+  ExternalProject_Add(${JEMALLOC_PRJ}
+    PREFIX ${DEPS}
+    URL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VER}/jemalloc-${JEMALLOC_VER}.tar.bz2
+    URL_HASH SHA256=${JEMALLOC_HASH}
+    DOWNLOAD_NO_PROGRESS true
+    UPDATE_COMMAND ""
+    CONFIGURE_COMMAND ${JEMALLOC_SOURCE_DIR}/configure
+                               --srcdir=${JEMALLOC_SOURCE_DIR}
+                               --prefix=${DEPS}
+                               --enable-static
+                               --disable-shared
+    SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
+    BINARY_DIR ${JEMALLOC_BINARY_DIR}
+    BUILD_BYPRODUCTS ${__LIBJEMALLOC}
+  )
+endif(${WITH_JEMALLOC_BUILD})
 
 # ...................................................................
 # Library
@@ -298,7 +330,9 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   add_dependencies(dwarfs-wr ${GFLAGS_PRJ})
 endif(${WITH_GFLAGS_BUILD})
-
+if(${WITH_JEMALLOC_BUILD})
+  add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
+endif(${WITH_JEMALLOC_BUILD})
 # ...................................................................
 # Tests
 
@@ -407,7 +441,6 @@ if(${WITH_TESTS})
   find_library(_LIBLZ4 "liblz4.a" REQUIRED)
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
   find_library(_LIBZ "libz.a" REQUIRED)
-  find_library(_LIBLJEMALLOC "libjemalloc.a" REQUIRED)
   find_library(_LIBSSL "libssl.a" REQUIRED)
 
   find_library(_LIBACL "libacl.a")
@@ -505,7 +538,7 @@ if(${WITH_TESTS})
   list(APPEND _LIBRARIES ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
 
   if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
-    list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBJEMALLOC} ${_LIBLZMA})
+    list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBLZMA})
   else()
     list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
                            ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBPTHREAD}  ${_LIBDL}      ${_LIBM}
@@ -515,6 +548,14 @@ if(${WITH_TESTS})
 
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
+
+  if(${WITH_JEMALLOC_BUILD})
+    add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBJEMALLOC)
+  else(${WITH_JEMALLOC_BUILD})
+    target_link_libraries(wr-bin ${_LIBJEMALLOC})
+    target_link_libraries(wr-tests ${_LIBJEMALLOC})
+  endif(${WITH_JEMALLOC_BUILD})
 
 endif(${WITH_TESTS})
 
@@ -536,6 +577,11 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   install(FILES ${__LIBGFLAGS} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(${WITH_GFLAGS_BUILD})
+
+if(${WITH_JEMALLOC_BUILD})
+  install(FILES ${__LIBJEMALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(DIRECTORY ${DEPS_INCLUDE_DIR}/jemalloc DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif(${WITH_JEMALLOC_BUILD})
 
 install(FILES
         "include/tebako-defines.h"
