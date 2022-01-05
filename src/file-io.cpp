@@ -172,3 +172,18 @@ extern "C" int tebako_fstatat(int vfd, const char* path, struct stat* buf, int f
 	}
 	return ret;
 }
+
+#if TEBAKO_HAS_FGETATTRLIST
+extern "C" int tebako_fgetattrlist (int fd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options) {
+	struct stat stfd;
+	int ret = fstat(vfd, &stfd);
+	if (ret == DWARFS_IO_ERROR) {
+		ret = ::fgetattrlist (fd, attrList, attrBuf, attrBufSize, options);
+	}
+	else {
+		ret = -1;
+		TEBAKO_SET_LAST_ERROR(ENOTSUP);
+	}
+	return ret;
+}
+#endif

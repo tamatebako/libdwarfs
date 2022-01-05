@@ -103,3 +103,22 @@ ssize_t tebako_readlink(const char* path, char* buf, size_t bufsize) {
 	}
 	return ret;
 }
+
+#if TEBAKO_HAS_GETATTRLIST
+extern "C" int tebako_getattrlist (const char* path, struct attrlist * attrList, void * attrBuf,  size_t attrBufSize, unsigned long options) {
+	int ret =  DWARFS_IO_ERROR;
+	if (path == NULL) {
+		TEBAKO_SET_LAST_ERROR(EFAULT);
+	}
+	else {
+		const char* p_path = to_tebako_path(t_path, path);
+        if (path) {
+		    TEBAKO_SET_LAST_ERROR(ENOTSUP);
+		}
+		else {
+			ret = ::getattrlist(path, attrList, attrBuf, attrBufSize, options);
+		}
+	}
+	return ret;
+}
+#endif

@@ -43,6 +43,7 @@ option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
 
 include(ExternalProject)
 include(GNUInstallDirs)
+include(CheckSymbolExists)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
 
@@ -289,6 +290,13 @@ configure_file(
    @ONLY
 )
 
+check_symbol_exists(getattrlist "sys/attr.h" TEBAKO_HAS_GETATTRLIST)
+check_symbol_exists(fgetattrlist "sys/attr.h" TEBAKO_HAS_FGETATTRLIST)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/include/tebako-config.h
+)
+
 
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
@@ -320,6 +328,7 @@ add_library(dwarfs-wr STATIC
     "include/tebako-dirent.h"
     "include/tebako-mfs.h"
     "include/tebako-defines.h"
+    "include/tebako-config.h"
     "include/version.h"
   )
 

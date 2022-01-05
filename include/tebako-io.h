@@ -34,7 +34,6 @@
 
 #pragma once
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif // !__cplusplus
@@ -63,7 +62,7 @@ extern "C" {
     int   tebako_openat(int nargs, int fd, const char* path, int flags, ...);
     ssize_t tebako_read(int vfd, void* buf, size_t nbyte);
 
-/* struct iovec will be defined only if sys/uio.h has been included */
+/* struct iovec is defined only if sys/uio.h has been included */
 #if defined(_SYS_UIO_H) || defined(_SYS_UIO_H_)
     ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
 #endif
@@ -73,7 +72,7 @@ extern "C" {
     off_t tebako_lseek(int vfd, off_t offset, int whence);
 #endif
 
-/* struct stat will be defined only if sys/stat.h has been included */
+/* struct stat is defined only if sys/stat.h has been included */
 #if defined(_SYS_STAT_H) || defined(_SYS_STAT_H_)
     int   tebako_stat(const char* path, struct stat* buf);
     int   tebako_fstat(int vfd, struct stat* buf);
@@ -84,7 +83,7 @@ extern "C" {
     int   tebako_close(int vfd);
     ssize_t tebako_readlink(const char* path, char* buf, size_t bufsiz);
 
-/* DIR and struct dirent will be defined only if dirent.h has been included */
+/* DIR and struct dirent is defined only if dirent.h has been included */
 #if defined(_DIRENT_H) || defined(_DIRENT_H_)
     DIR* tebako_opendir(const char* dirname);
     DIR* tebako_fdopendir(int fd);
@@ -100,6 +99,12 @@ extern "C" {
 #endif
 
     void* tebako_dlopen(const char* path, int flags);
+
+/* struct attr is defined only if sys/attr.h has been included */
+#if defined(_SYS_ATTR_H_) || defined(_SYS_ATTR_H_)
+    int tebako_getattrlist(const char* path, struct attrlist * attrList, void * attrBuf,  size_t attrBufSize, unsigned long options);
+    int tebako_fgetattrlist(int fd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options);
+#endif
 
 #ifdef __cplusplus
 }

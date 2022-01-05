@@ -43,14 +43,14 @@ test_static_linkage() {
    elif [[ "$OSTYPE" == "cygwin" ]]; then
       echo "... cygwin ... skipping"
    elif [[ "$OSTYPE" == "msys" ]]; then
-      echo "... msys ... skipping"  
+      echo "... msys ... skipping"
    elif [[ "$OSTYPE" == "win32" ]]; then
       echo "... win32 ... skipping"
    elif [[ "$OSTYPE" == "freebsd"* ]]; then
       echo "... freebsd ... skipping"
    else
       echo "... unknown - $OSTYPE ... skipping"
-   fi  
+   fi
 }
 
 # ......................................................................
@@ -87,7 +87,7 @@ test_install_script() {
    cmake --install  "$DIR_ROOT" --prefix "$DIR_INSTALL"
    assertEquals 0 "${PIPESTATUS[0]}"
 
-# We do not test fuse driver since we may operate in the environment 
+# We do not test fuse driver since we may operate in the environment
 # where fuse is not vailable at all
 #   assertTrue "[ -f "$DIR_INS_B"/dwarfs2 ]"
 
