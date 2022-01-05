@@ -178,7 +178,7 @@ extern "C" int tebako_fgetattrlist (int vfd, struct attrlist * attrList, void * 
 	struct stat stfd;
 	int ret = sync_tebako_fdtable::fdtable.fstat(vfd, &stfd);
 	if (ret == DWARFS_INVALID_FD) {
-		ret = ::fgetattrlist(vfd, attrList, attrBuf, attrBufSize, options);	
+		ret = ::fgetattrlist(vfd, attrList, attrBuf, attrBufSize, options);
 	}
 	else {
 		ret = -1;

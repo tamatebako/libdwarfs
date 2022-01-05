@@ -273,7 +273,7 @@ namespace {
                                 | ATTR_VOL_DIRCOUNT
                                 | ATTR_VOL_MOUNTPOINT
                                 | ATTR_VOL_NAME;
-        
+
 		int ret = tebako_getattrlist(TEBAKIZE_PATH("file.txt"), &attrList, &attrBuf, sizeof(attrBuf), 0);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOTSUP, errno);
@@ -291,7 +291,7 @@ namespace {
                                 | ATTR_VOL_MOUNTPOINT
                                 | ATTR_VOL_NAME;
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-1"));
-		EXPECT_EQ(0, ret);        
+		EXPECT_EQ(0, ret);
 		ret = tebako_getattrlist(TEBAKIZE_PATH("file-in-directory-1.txt"), &attrList, &attrBuf, sizeof(attrBuf), 0);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOTSUP, errno);
@@ -308,7 +308,7 @@ namespace {
                                 | ATTR_VOL_DIRCOUNT
                                 | ATTR_VOL_MOUNTPOINT
                                 | ATTR_VOL_NAME;
-       
+
 		int ret = tebako_getattrlist(NULL, &attrList, &attrBuf, sizeof(attrBuf), 0);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EFAULT, errno);
@@ -325,7 +325,7 @@ namespace {
                                 | ATTR_VOL_DIRCOUNT
                                 | ATTR_VOL_MOUNTPOINT
                                 | ATTR_VOL_NAME;
-       
+
 		int ret = tebako_getattrlist("/bin/no-file", &attrList, &attrBuf, sizeof(attrBuf), 0);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOENT, errno);
@@ -342,10 +342,10 @@ namespace {
                                 | ATTR_VOL_DIRCOUNT
                                 | ATTR_VOL_MOUNTPOINT
                                 | ATTR_VOL_NAME;
-       
+
 		int ret = tebako_getattrlist("/bin/bash", &attrList, &attrBuf, sizeof(attrBuf), 0);
 		EXPECT_EQ(0, ret);
-	}	
+	}
 #endif
 
 

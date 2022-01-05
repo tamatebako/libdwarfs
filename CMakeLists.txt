@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.5)
+project(libdwarfs-wr VERSION 0.1.6)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
