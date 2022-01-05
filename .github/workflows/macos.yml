@@ -68,6 +68,18 @@ jobs:
       matrix:
         os: [ macos-10.15 , macos-11.0 ]
     steps:
+      - name: Select XCode 12.1.1 & SDK 10.15 for macos-10.15
+        if: ${{ matrix.os == 'macos-10.15' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '12.1.1'
+
+      - name: Select XCode 12.4 & SDK 11.1 for macos-11.0
+        if: ${{ matrix.os == 'macos-11.0' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '12.4'
+
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -90,11 +102,11 @@ jobs:
           key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v02
 
       - name: Install packages
-# Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz
+# Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz, zlib
 # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
           brew install \
-          bison flex binutils libarchive double-conversion boost jemalloc fmt glog zlib
+          bison flex binutils libarchive double-conversion boost jemalloc fmt glog
 
       - name: Configure
         run: cmake -B ${{ github.workspace }} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON
