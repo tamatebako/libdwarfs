@@ -27,7 +27,6 @@
  *
  */
 
-
 #pragma once
 
 #define _HELPER(x) #x
@@ -40,4 +39,3 @@
 #define PRJ_VERSION_STRING _STR(PRJ_VERSION_MAJOR) "." _STR(PRJ_VERSION_MINOR) "." _STR(PRJ_VERSION_TEENY)
 
 #define PRJ_NAME          "libdwarfs-wr"
-

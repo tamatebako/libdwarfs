@@ -27,37 +27,7 @@
  *
  */
 
-/*
-* This a set of standard "C" headers used through libdwarfs-wr source files
-*/
-
 #pragma once
 
-#include <tebako-config.h>
-
-#include <stdlib.h>
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <errno.h>
-
-#if defined(TEBAKO_HAS_GETATTRLIST) || defined(TEBAKO_HAS_FGETATTRLIST)
-  #include <sys/attr.h>
-#endif
-
-#ifdef _WIN32
- #include <direct.h>
- #include <Shlwapi.h>
-#else
- #include <sys/param.h>
- #include <sys/uio.h>
- #include <unistd.h>
- #include <ftw.h>
- #include <dirent.h>
- #include <dlfcn.h>
-#endif
-
+#cmakedefine TEBAKO_HAS_GETATTRLIST 1
+#cmakedefine TEBAKO_HAS_FGETATTRLIST 1

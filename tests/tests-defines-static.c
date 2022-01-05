@@ -35,7 +35,11 @@
 #include "tebako-fs.h"
 #include "tests-defines.h"
 
-static const int true = -1, false = 0;
+#ifndef true
+#define true 1
+#define false 0
+#endif
+
 static int attr_functions_c_test(char* fname);
 static int pread_c_test(int fh);
 static int readv_c_test(int fh);
@@ -73,15 +77,18 @@ int main(int argc, char** argv)
 		rOK = true;
 
 		rOK &= attr_functions_c_test(TEBAKIZE_PATH("file.txt"));
+        if (!rOK) printf("failing\n");
 
 		ret = chdir(TEBAKIZE_PATH("directory-1"));
 		printf("A call to 'chdir' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
+        if (!rOK) printf("failing\n");
 
 		r = getcwd(NULL, 0);
 		printf("A call to 'getcwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
 		free(r);
+        if (!rOK) printf("failing\n");
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -93,35 +100,51 @@ int main(int argc, char** argv)
 #endif
 		printf("A call to 'getwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
+        if (!rOK) printf("failing\n");
 
 		ret = mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
 		printf("A call to 'mkdir' returned %i (-1 expected)\n", ret);
 		rOK &= (ret == -1);
+        if (!rOK) printf("failing\n");
 
 		fh = open(TEBAKIZE_PATH("file.txt"), O_RDONLY);
 		printf("A call to 'open' returned %i (non negative file handle expected)\n", fh);
 		rOK &= (fh >= 0);
+        if (!rOK) printf("failing\n");
 
 		rOK &= lseek_read_c_test(fh);
+		if (!rOK) printf("failing\n");
 		rOK &= readv_c_test(fh);  /* Skipped 'Ju', read 'st', ' a file' remains */
+        if (!rOK) printf("failing\n");
 		rOK &= pread_c_test(fh);
+        if (!rOK) printf("failing\n");
 		rOK &= openat_c_test(fh);
+        if (!rOK) printf("failing\n");
 
 		ret = fstat(fh, &buf);
 		rOK &= (ret == 0);
+        if (!rOK) printf("failing\n");
 
 		ret = close(fh);
 		printf("A call to 'close' returned %i (0 expected)\n", ret);
 		rOK &= (ret == 0);
+        if (!rOK) printf("failing\n");
 
 		rOK &= open_3_args_c_test();
+        if (!rOK) printf("failing\n");
 		rOK &= dirio_c_test();
+        if (!rOK) printf("failing\n");
 		rOK &= dirio_fd_c_test();
+        if (!rOK) printf("failing\n");
 		rOK &= scandir_c_test();
+        if (!rOK) printf("failing\n");
 		rOK &= dlopen_c_test();
+        if (!rOK) printf("failing\n");
 		rOK &= link_c_tests();
+        if (!rOK) printf("failing\n");
 
 		rOK &= fstatat_c_test();
+        if (!rOK) printf("failing\n");
 
 		drop_fs();
 		printf("Filesystem dropped\n");
@@ -239,7 +262,7 @@ static int open_3_args_c_test(void) {
 
 static int dirio_c_test(void) {
 	int rOK = true;
-	DIR* dirp = opendir(TEBAKIZE_PATH("directory-1"));
+	DIR* dirp = opendir(TEBAKIZE_PATH("directory-2"));
 	printf("A call to 'opendir' returned %p (not NULL expected)\n", dirp);
 	rOK &= (dirp != NULL);
 
@@ -247,17 +270,17 @@ static int dirio_c_test(void) {
 	printf("A call to 'telldir' returned %li (0 expected)\n", pos);
 	rOK &= (pos == 0L);
 
-	seekdir(dirp, 3);
+	seekdir(dirp, 2);
 	pos = telldir(dirp);
-	printf("A call to 'telldir' after 'seekdir(dirp, 3)' returned %li (3 expected)\n", pos);
-	rOK &= (pos == 3L);
+	printf("A call to 'telldir' after 'seekdir(dirp, 2)' returned %li (2 expected)\n", pos);
+	rOK &= (pos == 2L);
 
 	struct dirent* entry = readdir(dirp);
 	printf("A call to 'readdir'  returned %p (not NULL expected)\n", entry);
 	rOK &= (entry != NULL);
 	if (entry != NULL) {
-		printf("Filename: %s ('file-in-directory-1.txt' expected)\n", entry->d_name);
-		rOK &= (strcmp(entry->d_name, "file-in-directory-1.txt") == 0);
+		printf("Filename: %s ('file-in-directory-2.txt' expected)\n", entry->d_name);
+		rOK &= (strcmp(entry->d_name, "file-in-directory-2.txt") == 0);
 	}
 
 	rewinddir(dirp);
@@ -308,14 +331,12 @@ static int scandir_c_test(void) {
 		}
 		free(namelist);
 	}
-
 	return rOK;
 }
 
 static int dlopen_c_test(void) {
 	int rOK = true;
-	void* handle = dlopen(TEBAKIZE_PATH("directory-1/empty-1.so"),
-			                         RTLD_LAZY | RTLD_GLOBAL);
+	void* handle = dlopen(TEBAKIZE_PATH("directory-1/libempty.so"), RTLD_LAZY | RTLD_GLOBAL);
 	rOK &= (handle != NULL);
 	printf("A call to 'dlopen' returned %p (not NULL expected)\n", handle);
 	if (handle != NULL) {

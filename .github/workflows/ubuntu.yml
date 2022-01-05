@@ -31,26 +31,25 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/macos.yml'      
   pull_request:
     branches: [ master ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/macos.yml'     
   workflow_dispatch:
 
 env:
-# Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
   MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
   DEPS: deps
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "libdwarfs_wr_v0.1.4"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.6"
   LIBARCHIVE_TAG: "v3.2.1"
-# Ruby  (this is for ronn)
-  RUBY_VER:   "2.7.4"
 
 jobs:
   build:
@@ -63,8 +62,8 @@ jobs:
         env:
           - CC: gcc
             CXX: g++
-#          - CC: clang
-#            CXX: clang++
+          - CC: clang
+            CXX: clang++
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
@@ -73,12 +72,17 @@ jobs:
       - name: Create deps folder
         run: |
           mkdir ${{github.workspace}}/${{env.DEPS}}
+          echo "Keys" > key.txt
+          echo ${{ env.DWARFS_TAG }} >> key.txt
+          echo ${{ env.INCBIN_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_TAG }} >> key.txt
 
       - name: Process cache
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key: ${{ matrix.os }}-${{ matrix.env.CC }}-${{ env.DWARFS_TAG }}-${{ env.INCBIN_TAG }}-${{ env.LIBARCHIVE_TAG }}-v05
+          key:  ${{ matrix.os }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v04
+
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1804-README.md
@@ -112,36 +116,35 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt-get -y install \
-          binutils-dev libarchive-dev libevent-dev libjemalloc-dev acl-dev \
+          binutils-dev libarchive-dev libevent-dev acl-dev \
           libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev \
-          libfuse-dev libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libgtest-dev \
+          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev \
           libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
           libboost-regex-dev libboost-system-dev libboost-thread-dev
 
-      - name: Update libfmt, googletest (bionic)
+      - name: Install libfmt and libjemalloc (focal)
+        if: ${{ matrix.os == 'ubuntu-20.04' }}
+        run: sudo apt-get install libfmt-dev libjemalloc-dev
+
+      - name: Update libfmt (bionic)
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         run: |
-          sudo apt-get -y remove libfmt-dev googletest libgtest-dev
+          sudo apt-get -y remove libfmt-dev
           sudo apt-get -y install software-properties-common
           sudo add-apt-repository ppa:team-xbmc/ppa
           sudo apt-get -y update
-          sudo apt-get -y install libfmt-dev googletest libgtest-dev
+          sudo apt-get -y install libfmt-dev
 
-      - name: Install libfmt, googletest (focal)
-        if: ${{ matrix.os == 'ubuntu-20.04' }}
-        run: sudo apt-get install libfmt-dev googletest libgtest-dev
-
-# sudo apt install ronn does not work for bionic
-# On focal  it cannot process one of the files, so we do it natively
-# Note that libruby-dev is required under the hood
-
-      - name: Install Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ env.RUBY_VER }}
-
-      - name: Install ronn
-        run: sudo gem install ronn
+      - name: Install libjemalloc 5 (bionic)
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        run: |
+          sudo apt-get remove libjemalloc-dev
+          wget -q https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
+          tar -xf jemalloc-5.2.1.tar.bz2
+          cd jemalloc-5.2.1
+          ./configure --prefix='/usr'
+          make
+          sudo make install
 
       - name: Configure
         run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=ON
@@ -166,19 +169,24 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-18.04' }}
         uses: actions/upload-artifact@v2
         with:
-          name: tests
+          name: tests-${{ matrix.env.CC }}
           path: |
             ${{github.workspace}}/wr-bin
             ${{github.workspace}}/wr-tests
 
   cross-test-ubuntu-18-to-ubuntu-20:
     needs: build
+    name: Run Ubuntu-18.04 binaries on Ubuntu-20.04 [CC ${{ matrix.env }}]
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [ gcc, clang ]
     steps:
       - name: Download tests
         uses: actions/download-artifact@v2
         with:
-          name: tests
+          name: tests-${{ matrix.env }}
 
       - name: Provision execute permissions
         run: |

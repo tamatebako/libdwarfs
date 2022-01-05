@@ -31,7 +31,6 @@
  *  C/C++ common definitions and utility functions
  */
 
-
 #pragma once
 
 #include <version.h>
@@ -99,4 +98,3 @@ bool is_tebako_path(const char* path);
 bool is_tebako_cwd(void);
 const char* tebako_expand_path(tebako_path_t expanded_path, const char* path);
 const char* to_tebako_path(tebako_path_t t_path, const char* path);
-

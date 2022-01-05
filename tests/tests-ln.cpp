@@ -28,11 +28,15 @@
  */
 
 #include "tests.h"
-#include <gnu/lib-names.h>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 namespace {
 	class LnTests : public testing::Test {
 	protected:
+		static fs::path tmp_path;
+		static bool path_initialized;
 		static void SetUpTestSuite() {
 			load_fs(&gfsData[0],
 				gfsSize,
@@ -43,12 +47,33 @@ namespace {
 				NULL	/* decompress_ratio*/,
 				NULL    /* image_offset */
 			);
+
+			std::string tdp_template = (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
+			size_t l = tdp_template.length();
+			char* dir_name = new char[l+1];
+			if (dir_name) {
+				strcpy(dir_name, tdp_template.c_str());
+				dir_name = mkdtemp(dir_name);
+				tmp_path = dir_name;
+				fs::create_directories(tmp_path);
+				path_initialized = true;
+
+				fs::create_symlink("/bin/true", tmp_path / "link2true");
+				fs::create_symlink("/bin/false", tmp_path / "link2false");
+			}
 		}
 
 		static void TearDownTestSuite() {
+			if (path_initialized) {
+				fs::remove_all(tmp_path);
+			}
+			path_initialized = false;
 			drop_fs();
 		}
 	};
+	bool LnTests::path_initialized = false;
+	fs::path LnTests::tmp_path;
+
 #ifdef WITH_LINK_TESTS
 	TEST_F(LnTests, tebako_softlink) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-file-1"), O_RDONLY);
@@ -150,18 +175,18 @@ namespace {
 	TEST_F(LnTests, tebako_readlink_absolute_path_pass_through) {
 		char readbuf[32];
 		const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
-		int ret = tebako_readlink("/bin/sh", readbuf, num2read);
-		EXPECT_EQ(strlen("dash"), ret);
-		EXPECT_TRUE(strncmp(readbuf, "dash", num2read) == 0);
+		int ret = tebako_readlink((tmp_path / "link2false").c_str(), readbuf, num2read);
+		EXPECT_EQ(strlen("/bin/false"), ret);
+		EXPECT_TRUE(strncmp(readbuf, "/bin/false", ret) == 0);
 	}
 
 	TEST_F(LnTests, tebako_readlink_relative_path_pass_through) {
 		char readbuf[32];
 		const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
-		EXPECT_EQ(0, tebako_chdir("/bin"));
-		int ret = tebako_readlink("sh", readbuf, num2read);
-		EXPECT_EQ(strlen("dash"), ret);
-		EXPECT_TRUE(strncmp(readbuf, "dash", num2read) == 0);
+		EXPECT_EQ(0, tebako_chdir(tmp_path.c_str()));
+		int ret = tebako_readlink("link2true", readbuf, num2read);
+		EXPECT_EQ(strlen("/bin/true"), ret);
+		EXPECT_TRUE(strncmp(readbuf, "/bin/true", ret) == 0);
 	}
 
 	TEST_F(LnTests, tebako_lstat_absolute_path) {
@@ -208,15 +233,15 @@ namespace {
 
 	TEST_F(LnTests, tebako_lstat_absolute_path_pass_through) {
 		struct stat st;
-		int ret = tebako_lstat("/usr/bin/gcc", &st);
+		int ret = tebako_lstat((tmp_path / "link2true").c_str(), &st);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(LnTests, tebako_lstat_relative_path_pass_through) {
 		struct stat st;
-		int ret = tebako_chdir("/usr/bin");
+		int ret = tebako_chdir(tmp_path.c_str());
 		EXPECT_EQ(0, ret);
-		ret = tebako_lstat("gcc", &st);
+		ret = tebako_lstat("link2false", &st);
 		EXPECT_EQ(0, ret);
 	}
 #endif

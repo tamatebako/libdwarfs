@@ -66,7 +66,10 @@ extern "C" int tebako_open(int nargs, const char* path, int flags, ...)
 				va_list args;
 				mode_t mode;
 				va_start(args, flags);
-				mode = va_arg(args, mode_t);
+// https://stackoverflow.com/questions/28054194/char-type-in-va-arg
+// second argument to 'va_arg' is of promotable type 'mode_t' (aka 'unsigned short');
+// this va_arg has undefined behavior because arguments will be promoted to 'int'
+				mode = (mode_t)va_arg(args, int);
 				va_end(args);
 				ret = ::open(path, flags, mode);
 			}
@@ -93,7 +96,7 @@ extern "C" int tebako_openat(int nargs, int vfd, const char* path, int flags, ..
 				}
 				else {
 					va_start(args, flags);
-					mode = va_arg(args, mode_t);
+					mode = (mode_t)va_arg(args, int);
 					va_end(args);
 					ret = ::openat(vfd, path, flags, mode);
 				}
@@ -105,7 +108,7 @@ extern "C" int tebako_openat(int nargs, int vfd, const char* path, int flags, ..
 			}
 			else {
 				va_start(args, flags);
-				mode = va_arg(args, mode_t);
+				mode = (mode_t)va_arg(args, int);
 				va_end(args);
 				ret = tebako_open(3, path, flags, mode);
 			}
@@ -169,3 +172,18 @@ extern "C" int tebako_fstatat(int vfd, const char* path, struct stat* buf, int f
 	}
 	return ret;
 }
+
+#ifdef TEBAKO_HAS_FGETATTRLIST
+extern "C" int tebako_fgetattrlist (int vfd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options) {
+	struct stat stfd;
+	int ret = sync_tebako_fdtable::fdtable.fstat(vfd, &stfd);
+	if (ret == DWARFS_INVALID_FD) {
+		ret = ::fgetattrlist(vfd, attrList, attrBuf, attrBufSize, options);
+	}
+	else {
+		ret = -1;
+		TEBAKO_SET_LAST_ERROR(ENOTSUP);
+	}
+	return ret;
+}
+#endif

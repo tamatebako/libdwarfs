@@ -97,6 +97,8 @@
  #define dlopen(...)        tebako_dlopen(__VA_ARGS__)
  #define access(...)        tebako_access(__VA_ARGS__)
  #define mkdir(...)         tebako_mkdir(__VA_ARGS__)
+ #define getattrlist(...)   tebako_getattrlist(__VA_ARGS__)
+ #define fgetattrlist(...)  tebako_fgetattrlist(__VA_ARGS__)
 
 #endif // !_WIN32
 
