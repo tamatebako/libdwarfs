@@ -104,7 +104,7 @@ ssize_t tebako_readlink(const char* path, char* buf, size_t bufsize) {
 	return ret;
 }
 
-#if TEBAKO_HAS_GETATTRLIST
+#ifdef TEBAKO_HAS_GETATTRLIST
 extern "C" int tebako_getattrlist (const char* path, struct attrlist * attrList, void * attrBuf,  size_t attrBufSize, unsigned long options) {
 	int ret =  DWARFS_IO_ERROR;
 	if (path == NULL) {

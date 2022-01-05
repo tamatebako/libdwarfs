@@ -43,6 +43,7 @@ deps
 tests/tebako-fs.cpp
 tests/shunit2
 include/version.h
+include/tebako-config.h
 *.bin
 
 # VS files

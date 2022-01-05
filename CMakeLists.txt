@@ -96,7 +96,7 @@ if(${WITH_JEMALLOC_BUILD})
   message("Building jemalloc since homebrew version lacks support of weak symbols")
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
 else(${WITH_JEMALLOC_BUILD})
-  find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)  
+  find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
 endif(${WITH_JEMALLOC_BUILD})
 
 message("Collecting packages:")
@@ -192,7 +192,7 @@ ExternalProject_Add(${DWARFS_PRJ}
   UPDATE_COMMAND ""
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
              -DCMAKE_CXX_STANDARD=14
-             -DCMAKE_CXX_STANDARD_REQUIRED=ON 
+             -DCMAKE_CXX_STANDARD_REQUIRED=ON
              -DCMAKE_CXX_EXTENSIONS=OFF
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
@@ -294,7 +294,7 @@ check_symbol_exists(getattrlist "sys/attr.h" TEBAKO_HAS_GETATTRLIST)
 check_symbol_exists(fgetattrlist "sys/attr.h" TEBAKO_HAS_FGETATTRLIST)
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-config.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/include/tebako-config.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/tebako-config.h
 )
 
 

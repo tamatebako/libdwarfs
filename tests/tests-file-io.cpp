@@ -353,5 +353,4 @@ namespace {
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);
 	}
-
 }

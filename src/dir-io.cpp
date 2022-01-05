@@ -211,20 +211,20 @@ static struct dirent* internal_readdir(DIR* dirp) {
 }
 
 extern "C" int tebako_scandir(const char* dirname, struct dirent*** namelist,
-	int (*sel)(const struct dirent*),
+    int (*sel)(const struct dirent*),
 	int (*compar)(const struct dirent**, const struct dirent**)) {
 
 	int ret = DWARFS_IO_ERROR;
 	if (dirname == NULL) {
-		 TEBAKO_SET_LAST_ERROR(ENOENT);
+		TEBAKO_SET_LAST_ERROR(ENOENT);
 	}
 	else {
-	    DIR* dirp = NULL;
+		DIR* dirp = NULL;
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, dirname);
 
 		if (!p_path) {
-		    ret = ::scandir(dirname, namelist, sel, compar);
+			ret = ::scandir(dirname, namelist, sel, compar);
 		}
 		else {
 			if (namelist != NULL) {
@@ -253,7 +253,7 @@ extern "C" int tebako_scandir(const char* dirname, struct dirent*** namelist,
 							else {
 								memcpy((void*)p, (void*)ent, ent->d_reclen);
 								list[n++] = p;
-
+							}
 						}
 						sync_tebako_dstable::dstable.closedir(reinterpret_cast<uintptr_t>(dirp));
 						if (list == NULL) {
