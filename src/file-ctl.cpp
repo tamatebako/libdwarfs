@@ -123,3 +123,7 @@ extern "C" int tebako_getattrlist (const char* path, struct attrlist * attrList,
 	return ret;
 }
 #endif
+
+extern "C" int within_tebako_memfs(const char* path) {
+	return is_tebako_path(path) ? -1 : 0;
+}
