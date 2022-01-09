@@ -393,4 +393,11 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 #endif
+
+	TEST_F(FileCtlTests, tebako_within_tebako_memfs) {
+		EXPECT_EQ(-1, within_tebako_memfs(TEBAKIZE_PATH("")));
+		EXPECT_EQ(-1, within_tebako_memfs(TEBAKIZE_PATH("directory-1")));
+		EXPECT_EQ(-1, within_tebako_memfs(TEBAKIZE_PATH("directory-1/file-in-directory-1.txt")));
+		EXPECT_EQ(0, within_tebako_memfs("/bin/bash"));
+	}
 }

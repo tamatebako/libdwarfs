@@ -106,6 +106,7 @@ extern "C" {
     int tebako_fgetattrlist(int fd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options);
 #endif
 
+    int within_tebako_memfs(const char* path);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
