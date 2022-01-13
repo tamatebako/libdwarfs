@@ -169,11 +169,11 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, const char* path, Args&&.
     auto locked = usd.rlock();
     auto p = *locked;
     if (p) {
+        if (p->opts.debuglevel >= logger::DEBUG) {
+            LOG_PROXY(debug_logger_policy, p->lgr);
+            LOG_DEBUG << caller << " [ " << path << " ]";
+        }
         try {
-            if (p->opts.debuglevel >= logger::DEBUG) {
-                LOG_PROXY(debug_logger_policy, p->lgr);
-                LOG_DEBUG << caller << " [ " << path << " ]";
-            }
 // Normally we remove '/__tebako_memfs__/'
 // However, there is also a case when it is memfs root and path isn just '/__tebako_memfs__'
             const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH + 1] == '\0' ?
@@ -209,11 +209,11 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, uint32_t inode, Args&&...
     auto locked = usd.rlock();
     auto p = *locked;
     if (p) {
+        if (p->opts.debuglevel >= logger::DEBUG) {
+            LOG_PROXY(debug_logger_policy, p->lgr);
+            LOG_INFO << caller << " [ " << inode << " ]";
+        }
         try {
-            if (p->opts.debuglevel >= logger::DEBUG) {
-                LOG_PROXY(debug_logger_policy, p->lgr);
-                LOG_INFO << caller << " [ " << inode << " ]";
-            }
             ret = fn(&p->fs, inode, std::forward<Args>(args)...);
             if (ret < 0) {
                 err = -ret;
@@ -362,7 +362,7 @@ static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* ca
 }
 
 int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, tebako_dirent*, off_t, size_t, size_t&, size_t& )> { internal_readdir },
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, tebako_dirent*, off_t, size_t, size_t&, size_t& )> { internal_readdir }, 
                             __func__, inode, cache, cache_start, buffer_size, cache_size, dir_size);
 }
 
