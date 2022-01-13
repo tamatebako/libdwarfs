@@ -39,7 +39,7 @@ namespace {
 		static void SetUpTestSuite() {
 			load_fs(&gfsData[0],
 				gfsSize,
-				"warn" /*debuglevel*/,
+				"debug" /*debuglevel*/,
 				NULL	/* cachesize*/,
 				NULL	/* workers */,
 				NULL	/* mlock */,
