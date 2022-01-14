@@ -214,7 +214,7 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, uint32_t inode, Args&&...
     if (p) {
         if (p->opts.debuglevel >= logger::DEBUG) {
             LOG_PROXY(debug_logger_policy, p->lgr);
-            LOG_INFO << caller << " [ " << inode << " ]";
+            LOG_DEBUG << caller << " [ " << inode << " ]";
         }
         try {
             ret = fn(&p->fs, inode, std::forward<Args>(args)...);

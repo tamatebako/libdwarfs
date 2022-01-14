@@ -92,34 +92,34 @@ public:
         tebako_path_s(),
         LOG_PROXY_INIT(lgr) {
 			LOG_TRACE << __func__ << " [ constructing ] ";
-		}
+	}
 
-        virtual ~tebako_path_s_l() {
-			LOG_TRACE << __func__ << " [ destroying ] ";
-	    }
+    virtual ~tebako_path_s_l() {
+        LOG_TRACE << __func__ << " [ destroying ] ";
+	}
 
     virtual const char* get_cwd(tebako_path_t cwd) {
-		tebako_path_s::get_cwd(cwd);
-        LOG_TRACE << __func__ << " returning [ " << cwd << " ]";
+	    tebako_path_s::get_cwd(cwd);
+	    LOG_TRACE << __func__ << " returning [ " << cwd << " ]";
 		return cwd;
 	}
 
 	virtual void set_cwd(const char* path) {
         LOG_TRACE << __func__ << " setting [ " << (path ? path : "NULL") << " ]";
-		tebako_path_s::set_cwd(path);
+	    tebako_path_s::set_cwd(path);
 	}
 
 	virtual bool is_in(void) {
-		bool ret = tebako_path_s::is_in();
+	    bool ret = tebako_path_s::is_in();
         LOG_TRACE << __func__ << " [ " << (ret ? "true" : "false") << " ]";
-		return ret;
+        return ret;
 	}
 
-	virtual const char* expand_path(tebako_path_t expanded_path, const char* path) {
-		tebako_path_s::expand_path(expanded_path, path);
+    virtual const char* expand_path(tebako_path_t expanded_path, const char* path) {
+        tebako_path_s::expand_path(expanded_path, path);
         LOG_TRACE << __func__ << " expanding [ " << (path ? path : NULL) << " --> " << expanded_path << " ]";
-		return expanded_path;
-	}
+        return expanded_path;
+    }
 
 };
 
