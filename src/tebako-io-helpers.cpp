@@ -105,7 +105,7 @@ public:
 	}
 
 	virtual void set_cwd(const char* path) {
-        LOG_TRACE << __func__ << " setting [ " << path << " ]";
+        LOG_TRACE << __func__ << " setting [ " << (path ? path : "NULL") << " ]";
 		tebako_path_s::set_cwd(path);
 	}
 
@@ -117,7 +117,7 @@ public:
 
 	virtual const char* expand_path(tebako_path_t expanded_path, const char* path) {
 		tebako_path_s::expand_path(expanded_path, path);
-        LOG_TRACE << __func__ << " expanding [ " << path << " --> " << expanded_path << " ]";
+        LOG_TRACE << __func__ << " expanding [ " << (path ? path : NULL) << " --> " << expanded_path << " ]";
 		return expanded_path;
 	}
 
