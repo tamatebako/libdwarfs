@@ -87,6 +87,7 @@ extern "C" void drop_fs(void) {
 
     sync_tebako_dstable::dstable.close_all();
     sync_tebako_fdtable::fdtable.close_all();
+    tebako_drop_cwd();
 }
 
 
@@ -151,7 +152,9 @@ extern "C" int load_fs( const void* data,
         LOG_PROXY(debug_logger_policy, p->lgr);
         LOG_INFO << PRJ_NAME << " version " << PRJ_VERSION_STRING;
 
+        tebako_init_cwd(p->lgr, p->opts.debuglevel >= logger::DEBUG);
         (p->opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(p) :  load_filesystem<prod_logger_policy>(p);
+
     }
 
     catch (...) {

@@ -47,3 +47,5 @@
 
 #include <folly/Conv.h>
 #include <folly/Synchronized.h>
+
+#include <dwarfs/logger.h>

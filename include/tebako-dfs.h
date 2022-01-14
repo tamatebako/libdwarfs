@@ -37,11 +37,14 @@
 #include "dwarfs/error.h"
 #include "dwarfs/filesystem_v2.h"
 #include "dwarfs/fstypes.h"
-#include "dwarfs/logger.h"
 #include "dwarfs/metadata_v2.h"
 #include "dwarfs/mmap.h"
 #include "dwarfs/options.h"
 #include "dwarfs/util.h"
+
+void tebako_init_cwd(dwarfs::logger& lgr, bool need_debug_policy);
+void tebako_drop_cwd(void);
+
 
 namespace dwarfs {
     struct options {
