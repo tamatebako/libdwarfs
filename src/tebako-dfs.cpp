@@ -365,7 +365,7 @@ static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* ca
 }
 
 int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, tebako_dirent*, off_t, size_t, size_t&, size_t& )> { internal_readdir }, 
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, tebako_dirent*, off_t, size_t, size_t&, size_t& )> { internal_readdir },
                             __func__, inode, cache, cache_start, buffer_size, cache_size, dir_size);
 }
 

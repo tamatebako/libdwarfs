@@ -83,14 +83,14 @@ public:
 	}
 };
 
-template <typename LoggerPolicy> 
+template <typename LoggerPolicy>
 class tebako_path_s_l: public tebako_path_s {
 private:
     LOG_PROXY_DECL(LoggerPolicy);
 public:
-    tebako_path_s_l(dwarfs::logger& lgr): 
-        tebako_path_s(), 
-        LOG_PROXY_INIT(lgr) { 
+    tebako_path_s_l(dwarfs::logger& lgr):
+        tebako_path_s(),
+        LOG_PROXY_INIT(lgr) {
 			LOG_TRACE << __func__ << " [ constructing ] ";
 		}
 
@@ -127,7 +127,7 @@ static folly::Synchronized<tebako_path_s *> tebako_cwd{ NULL };
 
 void tebako_init_cwd(dwarfs::logger& lgr, bool need_debug_policy) {
     auto locked = tebako_cwd.wlock();
-    *locked = (need_debug_policy) ? static_cast<tebako_path_s *>(new tebako_path_s_l<dwarfs::debug_logger_policy>(lgr)): 
+    *locked = (need_debug_policy) ? static_cast<tebako_path_s *>(new tebako_path_s_l<dwarfs::debug_logger_policy>(lgr)):
 	                                static_cast<tebako_path_s *>(new tebako_path_s_l<dwarfs::prod_logger_policy>(lgr));
 }
 

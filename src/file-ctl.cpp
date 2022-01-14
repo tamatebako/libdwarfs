@@ -33,7 +33,6 @@
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
-
  /*
  * tebaco_access
  * tebaco_stat
@@ -49,8 +48,7 @@ int tebako_access(const char* path, int amode) {
 	else {
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, path);
-		ret = p_path ? dwarfs_access(p_path, amode, getuid(), getgid()) :
-			access(path, amode);
+		ret = p_path ? dwarfs_access(p_path, amode, getuid(), getgid()) : access(path, amode);
 	}
 	return ret;
 }
