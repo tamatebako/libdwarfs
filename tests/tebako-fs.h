@@ -32,3 +32,5 @@
 #include <incbin.h>
 
 INCBIN_EXTERN(fs);
+
+extern const char * tests_log_level;

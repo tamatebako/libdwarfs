@@ -40,6 +40,7 @@ option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON
 
 option(WITH_LINK_TESTS "Include tests for hard and symbolic links" ON)
 option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
+set(TESTS_LOG_LEVEL "warn")
 
 include(ExternalProject)
 include(GNUInstallDirs)

@@ -30,3 +30,5 @@
 #include <incbin.h>
 
 INCBIN(fs, "@DATA_BIN_FILE@");
+
+const char * tests_log_level = "@TESTS_LOG_LEVEL@";

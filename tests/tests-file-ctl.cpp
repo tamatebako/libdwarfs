@@ -35,7 +35,7 @@ namespace {
 		static void SetUpTestSuite() {
 			load_fs(&gfsData[0],
 				gfsSize,
-				"trace" /*debuglevel*/,
+				tests_log_level,
 				NULL	/* cachesize*/,
 				NULL	/* workers */,
 				NULL	/* mlock */,

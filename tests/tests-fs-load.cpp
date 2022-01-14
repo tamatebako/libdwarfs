@@ -45,7 +45,7 @@ namespace {
 		const unsigned char data[] = "This is broken filesystem image";
 		int ret = load_fs(	&data[0],
 							sizeof(data)/sizeof(data[0]),
-							"debug" /*debuglevel*/,
+							tests_log_level,
 							NULL	/* cachesize*/,
 							NULL	/* workers */,
 							NULL	/* mlock */,
@@ -74,7 +74,7 @@ namespace {
 	TEST(LoadTests, tebako_load_valid_filesystem) {
 		int ret = load_fs(	&gfsData[0],
 							gfsSize,
-							"debug" /*debuglevel*/,
+							tests_log_level,
 							NULL	/* cachesize*/,
 							NULL	/* workers */,
 							NULL	/* mlock */,
@@ -110,7 +110,7 @@ namespace {
 	TEST(LoadTests, tebako_close_all_fd) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
-			"debug" /*debuglevel*/,
+			tests_log_level,
 			NULL	/* cachesize*/,
 			NULL	/* workers */,
 			NULL	/* mlock */,
@@ -134,7 +134,7 @@ namespace {
 	TEST(LoadTests, tebako_close_all_dir) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
-			"debug" /*debuglevel*/,
+			tests_log_level,
 			NULL	/* cachesize*/,
 			NULL	/* workers */,
 			NULL	/* mlock */,

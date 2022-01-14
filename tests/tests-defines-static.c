@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 
 	int ret = load_fs(&gfsData[0],
 		gfsSize,
-		"debug" /*debuglevel*/,
+		tests_log_level,
 		NULL	/* cachesize*/,
 		NULL	/* workers */,
 		NULL	/* mlock */,
