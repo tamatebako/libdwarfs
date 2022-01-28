@@ -60,6 +60,8 @@ namespace {
 
 				fs::create_symlink("/bin/true", tmp_path / "link2true");
 				fs::create_symlink("/bin/false", tmp_path / "link2false");
+
+				delete[] dir_name;
 			}
 		}
 

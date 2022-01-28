@@ -62,8 +62,13 @@ jobs:
         env:
           - CC: gcc
             CXX: g++
+            ASAN: 'OFF'
           - CC: clang
             CXX: clang++
+            ASAN: 'OFF'
+          - CC: clang
+            CXX: clang++
+            ASAN: 'ON'
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
@@ -147,7 +152,7 @@ jobs:
           sudo make install
 
       - name: Configure
-        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=ON
+        run: cmake -B ${{ github.workspace }} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }}
 
       - name: Build
         run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
@@ -166,7 +171,7 @@ jobs:
         run:  ${{github.workspace}}/tests/scripts/tests.sh
 
       - name: Upload tests
-        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        if: ${{ matrix.os == 'ubuntu-18.04' && env.ASAN == 'OFF' }}
         uses: actions/upload-artifact@v2
         with:
           name: tests-${{ matrix.env.CC }}

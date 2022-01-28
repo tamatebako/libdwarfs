@@ -31,7 +31,7 @@
 
 
 /* The d_name field
- The dirent structure definition shown above is taken from the
+ The dirent structure definition is taken from the
  glibc headers, and shows the d_name field with a fixed size.
 
  Warning: applications should avoid any dependence on the size of
@@ -57,9 +57,17 @@
     that exceeds the size of the glibc dirent structure shown above.
 */
 
+typedef struct _tebako_dirent {
+    unsigned long d_ino;
+    long d_off;
+    unsigned short d_reclen;
+    unsigned char d_type;
+    tebako_path_t d_name;
+} _tebako_dirent;
+
 typedef union tebako_dirent {
     struct dirent e;
-    char padding[TEBAKO_PATH_LENGTH + 1 + (sizeof(struct dirent) - 256 * sizeof(char))];
+    struct _tebako_dirent _e;
 } tebako_dirent;
 
 const size_t TEBAKO_DIR_CACHE_SIZE = 50;
