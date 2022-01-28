@@ -35,9 +35,13 @@ set -o errexit -o pipefail -o noclobber -o nounset
 test_static_linkage() {
    echo "==> Static linkage test"
    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-      result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
-      assertEquals 1 "${PIPESTATUS[0]}"
-      assertContains "$result" "not a dynamic executable"
+      if [[ "$ASAN" == "ON"* ]]; then
+        echo "... Address sanitizer os on ... skipping"
+      else
+        result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
+        assertEquals 1 "${PIPESTATUS[0]}"
+        assertContains "$result" "not a dynamic executable"
+      fi
    elif [[ "$OSTYPE" == "darwin"* ]]; then
       echo "... MacOS ... skipping"
    elif [[ "$OSTYPE" == "cygwin" ]]; then

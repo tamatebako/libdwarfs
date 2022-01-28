@@ -53,7 +53,7 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}]
+    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ASAN {{ matrix.env.ASAN }}]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
