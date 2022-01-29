@@ -40,13 +40,19 @@ option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON
 
 option(WITH_LINK_TESTS "Include tests for hard and symbolic links" ON)
 option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
-set(TESTS_LOG_LEVEL "trace")
 
 include(ExternalProject)
 include(GNUInstallDirs)
 include(CheckSymbolExists)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
+
+# log level
+if (NOT TESTS_LOG_LEVEL)
+  set(TESTS_LOG_LEVEL "warn")
+  message(STATUS "Logging level not specified. Defaulted to warn")
+endif()
+
 
 # coverage
 if (WITH_COVERAGE)
@@ -71,12 +77,12 @@ if (WITH_COVERAGE OR WITH_ASAN)
   set(WITH_TESTS ON CACHE BOOL "Forced for code coverage or sanitizers" FORCE)
   message(STATUS "Forcing build type to Debug for code coverage or sanitizers")
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Forced for code coverage or sanitizers" FORCE)
-endif() 
+endif()
 
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "Build type was not specified. Defaulted to release")
   set(CMAKE_BUILD_TYPE Release)
-endif()  
+endif()
 
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_LINK_STATIC       ON)
@@ -583,7 +589,7 @@ if(${WITH_TESTS})
     list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
                            ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}
     )
-  else()                         
+  else()
     list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
                            ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBPTHREAD}  ${_LIBDL}      ${_LIBM}
                            ${_LIBRT}     gcc_eh          ${_LIBUNWIND}   ${_LIBLZMA}

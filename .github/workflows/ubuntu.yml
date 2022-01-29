@@ -63,12 +63,19 @@ jobs:
           - CC: gcc
             CXX: g++
             ASAN: 'OFF'
+            LOG_LEVEL: 'warn'
+          - CC: gcc
+            CXX: g++
+            ASAN: 'OFF'
+            LOG_LEVEL: 'trace'
           - CC: clang
             CXX: clang++
             ASAN: 'OFF'
+            LOG_LEVEL: 'warn'
           - CC: clang
             CXX: clang++
             ASAN: 'ON'
+            LOG_LEVEL: 'warn'
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
@@ -152,7 +159,10 @@ jobs:
           sudo make install
 
       - name: Configure
-        run: cmake -B ${{ github.workspace }} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }}
+        run: cmake -B ${{ github.workspace }}                   \
+                   -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}     \
+                   -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }}  \
+                   -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
         run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}

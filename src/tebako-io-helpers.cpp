@@ -42,9 +42,9 @@ private:
 	fs::path p;
 
 public:
-    tebako_path_s(void): p("") { 		
+    tebako_path_s(void): p("") {
 	}
-	
+
 //	Gets current working directory
 	virtual const char* get_cwd(tebako_path_t cwd) {
 		const char* n = p.c_str();
