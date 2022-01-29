@@ -161,7 +161,7 @@ jobs:
         run: cmake -B ${{ github.workspace }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
+        run: cmake --build ${{github.workspace}}
 
       - name: Run unit tests
         run: make test
@@ -181,6 +181,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: tests-${{ matrix.env.CC }}
+          retention-days: 1
           path: |
             ${{github.workspace}}/wr-bin
             ${{github.workspace}}/wr-tests
