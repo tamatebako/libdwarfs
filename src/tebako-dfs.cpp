@@ -67,8 +67,6 @@ namespace dwarfs {
     }
 }
 
-
-
 using namespace dwarfs;
 
 // dwarFS user data including fs pointer
