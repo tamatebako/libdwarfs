@@ -154,10 +154,11 @@ bool tebako_set_cwd(const char* path) {
 	bool ret = false;
 	try {
 	    auto locked = tebako_cwd.wlock();
+// *locked == NULL is not an error condition
 		if (*locked) {
 	        (*locked)->set_cwd(path);
-		    ret = true;
 		}
+		ret = true;
 	}
 	catch (...) {
 	}
@@ -205,6 +206,7 @@ const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
 //  Returns tebako path is cwd if within tebako memfs
 //  NULL otherwise
 const char* to_tebako_path(tebako_path_t t_path, const char* path) {
+
 	const char* p_path = NULL;
 	try {
 	    fs::path p = path;
@@ -222,6 +224,7 @@ const char* to_tebako_path(tebako_path_t t_path, const char* path) {
 		}
 	}
 	catch (...) {
+		printf("!!!!!!!!! to_tebako_path has failed %s\n", path);
 	}
 	return p_path;
 }
