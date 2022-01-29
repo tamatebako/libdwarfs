@@ -1,4 +1,4 @@
-# Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tamatebako
 #
@@ -22,9 +22,9 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
-# The purpose of this workflow is to check that build procedures work correctly 
-# in specific environment. Due to this reason there is no caching. It is done by 
+#
+# The purpose of this workflow is to check that build procedures work correctly
+# in specific environment. Due to this reason there is no caching. It is done by
 # intention. All caching is in upstream projects.
 name: MacOS
 
@@ -46,7 +46,7 @@ on:
 
 env:
   MAKEFLAGS: -j4
-  BUILD_TYPE: Release  
+  BUILD_TYPE: Release
   CC: clang
   CXX: clang++
   CXXFLAGS: -DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0
@@ -120,7 +120,8 @@ jobs:
         run: cmake --build ${{ github.workspace }} --config ${{ env.BUILD_TYPE }}
 
       - name: Run unit tests
-        run: make test
+#        run: make test
+        run: ./wr-tests
 
       - name: Checkout shell test framework
         uses: actions/checkout@v2
@@ -137,6 +138,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: tests-${{ env.CC }}
+          retention-days: 1
           path: |
             ${{github.workspace}}/wr-bin
             ${{github.workspace}}/wr-tests

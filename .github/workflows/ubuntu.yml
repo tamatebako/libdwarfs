@@ -1,4 +1,4 @@
-# Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tamatebako
 #
@@ -31,18 +31,17 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/macos.yml'      
+      - '.github/workflows/macos.yml'
   pull_request:
     branches: [ master ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/macos.yml'     
+      - '.github/workflows/macos.yml'
   workflow_dispatch:
 
 env:
-  BUILD_TYPE: Release
   MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
   DEPS: deps
@@ -53,7 +52,7 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}]
+    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -62,8 +61,16 @@ jobs:
         env:
           - CC: gcc
             CXX: g++
+            ASAN: 'OFF'
+            LOG_LEVEL: 'trace'
           - CC: clang
             CXX: clang++
+            ASAN: 'OFF'
+            LOG_LEVEL: 'warn'
+          - CC: clang
+            CXX: clang++
+            ASAN: 'ON'
+            LOG_LEVEL: 'warn'
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
@@ -147,10 +154,10 @@ jobs:
           sudo make install
 
       - name: Configure
-        run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=ON
+        run: cmake -B ${{ github.workspace }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
+        run: cmake --build ${{github.workspace}}
 
       - name: Run unit tests
         run: make test
@@ -166,10 +173,11 @@ jobs:
         run:  ${{github.workspace}}/tests/scripts/tests.sh
 
       - name: Upload tests
-        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        if: ${{ matrix.os == 'ubuntu-18.04' && env.ASAN == 'OFF' }}
         uses: actions/upload-artifact@v2
         with:
           name: tests-${{ matrix.env.CC }}
+          retention-days: 1
           path: |
             ${{github.workspace}}/wr-bin
             ${{github.workspace}}/wr-tests

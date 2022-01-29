@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2022, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -40,7 +40,7 @@ namespace {
 		static void SetUpTestSuite() {
 			load_fs(&gfsData[0],
 				gfsSize,
-				"warn" /*debuglevel*/,
+				tests_log_level,
 				NULL	/* cachesize*/,
 				NULL	/* workers */,
 				NULL	/* mlock */,
@@ -60,6 +60,8 @@ namespace {
 
 				fs::create_symlink("/bin/true", tmp_path / "link2true");
 				fs::create_symlink("/bin/false", tmp_path / "link2false");
+
+				delete[] dir_name;
 			}
 		}
 

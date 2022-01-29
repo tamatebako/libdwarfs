@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2022, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -41,11 +41,13 @@ namespace {
 		EXPECT_EQ(1, i);
 	}
 
+#ifndef WITH_ASAN
+// ASAN cannot survive DWARFS_THROW [??] 
 	TEST(LoadTests, tebako_load_invalid_filesystem) {
 		const unsigned char data[] = "This is broken filesystem image";
 		int ret = load_fs(	&data[0],
 							sizeof(data)/sizeof(data[0]),
-							"debug" /*debuglevel*/,
+							tests_log_level,
 							NULL	/* cachesize*/,
 							NULL	/* workers */,
 							NULL	/* mlock */,
@@ -70,11 +72,11 @@ namespace {
 		EXPECT_EQ(1, ret);
 		drop_fs();
 	}
-
+#endif
 	TEST(LoadTests, tebako_load_valid_filesystem) {
 		int ret = load_fs(	&gfsData[0],
 							gfsSize,
-							"debug" /*debuglevel*/,
+							tests_log_level,
 							NULL	/* cachesize*/,
 							NULL	/* workers */,
 							NULL	/* mlock */,
@@ -110,7 +112,7 @@ namespace {
 	TEST(LoadTests, tebako_close_all_fd) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
-			"debug" /*debuglevel*/,
+			tests_log_level,
 			NULL	/* cachesize*/,
 			NULL	/* workers */,
 			NULL	/* mlock */,
@@ -134,7 +136,7 @@ namespace {
 	TEST(LoadTests, tebako_close_all_dir) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
-			"debug" /*debuglevel*/,
+			tests_log_level,
 			NULL	/* cachesize*/,
 			NULL	/* workers */,
 			NULL	/* mlock */,

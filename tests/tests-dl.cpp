@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2022, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -39,7 +39,7 @@ namespace {
 		static void SetUpTestSuite() {
 			load_fs(&gfsData[0],
 				gfsSize,
-				"warn" /*debuglevel*/,
+				tests_log_level,
 				NULL	/* cachesize*/,
 				NULL	/* workers */,
 				NULL	/* mlock */,
@@ -64,7 +64,10 @@ namespace {
 		errno = 0;
 		void* dlptr = tebako_dlopen("/bin/no_file", RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_EQ(NULL, dlptr);
+#ifndef WITH_ASAN		
+// For some reason if ASAN is enabled errno equals 0 here
 		EXPECT_EQ(ENOENT, errno);
+#endif		
 	}
 
 	TEST_F(DlTests, tebako_dlopen_absolute_path) {

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tebako
 #
@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.7)
+project(libdwarfs-wr VERSION 0.1.8)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -46,6 +46,43 @@ include(GNUInstallDirs)
 include(CheckSymbolExists)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
+
+# log level
+if (NOT TESTS_LOG_LEVEL)
+  set(TESTS_LOG_LEVEL "warn")
+  message(STATUS "Logging level not specified. Defaulted to warn")
+endif()
+
+
+# coverage
+if (WITH_COVERAGE)
+  if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    message(FATAL_ERROR "Coverage is only supported with the GNU compiler")
+  endif()
+  add_compile_options(--coverage -O0)
+  add_link_options(--coverage)
+endif()
+
+# sanitizers
+if (WITH_ASAN)
+  if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "Sanitizers are only supported with the clang compiler")
+  endif()
+  add_compile_options(-DWITH_ASAN -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common -O1)
+  link_libraries(-fsanitize=address,undefined)
+endif()
+
+if (WITH_COVERAGE OR WITH_ASAN)
+  message(STATUS "Forcing WITH_TEST=ON for code coverage or sanitizers")
+  set(WITH_TESTS ON CACHE BOOL "Forced for code coverage or sanitizers" FORCE)
+  message(STATUS "Forcing build type to Debug for code coverage or sanitizers")
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Forced for code coverage or sanitizers" FORCE)
+endif()
+
+if (NOT CMAKE_BUILD_TYPE)
+  message(STATUS "Build type was not specified. Defaulted to release")
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_LINK_STATIC       ON)
@@ -466,7 +503,7 @@ if(${WITH_TESTS})
  # We check that (1) it is possible to compile, build and run program with pure C startup
  #               (2) it is statically linked
 
-  if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+  if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin" AND NOT WITH_ASAN)
     add_link_options(-static)
   endif()
 
@@ -548,6 +585,10 @@ if(${WITH_TESTS})
 
   if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBLZMA})
+  elseif(WITH_ASAN)
+    list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
+                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}
+    )
   else()
     list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
                            ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBPTHREAD}  ${_LIBDL}      ${_LIBM}

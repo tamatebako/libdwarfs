@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (dwarfs-wr)
  *
@@ -31,7 +31,7 @@
 
 
 /* The d_name field
- The dirent structure definition shown above is taken from the
+ The dirent structure definition is taken from the
  glibc headers, and shows the d_name field with a fixed size.
 
  Warning: applications should avoid any dependence on the size of
@@ -57,9 +57,14 @@
     that exceeds the size of the glibc dirent structure shown above.
 */
 
+typedef struct _tebako_dirent {
+	unsigned char padding[offsetof(struct dirent, d_name)/sizeof(unsigned char)];
+    tebako_path_t d_name;
+} _tebako_dirent;
+
 typedef union tebako_dirent {
     struct dirent e;
-    char padding[TEBAKO_PATH_LENGTH + 1 + (sizeof(struct dirent) - 256 * sizeof(char))];
+    struct _tebako_dirent _e;
 } tebako_dirent;
 
 const size_t TEBAKO_DIR_CACHE_SIZE = 50;

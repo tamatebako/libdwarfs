@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2022, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 
 	int ret = load_fs(&gfsData[0],
 		gfsSize,
-		"debug" /*debuglevel*/,
+		tests_log_level,
 		NULL	/* cachesize*/,
 		NULL	/* workers */,
 		NULL	/* mlock */,
