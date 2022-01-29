@@ -182,6 +182,13 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, const char* path, Args&&.
                 path + TEBAKO_MOUNT_POINT_LENGTH + 1 :
                 path + TEBAKO_MOUNT_POINT_LENGTH + 2;
             auto inode = p->fs.find(adj);
+            if (p->opts.debuglevel >= logger::DEBUG) {
+              LOG_PROXY(debug_logger_policy, p->lgr);            
+              if (inode) 
+                LOG_DEBUG << "inode: " << inode->inode_num();
+              else
+                LOG_DEBUG << "inode: not found";
+            }  
             if (inode) {
                 err = fn(&p->fs, *inode, std::forward<Args>(args)...);
                 if (err == 0) {
@@ -280,7 +287,6 @@ int dwarfs_stat(const char* path, struct stat* buf) noexcept {
     }
     return ret;
 }
-
 
 int dwarfs_readlink(const char* path, std::string& lnk) noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, std::string&)>

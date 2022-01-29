@@ -40,7 +40,7 @@ option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON
 
 option(WITH_LINK_TESTS "Include tests for hard and symbolic links" ON)
 option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
-set(TESTS_LOG_LEVEL "warn")
+set(TESTS_LOG_LEVEL "trace")
 
 include(ExternalProject)
 include(GNUInstallDirs)
@@ -62,8 +62,8 @@ if (WITH_ASAN)
   if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "Sanitizers are only supported with the clang compiler")
   endif()
-  add_compile_options(-DWITH_ASAN -fsanitize=address,leak,undefined -fno-omit-frame-pointer -fno-common -O1)
-  link_libraries(-fsanitize=address,leak,undefined)
+  add_compile_options(-DWITH_ASAN -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common -O1)
+  link_libraries(-fsanitize=address,undefined)
 endif()
 
 if (WITH_COVERAGE OR WITH_ASAN)

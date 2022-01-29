@@ -58,10 +58,7 @@
 */
 
 typedef struct _tebako_dirent {
-    unsigned long d_ino;
-    long d_off;
-    unsigned short d_reclen;
-    unsigned char d_type;
+	unsigned char padding[offsetof(struct dirent, d_name)/sizeof(unsigned char)];
     tebako_path_t d_name;
 } _tebako_dirent;
 

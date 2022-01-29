@@ -47,4 +47,6 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 
 # Force local jemalloc rebuild since homebrew version does something wrong with weak symbols
     set(WITH_JEMALLOC_BUILD ON)
+
+    set(CMAKE_CXX_FLAGS "-std=gnu++14 -DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0")
 endif()
