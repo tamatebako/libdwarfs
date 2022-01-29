@@ -62,10 +62,6 @@ jobs:
           - CC: gcc
             CXX: g++
             ASAN: 'OFF'
-            LOG_LEVEL: 'warn'
-          - CC: gcc
-            CXX: g++
-            ASAN: 'OFF'
             LOG_LEVEL: 'trace'
           - CC: clang
             CXX: clang++
