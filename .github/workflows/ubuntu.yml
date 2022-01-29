@@ -42,7 +42,6 @@ on:
   workflow_dispatch:
 
 env:
-  BUILD_TYPE: Release
   MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
   DEPS: deps
@@ -159,10 +158,7 @@ jobs:
           sudo make install
 
       - name: Configure
-        run: cmake -B ${{ github.workspace }}                   \
-                   -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}     \
-                   -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }}  \
-                   -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake -B ${{ github.workspace }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
         run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}}
