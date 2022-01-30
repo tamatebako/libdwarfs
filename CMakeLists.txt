@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.8)
+project(libdwarfs-wr VERSION 0.1.9)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -103,7 +103,7 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.6")
+def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.7")
 def_ext_prj_g(LIBARCHIVE "v3.5.1")
 
 
@@ -231,6 +231,7 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DCMAKE_CXX_STANDARD=14
              -DCMAKE_CXX_STANDARD_REQUIRED=ON
              -DCMAKE_CXX_EXTENSIONS=OFF
+             -DDEPS=${DEPS}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
@@ -339,7 +340,7 @@ set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${DEPS}/include
+                    ${DEPS_INCLUDE_DIR}
                     ${INCBIN_SOURCE_DIR}
                     ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift
                     ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include ${BREW_PREFIX}/include
@@ -490,8 +491,8 @@ if(${WITH_TESTS})
   find_library(_LIBSSL "libssl.a" REQUIRED)
 
   find_library(_LIBACL "libacl.a")
-  find_library(_LIBPTHREAD "libpthread.a")
-  find_library(_LIBDL "libdl.a")
+  find_library(_LIBPTHREAD "pthread")
+  find_library(_LIBDL "dl")
   find_library(_LIBC "libc.a")
   find_library(_LIBM "libm.a")
   find_library(_LIBRT "librt.a")
@@ -503,9 +504,9 @@ if(${WITH_TESTS})
  # We check that (1) it is possible to compile, build and run program with pure C startup
  #               (2) it is statically linked
 
-  if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin" AND NOT WITH_ASAN)
-    add_link_options(-static)
-  endif()
+  #if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin" AND NOT WITH_ASAN)
+  #  add_link_options(-static)
+  #endif()
 
 
   add_executable(wr-bin
@@ -591,8 +592,8 @@ if(${WITH_TESTS})
     )
   else()
     list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
-                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBPTHREAD}  ${_LIBDL}      ${_LIBM}
-                           ${_LIBRT}     gcc_eh          ${_LIBUNWIND}   ${_LIBLZMA}
+                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}    ${_LIBPTHREAD}
+                           ${_LIBDL}
     )
   endif()
 
