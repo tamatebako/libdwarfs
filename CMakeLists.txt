@@ -53,7 +53,6 @@ if (NOT TESTS_LOG_LEVEL)
   message(STATUS "Logging level not specified. Defaulted to warn")
 endif()
 
-
 # coverage
 if (WITH_COVERAGE)
   if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -232,6 +231,7 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DCMAKE_CXX_STANDARD_REQUIRED=ON
              -DCMAKE_CXX_EXTENSIONS=OFF
              -DDEPS=${DEPS}
+             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
@@ -592,21 +592,23 @@ if(${WITH_TESTS})
     )
   else()
     list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
-                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}    ${_LIBPTHREAD}
-                           ${_LIBDL}
+                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}    pthread dl
     )
   endif()
+  
+  #                         ${_LIBPTHREAD}
+  #                         ${_LIBDL}
 
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
 
-  if(${WITH_JEMALLOC_BUILD})
-    add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
-    target_link_libraries(wr-tests _LIBJEMALLOC)
-  else(${WITH_JEMALLOC_BUILD})
-    target_link_libraries(wr-bin ${_LIBJEMALLOC})
-    target_link_libraries(wr-tests ${_LIBJEMALLOC})
-  endif(${WITH_JEMALLOC_BUILD})
+#  if(${WITH_JEMALLOC_BUILD})
+#    add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
+#    target_link_libraries(wr-tests _LIBJEMALLOC)
+#  else(${WITH_JEMALLOC_BUILD})
+#    target_link_libraries(wr-bin ${_LIBJEMALLOC})
+#    target_link_libraries(wr-tests ${_LIBJEMALLOC})
+#  endif(${WITH_JEMALLOC_BUILD})
 
 endif(${WITH_TESTS})
 

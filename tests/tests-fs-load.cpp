@@ -58,7 +58,6 @@ namespace {
 		EXPECT_EQ(-1, ret);
 		drop_fs();
 	}
-
 	TEST(LoadTests, tebako_load_invalid_parameter) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,

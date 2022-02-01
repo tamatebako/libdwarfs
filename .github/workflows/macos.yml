@@ -52,7 +52,7 @@ env:
   CXXFLAGS: -DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0
 # The folder for dwarfs and other dependenies
   DEPS: deps
-  CACHE_VER: "04"
+  CACHE_VER: "05"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
