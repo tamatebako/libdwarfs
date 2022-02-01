@@ -42,8 +42,8 @@ namespace {
 	}
 
 //ifndef WITH_ASAN
-#if 0
 // ASAN cannot survive DWARFS_THROW [??] 
+#if 0
 	TEST(LoadTests, tebako_load_invalid_filesystem) {
 		const unsigned char data[] = "This is broken filesystem image";
 		int ret = load_fs(	&data[0],

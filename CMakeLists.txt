@@ -505,7 +505,7 @@ if(${WITH_TESTS})
  #               (2) it is statically linked
 
   #if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin" AND NOT WITH_ASAN)
-  #  add_link_options(-static)
+    add_link_options(-static-libstdc++)
   #endif()
 
 

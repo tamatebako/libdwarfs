@@ -30,10 +30,6 @@
 #include <unistd.h>
 #include "tests.h"
 
- /*
- *  Unit tests for 'tebako_getcwd', 'tebako_getwd', 'tebako_chdir', 'tebako_mkdir' functions
- */
-
 namespace {
 	class DirCtlTests : public testing::Test {
 	protected:
@@ -114,7 +110,7 @@ namespace {
 		EXPECT_EQ(EINVAL, errno);
 		EXPECT_EQ(NULL, r2);
 	}
-
+#ifdef WITH_GETWD
 	TEST_F(DirCtlTests, tebako_chdir_relative_path_getwd) {
 		char p[PATH_MAX];
 		char* r;
@@ -134,7 +130,7 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 		EXPECT_EQ(-1, ret);
 	}
-
+#endif
 	TEST_F(DirCtlTests, tebako_chdir_absolute_path_pass_through) {
 		int ret = tebako_chdir("/usr/bin");
 		EXPECT_EQ(0, ret);
@@ -185,10 +181,11 @@ namespace {
 		errno = 0;
 		EXPECT_EQ(-1, tebako_mkdir(NULL, S_IRWXU));
 		EXPECT_EQ(ENOENT, errno);
-
+#ifdef WITH_GETWD
 		errno = 0;
 		EXPECT_EQ(NULL, tebako_getwd(NULL));
 		EXPECT_EQ(ENOENT, errno);
+#endif
 	}
 
 	TEST_F(DirCtlTests, tebako_dir_ctl_dot_dot) {
