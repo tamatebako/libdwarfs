@@ -148,7 +148,7 @@ test_install_script() {
 # ......................................................................
 # main
 DIR0="$( cd "$( dirname "$0" )" && pwd )"
-DIR1="${DIR_ROOT:="$DIR0/../.." }"
+DIR1="${DIR_ROOT:="$DIR0/../.."}"
 DIR_ROOT="$( cd "$DIR1" && pwd )"
 
 DIR_TESTS="$( cd "$DIR0/.." && pwd)"
