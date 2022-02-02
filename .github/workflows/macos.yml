@@ -111,7 +111,7 @@ jobs:
 # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
           brew install \
-          bison flex binutils libarchive double-conversion boost jemalloc fmt glog
+          bison flex gnu-sed bash libarchive double-conversion boost jemalloc fmt glog
 
       - name: Configure
         run: cmake -B ${{ github.workspace }} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON
