@@ -43,7 +43,7 @@ namespace {
 
 //ifndef WITH_ASAN
 // ASAN cannot survive DWARFS_THROW [??] 
-#if 0
+
 	TEST(LoadTests, tebako_load_invalid_filesystem) {
 		const unsigned char data[] = "This is broken filesystem image";
 		int ret = load_fs(	&data[0],
@@ -58,6 +58,7 @@ namespace {
 		EXPECT_EQ(-1, ret);
 		drop_fs();
 	}
+
 	TEST(LoadTests, tebako_load_invalid_parameter) {
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
@@ -72,7 +73,7 @@ namespace {
 		EXPECT_EQ(1, ret);
 		drop_fs();
 	}
-#endif
+
 	TEST(LoadTests, tebako_load_valid_filesystem) {
 		int ret = load_fs(	&gfsData[0],
 							gfsSize,
