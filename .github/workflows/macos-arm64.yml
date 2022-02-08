@@ -114,15 +114,14 @@ jobs:
         run: |
           ci-scripts/arm-brew-setup.sh ${{ github.workspace }}/..
           ci-scripts/arm-brew-install.sh ${{ github.workspace }}/.. libb2 lz4 xz zstd zlib libarchive \
-                                icu4c boost jemalloc fmt gflags glog openssl@1.1 libevent libsodium   \
-                                double-conversion
+                                icu4c boost fmt openssl@1.1 libevent libsodium double-conversion
 
       - name: Configure
         run: |
           mkdir build
           cd build
           cmake .. -DTARGET_HOMEBREW=${{ github.workspace }}/../arm-homebrew                         \
-                   -DTEBAKO_BUILD_TARGET=${{ env.TARGET }}-apple-macos${{ matrix.setup.version }}    \
+                   -DTEBAKO_BUILD_TARGET=${{ env.TARGET }}-apple-macos11                             \
                    -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install                              \
                    -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
 

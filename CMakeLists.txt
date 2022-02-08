@@ -47,6 +47,16 @@ include(CheckSymbolExists)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
 
+if(TEBAKO_BUILD_TARGET)
+  message("Building libdwarfs for ${TEBAKO_BUILD_TARGET}")
+  add_compile_options("--target=${TEBAKO_BUILD_TARGET}")
+  add_link_options("--target=${TEBAKO_BUILD_TARGET}")
+  set(ENV{CFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
+  set(ENV{CXXFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
+  set(ENV{LDFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
+endif()
+
+
 # log level
 if (NOT TESTS_LOG_LEVEL)
   set(TESTS_LOG_LEVEL "warn")
