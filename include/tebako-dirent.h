@@ -29,7 +29,6 @@
 
 #pragma once
 
-
 /* The d_name field
  The dirent structure definition is taken from the
  glibc headers, and shows the d_name field with a fixed size.
@@ -98,6 +97,3 @@ public:
 
 	static sync_tebako_dstable dstable;
 };
-
-
-

@@ -41,9 +41,7 @@ namespace {
 		EXPECT_EQ(1, i);
 	}
 
-//ifndef WITH_ASAN
-// ASAN cannot survive DWARFS_THROW [??] 
-
+#if __MACH__
 	TEST(LoadTests, tebako_load_invalid_filesystem) {
 		const unsigned char data[] = "This is broken filesystem image";
 		int ret = load_fs(	&data[0],
@@ -53,9 +51,25 @@ namespace {
 							NULL	/* workers */,
 							NULL	/* mlock */,
 							NULL	/* decompress_ratio*/,
-							NULL    /* image_offset */
-			);
+							"0"    /* image_offset */
+		);
 		EXPECT_EQ(-1, ret);
+		drop_fs();
+	}
+#endif
+
+	TEST(LoadTests, tebako_load_invalid_offset) {
+		const unsigned char data[] = "This is broken filesystem image";
+		int ret = load_fs(	&gfsData[0], // &data[0],
+							gfsSize, //sizeof(data)/sizeof(data[0]),
+							tests_log_level,
+							NULL	/* cachesize*/,
+							NULL	/* workers */,
+							NULL	/* mlock */,
+							NULL	/* decompress_ratio*/,
+							"xxx"    /* image_offset */
+		);
+		EXPECT_EQ(1, ret);
 		drop_fs();
 	}
 
@@ -164,7 +178,6 @@ namespace {
 		long loc = tebako_telldir(dirp);
 		EXPECT_EQ(-1L, loc);
 		EXPECT_EQ(EBADF, errno);
-
 
 		errno = 0;
 		struct dirent* entry = tebako_readdir(dirp);

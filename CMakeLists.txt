@@ -105,7 +105,6 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.7")
 def_ext_prj_g(LIBARCHIVE "v3.5.1")
 
-
 if(${WITH_TESTS})
   def_ext_prj_g(INCBIN "348e36b")
 endif(${WITH_TESTS})
@@ -225,11 +224,14 @@ ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
   GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
   GIT_TAG ${DWARFS_TAG}
-  UPDATE_COMMAND ""
+#  UPDATE_COMMAND ""
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
-             -DCMAKE_CXX_STANDARD=14
-             -DCMAKE_CXX_STANDARD_REQUIRED=ON
-             -DCMAKE_CXX_EXTENSIONS=OFF
+             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
+             -DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}
+             -DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}
+             -DWITH_TESTS=OFF
+             -DTEBAKO_BUILD_SCOPE=MKD
+             -DTEBAKO_BUILD_TARGET=${TEBAKO_BUILD_TARGET}
              -DDEPS=${DEPS}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
@@ -334,7 +336,6 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-config.h.in
   ${CMAKE_CURRENT_SOURCE_DIR}/include/tebako-config.h
 )
-
 
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
@@ -499,15 +500,9 @@ if(${WITH_TESTS})
   find_library(_LIBUNWIND "libunwind.a")
   find_library(_LIBIBERTY "libiberty.a")
 
- # ...................................................................
- # The very special test
- # We check that (1) it is possible to compile, build and run program with pure C startup
- #               (2) it is statically linked
-
-  #if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin" AND NOT WITH_ASAN)
+  if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     add_link_options(-static-libstdc++)
-  #endif()
-
+  endif()
 
   add_executable(wr-bin
     "include/tebako-pch.h"
@@ -565,7 +560,7 @@ if(${WITH_TESTS})
 #  libarchive
   add_dwarfs_library(_LIBARCHIVE ${LIBARCHIVE_PRJ} wr-bin)
 
-  target_link_libraries(wr-tests _LIBDWARFS  _LIBFSST   _LIBFOLLY _LIBT_METADATA
+  target_link_libraries(wr-tests _LIBDWARFS _LIBFSST   _LIBFOLLY _LIBT_METADATA
                                  _LIBT_LIGHT _LIBXXHASH _LIBZSTD  _LIBARCHIVE)
 
   if(${WITH_GLOG_BUILD})

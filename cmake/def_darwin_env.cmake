@@ -1,6 +1,6 @@
-# Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2022, [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
-# This file is a part of tebako
+# This file is a part of tamatebako
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -22,31 +22,42 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+#
 
-set(WITH_JEMALLOC_BUILD OFF)
+set(GNU_BASH "bash")
+
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
-    execute_process(
-        COMMAND brew --prefix
-        RESULT_VARIABLE BREW_PREFIX_RES
-        OUTPUT_VARIABLE BREW_PREFIX
-        OUTPUT_STRIP_TRAILING_WHITESPACE
+# If we are cross compiling TARGET_HOMEBREW will point to homebrew environment for target
+# If we are not cross compiling it will be empty
+
+  if(NOT TARGET_HOMEBREW)
+    set(BREW_BIN "${BUILD_BREW_PREFIX}/bin/brew" )
+  else()
+    set(BREW_BIN brew)
+  endif()
+  
+  execute_process(
+    COMMAND "${BREW_BIN}" --prefix
+      RESULT_VARIABLE BREW_PREFIX_RES
+      OUTPUT_VARIABLE TARGET_BREW_PREFIX
+      OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    if(NOT (BREW_PREFIX_RES EQUAL 0 AND EXISTS ${BREW_PREFIX}))
-        message(FATAL "Could not find brew setup")
+    if(NOT (BREW_PREFIX_RES EQUAL 0 AND EXISTS ${TARGET_BREW_PREFIX}))
+        message(FATAL "Could not find target brew setup")
     endif()
+  endif()
 
-    message("Using homebrew environment at ${BREW_PREFIX}")
-
-    set(CMAKE_PREFIX_PATH "${BREW_PREFIX};${BREW_PREFIX}/opt/openssl@1.1;${BREW_PREFIX}/opt/zlib")
+  message("Using target brew environment at ${TARGET_BREW_PREFIX}")
+  set(OPENSSL_ROOT_DIR "${TARGET_BREW_PREFIX}/opt/openssl@1.1")
+  set(CMAKE_PREFIX_PATH "${TARGET_BREW_PREFIX}")
+  include_directories("${TARGET_BREW_PREFIX}/include")
 
 # Suppress superfluous randlib warnings about "*.a" having no symbols on MacOSX.
-    set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
-    set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
-    set(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
-    set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+  set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+  set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+  set(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+  set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
 
-# Force local jemalloc rebuild since homebrew version does something wrong with weak symbols
-    set(WITH_JEMALLOC_BUILD ON)
+  set(CMAKE_CXX_FLAGS "-DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0")
 
-    set(CMAKE_CXX_FLAGS "-std=gnu++14 -DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0")
 endif()

@@ -1,0 +1,144 @@
+# Copyright (c) 2022 [Ribose Inc](https://www.ribose.com).
+# All rights reserved.
+# This file is a part of tamatebako
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The purpose of this workflow is to check that build procedures work correctly
+# in specific environment. Due to this reason there is no caching. It is done by
+# intention. All caching is in upstream projects.
+name: MacOS-arm64
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.github/workflows/ubuntu.yml'
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.github/workflows/ubuntu.yml'
+  workflow_dispatch:
+
+env:
+  MAKEFLAGS: -j4
+  BUILD_TYPE: Release
+  CC: clang
+  CXX: clang++
+  TARGET: arm64
+# The folder for dwarfs and other dependenies
+  DEPS: deps
+  CACHE_VER: "05"
+# GitHub dependencies'
+  INCBIN_TAG: "348e36b"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.7"
+  LIBARCHIVE_TAG: "v3.2.1"
+  GLOG_TAG: "v0.5.0"
+  GFLAGS_TAG: "v2.2.2"
+# Tarball dependencies
+  JEMALLOC_VER: "5.2.1"
+  JEMALLOC_HASH: "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6"
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ macos-11.0 ]
+    steps:
+      - name: Select XCode 12.1.1 & SDK 10.15 for macos-10.15
+        if: ${{ matrix.os == 'macos-10.15' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '12.1.1'
+
+      - name: Select XCode 12.4 & SDK 11.1 for macos-11.0
+        if: ${{ matrix.os == 'macos-11.0' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '12.4'
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create deps folder
+        run: |
+          mkdir ${{ github.workspace }}/${{ env.DEPS }}
+          echo "Keys" > key.txt
+          echo ${{ env.DWARFS_TAG }} >> key.txt
+          echo ${{ env.INCBIN_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_TAG }} >> key.txt
+          echo ${{ env.GLOG_TAG }} >> key.txt
+          echo ${{ env.GFLAGS_TAG }} >> key.txt
+          echo ${{ env.JEMALLOC_VER }} >> key.txt
+
+      - name: Process cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ github.workspace }}/${{ env.DEPS }}
+          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+
+      - name: Install packages for build host architecture
+        run: |
+          brew install bison flex gnu-sed bash glog gflags icu4c boost
+
+# Note: we cannot rely on dependencies here since resolved dependencies will point to x86_64 version
+      - name: Install packages for target host architecture
+        run: |
+          mkdir ${{ github.workspace }}/deps
+          ci-scripts/arm-brew-setup.sh ${{ github.workspace }}/..
+          ci-scripts/arm-brew-install.sh ${{ github.workspace }}/.. libb2 lz4 xz zstd libarchive    \
+                                icu4c boost jemalloc fmt gflags glog openssl@1.1 libevent libsodium \
+                                double-conversion
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DTARGET_HOMEBREW=${{ github.workspace }}/../arm-homebrew                               \
+                   -DTEBAKO_BUILD_TARGET=${{ env.TARGET }}-apple-macos${{ matrix.setup.version }} \
+                   -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install                                    \
+                   -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+      - name: Build
+        run: |
+          cd build 
+          cmake --build . --config ${{ env.BUILD_TYPE }}
+
+      - name: Upload tests
+        if: ${{ matrix.os == 'macos-10.15' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: tests-${{ env.CC }}
+          retention-days: 1
+          path: |
+            ${{github.workspace}}/wr-bin
+            ${{github.workspace}}/wr-tests
