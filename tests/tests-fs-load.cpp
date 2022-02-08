@@ -56,7 +56,6 @@ namespace {
 		EXPECT_EQ(-1, ret);
 		drop_fs();
 	}
-#endif
 
 	TEST(LoadTests, tebako_load_invalid_offset) {
 		const unsigned char data[] = "This is broken filesystem image";
@@ -72,6 +71,7 @@ namespace {
 		EXPECT_EQ(1, ret);
 		drop_fs();
 	}
+#endif
 
 	TEST(LoadTests, tebako_load_invalid_parameter) {
 		int ret = load_fs(&gfsData[0],

@@ -31,9 +31,9 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 # If we are not cross compiling it will be empty
 
   if(NOT TARGET_HOMEBREW)
-    set(BREW_BIN "${BUILD_BREW_PREFIX}/bin/brew" )
-  else()
     set(BREW_BIN brew)
+  else()
+    set(BREW_BIN "${TARGET_HOMEBREW}/bin/brew" )
   endif()
   
   execute_process(
