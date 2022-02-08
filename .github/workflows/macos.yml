@@ -35,6 +35,7 @@ on:
       - '**.adoc'
       - '**.md'
       - '.github/workflows/ubuntu.yml'
+      - '.github/workflows/macos-arm64.yml'
   pull_request:
     branches: [ master ]
     paths-ignore:
@@ -42,6 +43,7 @@ on:
       - '**.adoc'
       - '**.md'
       - '.github/workflows/ubuntu.yml'
+      - '.github/workflows/macos-arm64.yml'
   workflow_dispatch:
 
 env:

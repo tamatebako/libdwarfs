@@ -50,6 +50,12 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   set(CMAKE_PREFIX_PATH "${TARGET_BREW_PREFIX};${TARGET_BREW_PREFIX}/opt/openssl@1.1;${TARGET_BREW_PREFIX}/opt/zlib")
   include_directories("${TARGET_BREW_PREFIX}/include")
 
+
+# libarchive is keg-only, which means it was not symlinked into /usr/local,
+# because macOS already provides this software and installing another version in
+# parallel can cause all kinds of trouble.
+  set(ENV{PKG_CONFIG_PATH} "${TARGET_BREW_PREFIX}/opt/libarchive/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+
 # Suppress superfluous randlib warnings about "*.a" having no symbols on MacOSX.
   set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
   set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")

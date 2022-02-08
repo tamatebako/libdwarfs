@@ -32,6 +32,7 @@ on:
       - '**.adoc'
       - '**.md'
       - '.github/workflows/macos.yml'
+      - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
   pull_request:
     branches: [ master ]
@@ -40,6 +41,7 @@ on:
       - '**.adoc'
       - '**.md'
       - '.github/workflows/macos.yml'
+      - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
   workflow_dispatch:
 
