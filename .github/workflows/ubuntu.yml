@@ -32,6 +32,7 @@ on:
       - '**.adoc'
       - '**.md'
       - '.github/workflows/macos.yml'
+      - 'cmake/def_darwin_env.cmake'
   pull_request:
     branches: [ master ]
     paths-ignore:
@@ -39,6 +40,7 @@ on:
       - '**.adoc'
       - '**.md'
       - '.github/workflows/macos.yml'
+      - 'cmake/def_darwin_env.cmake'
   workflow_dispatch:
 
 env:
