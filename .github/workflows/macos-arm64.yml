@@ -54,7 +54,7 @@ env:
   TARGET: arm64
 # The folder for dwarfs and other dependenies
   DEPS: deps
-  CACHE_VER: "05"
+  CACHE_VER: "01"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
@@ -96,10 +96,13 @@ jobs:
           echo ${{ env.JEMALLOC_VER }} >> key.txt
 
       - name: Process cache
+        id: cache
         uses: actions/cache@v2
         with:
-          path: ${{ github.workspace }}/${{ env.DEPS }}
-          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          path: |
+            ${{ github.workspace }}/${{ env.DEPS }}
+            ${{ github.workspace }}/../arm-homebrew
+          key: ${{ matrix.os }}-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
       - name: Install packages for build host architecture
         run: |
@@ -107,6 +110,7 @@ jobs:
 
 # Note: we cannot rely on dependencies here since resolved dependencies will point to x86_64 version
       - name: Install packages for target host architecture
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           ci-scripts/arm-brew-setup.sh ${{ github.workspace }}/..
           ci-scripts/arm-brew-install.sh ${{ github.workspace }}/.. libb2 lz4 xz zstd zlib libarchive \
