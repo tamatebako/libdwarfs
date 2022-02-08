@@ -47,9 +47,7 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   endif()
 
   message("Using target brew environment at ${TARGET_BREW_PREFIX}")
-  set(OPENSSL_ROOT_DIR "${TARGET_BREW_PREFIX}/opt/openssl@1.1")
-  set(CMAKE_PREFIX_PATH "${TARGET_BREW_PREFIX}")
-  include_directories("${TARGET_BREW_PREFIX}/include")
+  set(CMAKE_PREFIX_PATH "${TARGET_BREW_PREFIX};${TARGET_BREW_PREFIX}/opt/openssl@1.1;${TARGET_BREW_PREFIX}/opt/zlib")
 
 # Suppress superfluous randlib warnings about "*.a" having no symbols on MacOSX.
   set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
