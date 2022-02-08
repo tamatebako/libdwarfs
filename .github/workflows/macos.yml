@@ -51,7 +51,6 @@ env:
   BUILD_TYPE: Release
   CC: clang
   CXX: clang++
-  CXXFLAGS: -DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0
 # The folder for dwarfs and other dependenies
   DEPS: deps
   CACHE_VER: "06"
