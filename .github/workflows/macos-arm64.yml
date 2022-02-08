@@ -114,7 +114,8 @@ jobs:
         run: |
           ci-scripts/arm-brew-setup.sh ${{ github.workspace }}/..
           ci-scripts/arm-brew-install.sh ${{ github.workspace }}/.. libb2 lz4 xz zstd zlib libarchive \
-                                icu4c boost fmt openssl@1.1 libevent libsodium double-conversion
+                                icu4c boost fmt openssl@1.1 libevent libsodium double-conversion      \
+                                gflags glog 
 
       - name: Configure
         run: |

@@ -653,9 +653,10 @@ install(FILES
 
 # We do not attempt to install fuse driver since we may operate in the environment
 # where fuse is not vailable at all
+# Since v0.1.9 we are building mkdwarfs only and not dwarfsck and dwarfsextract
+#  ${DEPS_BIN_DIR}/dwarfsck
+#  ${DEPS_BIN_DIR}/dwarfsextract
 install(FILES
-        ${DEPS_BIN_DIR}/dwarfsck
-        ${DEPS_BIN_DIR}/dwarfsextract
         ${DEPS_BIN_DIR}/mkdwarfs
         DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
