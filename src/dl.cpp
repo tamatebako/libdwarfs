@@ -35,18 +35,51 @@
 #include <tebako-fd.h>
 
 using namespace std;
+namespace fs = std::filesystem;
 
 typedef map<string, string> tebako_dltable;
 
 class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
+private:
+	fs::path dl_tmpdir;
+
+    void create_temporary_directory(void) {
+		const uint64_t MAX_TRIES = 1024;
+	    auto tmp_dir = fs::temp_directory_path();
+        fs::path _dl_tmpdir;
+        uint64_t i = 1;
+        std::random_device dev;
+        std::mt19937 prng(dev());
+        std::uniform_int_distribution<uint64_t> rand(0);
+        while (true) {
+            std::stringstream ss;
+            ss << std::hex << rand(prng);
+            _dl_tmpdir = tmp_dir / ss.str();
+            if (fs::create_directory(_dl_tmpdir)) {
+				dl_tmpdir = _dl_tmpdir;
+                break;
+            }
+            if (i == MAX_TRIES) {
+                throw std::runtime_error("Could not create temporary directory");
+            }
+            i++;
+        }
+}
+
 public:
-	sync_tebako_dltable(void) : folly::Synchronized<tebako_dltable*>(new tebako_dltable) { }
+	sync_tebako_dltable(void) : folly::Synchronized<tebako_dltable*>(new tebako_dltable) { 
+		create_temporary_directory();							
+	}
 	~sync_tebako_dltable(void) {
 		auto p_dltable = *wlock();
 		for (auto it = p_dltable->begin(); it != p_dltable->end(); ++it) {
 			::unlink(it->second.c_str());
 		}
 		p_dltable->clear();
+		if (!dl_tmpdir.empty()) {
+			std::error_code ec;
+			fs::remove_all(dl_tmpdir, ec);
+		}
 	}
 
 	string map2file(const char* path) {

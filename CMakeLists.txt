@@ -47,15 +47,32 @@ include(CheckSymbolExists)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
 
+# Various locations for external projects
+set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
+set(DEPS_INCLUDE_DIR ${DEPS}/include)
+set(DEPS_LIB_DIR ${DEPS}/lib)
+set(DEPS_BIN_DIR ${DEPS}/bin)
+set(DEPS_SBIN_DIR ${DEPS}/sbin)
+
 if(TEBAKO_BUILD_TARGET)
-  message("Building libdwarfs for ${TEBAKO_BUILD_TARGET}")
+  message("STATUS Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
   add_compile_options("--target=${TEBAKO_BUILD_TARGET}")
   add_link_options("--target=${TEBAKO_BUILD_TARGET}")
   set(ENV{CFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
   set(ENV{CXXFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
   set(ENV{LDFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
+  set(CROSSFLAGS "--target=${TEBAKO_BUILD_TARGET}")
+else()
 endif()
 
+if(MKDWARFS)
+  set(TEBAKO_BUILD_SCOPE LIB)
+  message(STATUS "Using upstream mkdwarfs at ${MKDWARFS}")
+else()
+  set(TEBAKO_BUILD_SCOPE MKD)
+  set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs) 
+  message(STATUS "Building mkdwarfs at ${MKDWARFS}")
+endif()
 
 # log level
 if (NOT TESTS_LOG_LEVEL)
@@ -101,13 +118,6 @@ set(CMAKE_CXX_STANDARD      17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS   OFF)
 set(DWARFS_CXX_FLAGS       "")
-
-# Various locations for external projects
-set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
-set(DEPS_INCLUDE_DIR ${DEPS}/include)
-set(DEPS_LIB_DIR ${DEPS}/lib)
-set(DEPS_BIN_DIR ${DEPS}/bin)
-set(DEPS_SBIN_DIR ${DEPS}/sbin)
 
 # ...................................................................
 # External projects
@@ -221,15 +231,6 @@ set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
 set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
 set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
 
-# Static build for dwarfs core is broken again
-# It is mot an issue any way since we agreed to limited set of shared libraries
-# as described here https://github.com/tamatebako/tebako/issues/42
-# We do static linkage within additional tests anyway.
-# Practically it is possible to build it static, th eissue is related to
-# dwarfs build scripts
-# Newer version of dwarfs has new issues
-# https://github.com/tamatebako/libdwarfs/issues/43
-
 ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
   GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
@@ -240,7 +241,7 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}
              -DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}
              -DWITH_TESTS=OFF
-             -DTEBAKO_BUILD_SCOPE=MKD
+             -DTEBAKO_BUILD_SCOPE=${TEBAKO_BUILD_SCOPE}
              -DTEBAKO_BUILD_TARGET=${TEBAKO_BUILD_TARGET}
              -DDEPS=${DEPS}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -262,6 +263,9 @@ ExternalProject_Add(${LIBARCHIVE_PRJ}
              -DENABLE_LIBXML2:BOOL=OFF
              -DENABLE_TEST:BOOL=OFF
              -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+             -DCMAKE_C_FLAGS=${CROSSFLAGS}
+             -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+             -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
   SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBARCHIVE}
@@ -284,7 +288,10 @@ if(${WITH_GLOG_BUILD})
                -DCMAKE_CXX_STANDARD_REQUIRED=ON
                -DCMAKE_CXX_EXTENSIONS=OFF
                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-    SOURCE_DIR ${GLOG_SOURCE_DIR}
+               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
+               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+      SOURCE_DIR ${GLOG_SOURCE_DIR}
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
   )
@@ -307,6 +314,9 @@ if(${WITH_GFLAGS_BUILD})
                -DINSTALL_SHARED_LIBS:BOOL=OFF
                -DCMAKE_BUILD_TYPE=Release
                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
+               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
     SOURCE_DIR ${GFLAGS_SOURCE_DIR}
     BINARY_DIR ${GFLAGS_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGFLAGS}
@@ -439,7 +449,7 @@ if(${WITH_TESTS})
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
-        COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -449,7 +459,7 @@ if(${WITH_TESTS})
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
-        COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -457,13 +467,13 @@ if(${WITH_TESTS})
   else(${WITH_LINK_TESTS})
     if (${USE_TEMP_FS})
       add_custom_target(PACKAGED_FILESYSTEM ALL
-        COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     else(${USE_TEMP_FS})
       add_custom_target(PACKAGED_FILESYSTEM ALL
-        COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -611,13 +621,13 @@ if(${WITH_TESTS})
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
 
-#  if(${WITH_JEMALLOC_BUILD})
-#    add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
-#    target_link_libraries(wr-tests _LIBJEMALLOC)
-#  else(${WITH_JEMALLOC_BUILD})
-#    target_link_libraries(wr-bin ${_LIBJEMALLOC})
-#    target_link_libraries(wr-tests ${_LIBJEMALLOC})
-#  endif(${WITH_JEMALLOC_BUILD})
+  if(${WITH_JEMALLOC_BUILD})
+    add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBJEMALLOC)
+  else(${WITH_JEMALLOC_BUILD})
+    target_link_libraries(wr-bin ${_LIBJEMALLOC})
+    target_link_libraries(wr-tests ${_LIBJEMALLOC})
+  endif(${WITH_JEMALLOC_BUILD})
 
 endif(${WITH_TESTS})
 

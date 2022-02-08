@@ -39,10 +39,11 @@
 #include <map>
 #include <iostream>
 #include <stdexcept>
-
+#include <sstream>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <random>
 #include <filesystem>
 
 #include <folly/Conv.h>

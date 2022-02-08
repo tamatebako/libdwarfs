@@ -49,7 +49,7 @@ env:
   MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
   DEPS: deps
-  CACHE_VER: "06"
+  CACHE_VER: "07"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
