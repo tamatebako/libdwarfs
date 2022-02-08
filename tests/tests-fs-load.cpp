@@ -53,7 +53,7 @@ namespace {
 							NULL	/* decompress_ratio*/,
 							"0"    /* image_offset */
 		);
-		EXPECT_EQ(-1, ret);
+		EXPECT_EQ(1, ret);
 		drop_fs();
 	}
 
