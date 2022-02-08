@@ -113,7 +113,6 @@ jobs:
 # Note: we cannot rely on dependencies here since resolved dependencies will point to x86_64 version
       - name: Install packages for target host architecture
         run: |
-          mkdir ${{ github.workspace }}/deps
           ci-scripts/arm-brew-setup.sh ${{ github.workspace }}/..
           ci-scripts/arm-brew-install.sh ${{ github.workspace }}/.. libb2 lz4 xz zstd libarchive    \
                                 icu4c boost jemalloc fmt gflags glog openssl@1.1 libevent libsodium \
