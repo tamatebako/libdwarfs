@@ -50,8 +50,7 @@ env:
   CXX: clang++
   TARGET: arm64
 # The folder for dwarfs and other dependenies
-  DEPS_BUILD: deps-x86_64
-  DEPS_TARGET: deps-arm64
+  DEPS: deps
   DWARFS_BUILD: dwarfs-x86_64
   CACHE_VER: "02"
 # GitHub dependencies'
@@ -85,7 +84,7 @@ jobs:
 
       - name: Create deps folders and keys
         run: |
-          mkdir ${{ github.workspace }}/${{ env.DEPS_TARGET }}
+          mkdir ${{ github.workspace }}/${{ env.DEPS }}
           mkdir ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
@@ -103,7 +102,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ${{ github.workspace }}/${{ env.DEPS_TARGET }}
+            ${{ github.workspace }}/${{ env.DEPS }}
             ${{ env.LEVEL_UP }}/arm-homebrew
             ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
           key: ${{ matrix.os }}-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
@@ -156,7 +155,6 @@ jobs:
                    -DMKDWARFS=${{ github.workspace }}/${{ env.DWARFS_BUILD }}/install/bin/mkdwarfs     \
                    -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install                                \
                    -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}                                            \
-                   -DDEPS=${{ env.DEPS_TARGET }}                                                        \
                    -DWITH_TESTS=ON
 
       - name: Build [for targets system architecture]
@@ -165,7 +163,6 @@ jobs:
           cmake --build . --config ${{ env.BUILD_TYPE }}
 
       - name: Upload tests
-        if: ${{ matrix.os == 'macos-10.15' }}
         uses: actions/upload-artifact@v2
         with:
           name: tests-${{ env.CC }}
