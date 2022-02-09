@@ -24,7 +24,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-set(WITH_JEMALLOC_BUILD OFF) 
+set(WITH_JEMALLOC_BUILD OFF)
 
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 # If we are cross compiling TARGET_HOMEBREW will point to homebrew environment for target
@@ -35,7 +35,7 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   else()
     set(BREW_BIN "${TARGET_HOMEBREW}/bin/brew" )
   endif()
-  
+
   execute_process(
     COMMAND "${BREW_BIN}" --prefix
       RESULT_VARIABLE BREW_PREFIX_RES
@@ -57,7 +57,7 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
 
   set(CMAKE_CXX_FLAGS "-DTARGET_OS_SIMULATOR=0 -DTARGET_OS_IPHONE=0")
-  
-  set(WITH_JEMALLOC_BUILD ON) 
+
+  set(WITH_JEMALLOC_BUILD ON)
 
 endif()

@@ -23,9 +23,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# The purpose of this workflow is to check that build procedures work correctly
-# in specific environment. Due to this reason there is no caching. It is done by
-# intention. All caching is in upstream projects.
 name: MacOS-arm64
 
 on:
@@ -56,7 +53,7 @@ env:
   DEPS_BUILD: deps-x86_64
   DEPS_TARGET: deps-arm64
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: "01"
+  CACHE_VER: "02"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
@@ -89,6 +86,7 @@ jobs:
       - name: Create deps folders and keys
         run: |
           mkdir ${{ github.workspace }}/${{ env.DEPS_TARGET }}
+          mkdir ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
@@ -125,6 +123,7 @@ jobs:
                                 gflags glog jemalloc
 
       - name: Checkout dwarfs [for build system architecture]
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v2
         with:
           repository: tamatebako/dwarfs
@@ -134,6 +133,7 @@ jobs:
           fetch-depth: 1
 
       - name: Configure dwarfs [for build system architecture]
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           mkdir ${{ env.DWARFS_BUILD }}/build
           cd ${{ env.DWARFS_BUILD }}/build
@@ -142,6 +142,7 @@ jobs:
                    -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/${{ env.DWARFS_BUILD }}/install
 
       - name: Build and install mkdwarfs [for build system architecture]
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd ${{ env.DWARFS_BUILD }}/build
           make install
@@ -155,12 +156,12 @@ jobs:
                    -DMKDWARFS=${{ github.workspace }}/${{ env.DWARFS_BUILD }}/install/bin/mkdwarfs     \
                    -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install                                \
                    -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}                                            \
-                   -DEPS=${{ env.DEPS_TARGET }}                                                        \
+                   -DDEPS=${{ env.DEPS_TARGET }}                                                        \
                    -DWITH_TESTS=ON
 
       - name: Build [for targets system architecture]
         run: |
-          cd build 
+          cd build
           cmake --build . --config ${{ env.BUILD_TYPE }}
 
       - name: Upload tests

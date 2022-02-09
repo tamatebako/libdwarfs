@@ -52,7 +52,7 @@ check_shared_libs() {
    for unexp in "${actual[@]}"; do
       echo "Unxpected reference to shared library $unexp"
    done
-   
+
    assertEquals "Unxpected references to shared libraries" 0 "${#actual[@]}"
 }
 

@@ -51,7 +51,7 @@ extern "C" {
 
     char* tebako_getcwd(char* buf, size_t size);
 #ifdef WITH_GETWD
-    char* tebako_getwd(char* buf); 
+    char* tebako_getwd(char* buf);
 #endif
     int   tebako_chdir(const char* path);
 

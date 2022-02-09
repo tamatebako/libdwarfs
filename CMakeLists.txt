@@ -70,7 +70,7 @@ if(MKDWARFS)
   message(STATUS "Using upstream mkdwarfs at ${MKDWARFS}")
 else()
   set(TEBAKO_BUILD_SCOPE MKD)
-  set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs) 
+  set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs)
   message(STATUS "Building mkdwarfs at ${MKDWARFS}")
 endif()
 
@@ -614,7 +614,7 @@ if(${WITH_TESTS})
                            ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}    pthread dl
     )
   endif()
-  
+
   #                         ${_LIBPTHREAD}
   #                         ${_LIBDL}
 
