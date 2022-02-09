@@ -62,7 +62,6 @@ if(TEBAKO_BUILD_TARGET)
   set(ENV{CXXFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
   set(ENV{LDFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
   set(CROSSFLAGS "--target=${TEBAKO_BUILD_TARGET}")
-else()
 endif()
 
 if(MKDWARFS)
@@ -334,7 +333,7 @@ if(${WITH_JEMALLOC_BUILD})
     URL_HASH SHA256=${JEMALLOC_HASH}
     DOWNLOAD_NO_PROGRESS true
     UPDATE_COMMAND ""
-    CONFIGURE_COMMAND ${JEMALLOC_SOURCE_DIR}/configure
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E CFLAGS=${CROSSFLAGS} CXXFLAGS=${CROSSFLAGS} ${JEMALLOC_SOURCE_DIR}/configure
                                --srcdir=${JEMALLOC_SOURCE_DIR}
                                --prefix=${DEPS}
                                --enable-static
