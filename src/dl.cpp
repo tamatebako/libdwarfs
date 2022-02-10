@@ -35,18 +35,60 @@
 #include <tebako-fd.h>
 
 using namespace std;
+namespace fs = std::filesystem;
 
 typedef map<string, string> tebako_dltable;
 
 class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
+private:
+	fs::path dl_tmpdir;
+
+    void create_temporary_directory(void) {
+		const uint64_t MAX_TRIES = 1024;
+	    auto tmp_dir = fs::temp_directory_path();
+        fs::path _dl_tmpdir;
+        uint64_t i = 1;
+        std::random_device dev;
+        std::mt19937 prng(dev());
+        std::uniform_int_distribution<uint64_t> rand(0);
+        while (true) {
+            std::stringstream ss;
+            ss << std::hex << rand(prng);
+            _dl_tmpdir = tmp_dir / ss.str();
+            if (fs::create_directory(_dl_tmpdir)) {
+				dl_tmpdir = _dl_tmpdir;
+                break;
+            }
+            if (i == MAX_TRIES) {
+                throw std::runtime_error("Could not create temporary directory");
+            }
+            i++;
+        }
+    }
+
+	void map_name(const char* path, std::string& mapped) {
+        const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH + 1] == '\0' ?
+                path + TEBAKO_MOUNT_POINT_LENGTH + 1 :
+                path + TEBAKO_MOUNT_POINT_LENGTH + 2;
+        fs::path _mapped = dl_tmpdir / adj;
+		fs::create_directories(_mapped.parent_path());
+	    mapped = _mapped;
+	}
+
 public:
-	sync_tebako_dltable(void) : folly::Synchronized<tebako_dltable*>(new tebako_dltable) { }
+	sync_tebako_dltable(void) : folly::Synchronized<tebako_dltable*>(new tebako_dltable) {
+		create_temporary_directory();
+	}
 	~sync_tebako_dltable(void) {
 		auto p_dltable = *wlock();
 		for (auto it = p_dltable->begin(); it != p_dltable->end(); ++it) {
 			::unlink(it->second.c_str());
 		}
 		p_dltable->clear();
+		if (!dl_tmpdir.empty()) {
+			std::error_code ec;
+			fs::remove_all(dl_tmpdir, ec);
+		}
 	}
 
 	string map2file(const char* path) {
@@ -57,8 +99,9 @@ public:
 			ret = p_dl->second;
 		}
 		else {
-			const char* nm = tmpnam(nullptr);
-			if (nm != NULL) {
+			try {
+			    std::string mapped;
+			    map_name(path, mapped);
 				int fh_in = tebako_open(2, path, O_RDONLY);
 				size_t f_size = 0;
 				if (fh_in < 0) {
@@ -71,7 +114,7 @@ public:
 						TEBAKO_SET_LAST_ERROR(EIO);
 					}
 					else {
-						int fh_out = ::open(nm, O_WRONLY | O_CREAT, st.st_mode);
+						int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT, st.st_mode);
 						if (fh_out == -1) {
 							TEBAKO_SET_LAST_ERROR(EIO);
 						}
@@ -88,19 +131,21 @@ public:
 								}
 							}
 						}
-
 						if (f_size == 0) {
-							ret = nm;
-							(*p_dltable)[path] = nm;
+							ret = mapped;
+							(*p_dltable)[path] = mapped;
 						}
 						else {
-							::unlink(nm);
+							::unlink(mapped.c_str());
 							TEBAKO_SET_LAST_ERROR(EIO);
 						}
 						::close(fh_out);
 					}
 					tebako_close(fh_in);
 				}
+			}
+			catch(...) {
+				TEBAKO_SET_LAST_ERROR(ENOMEM);
 			}
 		}
 		return ret;

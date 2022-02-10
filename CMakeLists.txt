@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.8)
+project(libdwarfs-wr VERSION 0.1.9)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -47,12 +47,39 @@ include(CheckSymbolExists)
 include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
 
+# Various locations for external projects
+set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
+set(DEPS_INCLUDE_DIR ${DEPS}/include)
+set(DEPS_LIB_DIR ${DEPS}/lib)
+set(DEPS_BIN_DIR ${DEPS}/bin)
+set(DEPS_SBIN_DIR ${DEPS}/sbin)
+
+if(TEBAKO_BUILD_TARGET)
+  if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11" AND CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+    message("STATUS Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
+    add_compile_options("--target=${TEBAKO_BUILD_TARGET}")
+    add_link_options("--target=${TEBAKO_BUILD_TARGET}")
+    set(CROSSFLAGS "--target=${TEBAKO_BUILD_TARGET}")
+    set(JEMALLOC_HOST_OPTION "--host=arm-apple-darwin")
+  else()
+    message(FATAL "MacOS [x86_64 --> arm64] is the only cross-compilation mode that is currently supported")
+  endif()
+endif()
+
+if(MKDWARFS)
+  set(TEBAKO_BUILD_SCOPE LIB)
+  message(STATUS "Using upstream mkdwarfs at ${MKDWARFS}")
+else()
+  set(TEBAKO_BUILD_SCOPE MKD)
+  set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs)
+  message(STATUS "Building mkdwarfs at ${MKDWARFS}")
+endif()
+
 # log level
 if (NOT TESTS_LOG_LEVEL)
   set(TESTS_LOG_LEVEL "warn")
   message(STATUS "Logging level not specified. Defaulted to warn")
 endif()
-
 
 # coverage
 if (WITH_COVERAGE)
@@ -93,19 +120,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS   OFF)
 set(DWARFS_CXX_FLAGS       "")
 
-# Various locations for external projects
-set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
-set(DEPS_INCLUDE_DIR ${DEPS}/include)
-set(DEPS_LIB_DIR ${DEPS}/lib)
-set(DEPS_BIN_DIR ${DEPS}/bin)
-set(DEPS_SBIN_DIR ${DEPS}/sbin)
-
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.6")
+def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.7")
 def_ext_prj_g(LIBARCHIVE "v3.5.1")
-
 
 if(${WITH_TESTS})
   def_ext_prj_g(INCBIN "348e36b")
@@ -213,24 +232,21 @@ set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
 set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
 set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
 
-# Static build for dwarfs core is broken again
-# It is mot an issue any way since we agreed to limited set of shared libraries
-# as described here https://github.com/tamatebako/tebako/issues/42
-# We do static linkage within additional tests anyway.
-# Practically it is possible to build it static, th eissue is related to
-# dwarfs build scripts
-# Newer version of dwarfs has new issues
-# https://github.com/tamatebako/libdwarfs/issues/43
-
 ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
   GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
   GIT_TAG ${DWARFS_TAG}
-  UPDATE_COMMAND ""
+#  UPDATE_COMMAND ""
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
-             -DCMAKE_CXX_STANDARD=14
-             -DCMAKE_CXX_STANDARD_REQUIRED=ON
-             -DCMAKE_CXX_EXTENSIONS=OFF
+             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
+             -DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}
+             -DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}
+             -DWITH_TESTS=OFF
+             -DTEBAKO_BUILD_SCOPE=${TEBAKO_BUILD_SCOPE}
+             -DTEBAKO_BUILD_TARGET=${TEBAKO_BUILD_TARGET}
+             -DDEPS=${DEPS}
+             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+             -DTARGET_HOMEBREW=${TARGET_HOMEBREW}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
@@ -247,6 +263,10 @@ ExternalProject_Add(${LIBARCHIVE_PRJ}
              -DENABLE_ICONV:BOOL=OFF
              -DENABLE_LIBXML2:BOOL=OFF
              -DENABLE_TEST:BOOL=OFF
+             -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+             -DCMAKE_C_FLAGS=${CROSSFLAGS}
+             -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+             -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
   SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBARCHIVE}
@@ -268,7 +288,11 @@ if(${WITH_GLOG_BUILD})
                -DCMAKE_CXX_STANDARD=17
                -DCMAKE_CXX_STANDARD_REQUIRED=ON
                -DCMAKE_CXX_EXTENSIONS=OFF
-    SOURCE_DIR ${GLOG_SOURCE_DIR}
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
+               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+      SOURCE_DIR ${GLOG_SOURCE_DIR}
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
   )
@@ -290,6 +314,10 @@ if(${WITH_GFLAGS_BUILD})
                -DBUILD_gflags_nothreads_LIB:BOOL=OFF
                -DINSTALL_SHARED_LIBS:BOOL=OFF
                -DCMAKE_BUILD_TYPE=Release
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
+               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
     SOURCE_DIR ${GFLAGS_SOURCE_DIR}
     BINARY_DIR ${GFLAGS_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGFLAGS}
@@ -301,6 +329,13 @@ endif(${WITH_GFLAGS_BUILD})
 
 if(${WITH_JEMALLOC_BUILD})
   set(__LIBJEMALLOC "${DEPS}/lib/libjemalloc.a")
+
+  if(CROSSFLAGS)
+    set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure --host=arm-apple-darwin)
+  else()
+    set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure)
+  endif()
+  
   ExternalProject_Add(${JEMALLOC_PRJ}
     PREFIX ${DEPS}
     URL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VER}/jemalloc-${JEMALLOC_VER}.tar.bz2
@@ -308,10 +343,14 @@ if(${WITH_JEMALLOC_BUILD})
     DOWNLOAD_NO_PROGRESS true
     UPDATE_COMMAND ""
     CONFIGURE_COMMAND ${JEMALLOC_SOURCE_DIR}/configure
-                               --srcdir=${JEMALLOC_SOURCE_DIR}
-                               --prefix=${DEPS}
-                               --enable-static
-                               --disable-shared
+                        ${JEMALLOC_HOST_OPTION}
+                        --srcdir=${JEMALLOC_SOURCE_DIR}
+                        --prefix=${DEPS}
+                        --enable-static
+                        --disable-shared
+                        --disable-documentation
+                        --datarootdir=${DEPS}/share.dummy
+                        --disable-syscall
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBJEMALLOC}
@@ -334,12 +373,11 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/tebako-config.h
 )
 
-
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${DEPS}/include
+                    ${DEPS_INCLUDE_DIR}
                     ${INCBIN_SOURCE_DIR}
                     ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift
                     ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include ${BREW_PREFIX}/include
@@ -378,6 +416,7 @@ if(${WITH_GFLAGS_BUILD})
 endif(${WITH_GFLAGS_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
+  add_dependencies(${DWARFS_PRJ} ${JEMALLOC_PRJ})
 endif(${WITH_JEMALLOC_BUILD})
 # ...................................................................
 # Tests
@@ -423,7 +462,7 @@ if(${WITH_TESTS})
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
-        COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -433,7 +472,7 @@ if(${WITH_TESTS})
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
         COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
-        COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -441,13 +480,13 @@ if(${WITH_TESTS})
   else(${WITH_LINK_TESTS})
     if (${USE_TEMP_FS})
       add_custom_target(PACKAGED_FILESYSTEM ALL
-        COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     else(${USE_TEMP_FS})
       add_custom_target(PACKAGED_FILESYSTEM ALL
-        COMMAND ${DEPS_BIN_DIR}/mkdwarfs -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -490,23 +529,17 @@ if(${WITH_TESTS})
   find_library(_LIBSSL "libssl.a" REQUIRED)
 
   find_library(_LIBACL "libacl.a")
-  find_library(_LIBPTHREAD "libpthread.a")
-  find_library(_LIBDL "libdl.a")
+  find_library(_LIBPTHREAD "pthread")
+  find_library(_LIBDL "dl")
   find_library(_LIBC "libc.a")
   find_library(_LIBM "libm.a")
   find_library(_LIBRT "librt.a")
   find_library(_LIBUNWIND "libunwind.a")
   find_library(_LIBIBERTY "libiberty.a")
 
- # ...................................................................
- # The very special test
- # We check that (1) it is possible to compile, build and run program with pure C startup
- #               (2) it is statically linked
-
-  if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin" AND NOT WITH_ASAN)
-    add_link_options(-static)
+  if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+    add_link_options(-static-libstdc++)
   endif()
-
 
   add_executable(wr-bin
     "include/tebako-pch.h"
@@ -564,7 +597,7 @@ if(${WITH_TESTS})
 #  libarchive
   add_dwarfs_library(_LIBARCHIVE ${LIBARCHIVE_PRJ} wr-bin)
 
-  target_link_libraries(wr-tests _LIBDWARFS  _LIBFSST   _LIBFOLLY _LIBT_METADATA
+  target_link_libraries(wr-tests _LIBDWARFS _LIBFSST   _LIBFOLLY _LIBT_METADATA
                                  _LIBT_LIGHT _LIBXXHASH _LIBZSTD  _LIBARCHIVE)
 
   if(${WITH_GLOG_BUILD})
@@ -591,10 +624,12 @@ if(${WITH_TESTS})
     )
   else()
     list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
-                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBPTHREAD}  ${_LIBDL}      ${_LIBM}
-                           ${_LIBRT}     gcc_eh          ${_LIBUNWIND}   ${_LIBLZMA}
+                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}    pthread dl
     )
   endif()
+
+  #                         ${_LIBPTHREAD}
+  #                         ${_LIBDL}
 
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
@@ -641,9 +676,10 @@ install(FILES
 
 # We do not attempt to install fuse driver since we may operate in the environment
 # where fuse is not vailable at all
+# Since v0.1.9 we are building mkdwarfs only and not dwarfsck and dwarfsextract
+#  ${DEPS_BIN_DIR}/dwarfsck
+#  ${DEPS_BIN_DIR}/dwarfsextract
 install(FILES
-        ${DEPS_BIN_DIR}/dwarfsck
-        ${DEPS_BIN_DIR}/dwarfsextract
         ${DEPS_BIN_DIR}/mkdwarfs
         DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

@@ -1,0 +1,176 @@
+# Copyright (c) 2022 [Ribose Inc](https://www.ribose.com).
+# All rights reserved.
+# This file is a part of tamatebako
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+name: MacOS-arm64
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.github/workflows/ubuntu.yml'
+      - '.github/workflows/macos.yml'
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.github/workflows/ubuntu.yml'
+      - '.github/workflows/macos.yml'
+  workflow_dispatch:
+
+env:
+  MAKEFLAGS: -j4
+  BUILD_TYPE: Release
+  CC: clang
+  CXX: clang++
+  TARGET: arm64
+# The folder for dwarfs and other dependenies
+  DEPS: deps
+  DWARFS_BUILD: dwarfs-x86_64
+  CACHE_VER: "06"
+# GitHub dependencies'
+  INCBIN_TAG: "348e36b"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.7"
+  LIBARCHIVE_TAG: "v3.2.1"
+  GLOG_TAG: "v0.5.0"
+  GFLAGS_TAG: "v2.2.2"
+# Tarball dependencies
+  JEMALLOC_VER: "5.2.1"
+  JEMALLOC_HASH: "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6"
+
+jobs:
+  build:
+    name: macos-11.0 [x86_64 --> arm64]
+    runs-on: macos-11.0
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Select XCode 12.4 & SDK 11.1 for macos-11.0
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '12.4'
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Create deps folders and keys
+        run: |
+          mkdir ${{ github.workspace }}/${{ env.DEPS }}
+          mkdir ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
+          echo "Keys" > key.txt
+          echo ${{ env.DWARFS_TAG }} >> key.txt
+          echo ${{ env.INCBIN_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_TAG }} >> key.txt
+          echo ${{ env.GLOG_TAG }} >> key.txt
+          echo ${{ env.GFLAGS_TAG }} >> key.txt
+          echo ${{ env.JEMALLOC_VER }} >> key.txt
+          echo 'LEVEL_UP<<EOF' >> $GITHUB_ENV
+          ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+          echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
+          brew --prefix >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - name: Process cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
+            ${{ env.LEVEL_UP }}/arm-homebrew
+          key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+
+      - name: Install packages [for build system architecture]
+        run: |
+          brew install \
+          bison flex gnu-sed bash libarchive double-conversion boost jemalloc fmt glog
+
+# Note: we cannot rely on dependencies here since resolved dependencies will point to x86_64 version
+# TODO: use brew deps -n to create full list of dependencies rather then hardcode
+# (libarchive depends on ibb2 lz4 xz zstd zlib)
+# (boost depends on icu4c)
+# (glog depends on gflags)
+      - name: Install packages for target host architecture
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          ci-scripts/arm-brew-setup.sh ${{ env.LEVEL_UP }}
+          ci-scripts/arm-brew-install.sh ${{ env.LEVEL_UP }} libb2 lz4 xz zstd zlib libarchive        \
+                                icu4c boost fmt openssl@1.1 libevent libsodium double-conversion      \
+                                gflags glog jemalloc
+
+      - name: Checkout dwarfs [for build system architecture]
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v2
+        with:
+          repository: tamatebako/dwarfs
+          path: ${{ env.DWARFS_BUILD }}
+          ref: ${{ env.DWARFS_TAG }}
+          submodules: true
+          fetch-depth: 1
+
+      - name: Configure dwarfs [for build system architecture]
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir ${{ env.DWARFS_BUILD }}/build
+          cd ${{ env.DWARFS_BUILD }}/build
+          cmake .. -DWITH_TESTS=OFF           \
+                   -DTEBAKO_BUILD_SCOPE=MKD   \
+                   -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/${{ env.DWARFS_BUILD }}/install
+
+      - name: Build and install mkdwarfs [for build system architecture]
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd ${{ env.DWARFS_BUILD }}/build
+          make install
+
+      - name: Configure [for targets system architecture]
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DTARGET_HOMEBREW=${{ env.LEVEL_UP }}/arm-homebrew                                  \
+                   -DTEBAKO_BUILD_TARGET=${{ env.TARGET }}-apple-macos11                               \
+                   -DMKDWARFS=${{ github.workspace }}/${{ env.DWARFS_BUILD }}/install/bin/mkdwarfs     \
+                   -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install                                \
+                   -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}                                            \
+                   -DWITH_TESTS=ON
+
+      - name: Build [for targets system architecture]
+        run: |
+          cd build
+          cmake --build . --config ${{ env.BUILD_TYPE }}
+
+      - name: Upload tests
+        uses: actions/upload-artifact@v2
+        with:
+          name: tests-${{ env.CC }}
+          retention-days: 1
+          path: |
+            ${{github.workspace}}/build/wr-bin
+            ${{github.workspace}}/build/wr-tests

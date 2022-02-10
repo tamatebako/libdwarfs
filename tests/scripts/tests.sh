@@ -30,20 +30,52 @@
 # PIPESTATUS with a simple $?
 set -o errexit -o pipefail -o noclobber -o nounset
 
+# Checks referenced shared libraries
+# $1 - an array of expected refs to shared libraries
+# $2 - an array of actual refs to shared libraries
+check_shared_libs() {
+   expected_size="${#expected[@]}"
+   actual_size="${#actual[@]}"
+   assertEquals "The number of references to shared libraries does not meet our expectations" "$expected_size" "$actual_size"
+
+   for exp in "${expected[@]}"; do
+      for i in "${!actual[@]}"; do
+         if [[ "${actual[i]}" =~ "$exp" ]]; then
+           unset 'actual[i]'
+         fi
+      done
+   done
+
+   for unexp in "${actual[@]}"; do
+      echo "Unxpected reference to shared library $unexp"
+   done
+
+   assertEquals "Unxpected references to shared libraries" 0 "${#actual[@]}"
+}
+
 # ......................................................................
-# Run ldd to check that wr-bin has been linked statically
-test_static_linkage() {
-   echo "==> Static linkage test"
+# Run ldd to check that wr-bin has been linked to expected set of shared libraries
+test_linkage() {
+   echo "==> References to shared libraries test"
    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
       if [[ "$ASAN" == "ON"* ]]; then
-        echo "... Address sanitizer os on ... skipping"
+         echo "... Address sanitizer os on ... skipping"
       else
-        result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
-        assertEquals 1 "${PIPESTATUS[0]}"
-        assertContains "$result" "not a dynamic executable"
+         expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
+         readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
+         assertEquals "readarray -t actual < <(ldd "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"        
+         check_shared_libs
       fi
+# Used to be:
+# Run ldd to check that wr-bin has been linked statically
+#        result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
+#        assertEquals 1 "${PIPESTATUS[0]}"
+#        assertContains "$result" "not a dynamic executable"
    elif [[ "$OSTYPE" == "darwin"* ]]; then
-      echo "... MacOS ... skipping"
+         expected=("libc++.1.dylib" "libSystem.B.dylib" "wr-bin")
+         readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin")
+         assertEquals "readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"        
+         check_shared_libs "${expected[@]}"  
    elif [[ "$OSTYPE" == "cygwin" ]]; then
       echo "... cygwin ... skipping"
    elif [[ "$OSTYPE" == "msys" ]]; then
@@ -62,20 +94,28 @@ test_static_linkage() {
 # Check that tmp directory is cleaned upon shutdown
 test_C_bindings_and_temp_dir() {
    echo "==> C bindings and temp dir handling combined test"
+
+# Skip if cross-compiling
+# (Based on the assumption that the only possible cross compile scenario is MacOs [x86_64 --> arm 64])
+   [ "${TARGET:-}" == "arm64" ] && startSkipping
+
    mkdir "$DIR_TESTS"/temp
-   assertEquals 0 "${PIPESTATUS[0]}"
+   assertEquals ""$DIR_TESTS"/temp failed" 0 "${PIPESTATUS[0]}"
 
    ls /tmp > "$DIR_TESTS"/temp/before
-   assertEquals 0 "${PIPESTATUS[0]}"
+   assertEquals "ls /tmp > "$DIR_TESTS"/temp/before failed" 0 "${PIPESTATUS[0]}"
 
    "$DIR_ROOT"/wr-bin
-   assertEquals 0 "${PIPESTATUS[0]}"
+   assertEquals ""$DIR_ROOT"/wr-bin failed" 0 "${PIPESTATUS[0]}"
 
    ls /tmp > "$DIR_TESTS"/temp/after
-   assertEquals 0 "${PIPESTATUS[0]}"
+   assertEquals "ls /tmp > "$DIR_TESTS"/temp/after failed" 0 "${PIPESTATUS[0]}"
 
    diff "$DIR_TESTS"/temp/before "$DIR_TESTS"/temp/after
-   assertEquals 0 "${PIPESTATUS[0]}"
+   assertEquals ""$DIR_TESTS"/temp/before "$DIR_TESTS"/temp/after differ" 0 "${PIPESTATUS[0]}"
+
+   rm -rf "$DIR_TESTS"/temp
+   assertEquals "rm -rf "$DIR_TESTS"/temp  failed" 0 "${PIPESTATUS[0]}"
 }
 
 # ......................................................................
@@ -83,39 +123,50 @@ test_C_bindings_and_temp_dir() {
 test_install_script() {
    echo "==> Install script test"
 
+# Skip if cross-compiling
+# (Based on the assumption that the only possible cross compile scenario is MacOs [x86_64 --> arm 64])
+   [ "${TARGET:-}" == "arm64" ] && startSkipping
+
    DIR_INSTALL="$DIR_ROOT"/install
    DIR_INS_B="$DIR_INSTALL"/bin
    DIR_INS_L="$DIR_INSTALL"/lib
    DIR_INS_I="$DIR_INSTALL"/include/tebako
 
    cmake --install  "$DIR_ROOT" --prefix "$DIR_INSTALL"
-   assertEquals 0 "${PIPESTATUS[0]}"
+   assertEquals "cmake --install failed" 0 "${PIPESTATUS[0]}"
 
-# We do not test fuse driver since we may operate in the environment
+# We do not test fuse driver because we may operate in the environment
 # where fuse is not vailable at all
 #   assertTrue "[ -f "$DIR_INS_B"/dwarfs2 ]"
 
-   assertTrue "[ -f "$DIR_INS_B"/dwarfsck ]"
-   assertTrue "[ -f "$DIR_INS_B"/dwarfsextract ]"
-   assertTrue "[ -f "$DIR_INS_B"/mkdwarfs ]"
-   assertTrue "[ -f "$DIR_INS_L"/libdwarfs-wr.a ]"
-   assertTrue "[ -f "$DIR_INS_L"/libdwarfs.a ]"
-   assertTrue "[ -f "$DIR_INS_L"/libfsst.a ]"
-   assertTrue "[ -f "$DIR_INS_L"/libfolly.a ]"
-   assertTrue "[ -f "$DIR_INS_L"/libmetadata_thrift.a ]"
-   assertTrue "[ -f "$DIR_INS_L"/libthrift_light.a ]"
-   assertTrue "[ -f "$DIR_INS_L"/libxxhash.a ]"
-   assertTrue "[ -f "$DIR_INS_L"/libzstd.a ]"
-   assertTrue "[ -f "$DIR_INS_L"/libarchive.a ]"
-   assertTrue "[ -f "$DIR_INS_I"/tebako-defines.h ]"
-   assertTrue "[ -f "$DIR_INS_I"/tebako-io.h ]"
+# We do not test dwarfsck and dwarfsextract since v0.1.9 because it employ optimized
+# configuration and those two utilities are not built
+#   assertTrue ""$DIR_INS_B"/dwarfsck was not installed" "[ -f "$DIR_INS_B"/dwarfsck ]"
+#   assertTrue ""$DIR_INS_B"/dwarfsextract was not installed" "[ -f "$DIR_INS_B"/dwarfsextract ]"
+
+   assertTrue ""$DIR_INS_B"/mkdwarfs was not installed" "[ -f "$DIR_INS_B"/mkdwarfs ]"
+   assertTrue ""$DIR_INS_L"/libdwarfs-wr.a was not installed" "[ -f "$DIR_INS_L"/libdwarfs-wr.a ]"
+   assertTrue ""$DIR_INS_L"/libdwarfs.a was not installed" "[ -f "$DIR_INS_L"/libdwarfs.a ]"
+   assertTrue ""$DIR_INS_L"/libfsst.a was not installed" "[ -f "$DIR_INS_L"/libfsst.a ]"
+   assertTrue ""$DIR_INS_L"/libfolly.a was not installed" "[ -f "$DIR_INS_L"/libfolly.a ]"
+   assertTrue ""$DIR_INS_L"/libmetadata_thrift.a was not installed" "[ -f "$DIR_INS_L"/libmetadata_thrift.a ]"
+   assertTrue ""$DIR_INS_L"/libthrift_light.a was not installed" "[ -f "$DIR_INS_L"/libthrift_light.a ]"
+   assertTrue ""$DIR_INS_L"/libxxhash.a was not installed" "[ -f "$DIR_INS_L"/libxxhash.a ]"
+   assertTrue ""$DIR_INS_L"/libzstd.a was not installed" "[ -f "$DIR_INS_L"/libzstd.a ]"
+   assertTrue ""$DIR_INS_L"/libarchive.a was not installed" "[ -f "$DIR_INS_L"/libarchive.a ]"
+   assertTrue ""$DIR_INS_I"/tebako-defines.h was not installed" "[ -f "$DIR_INS_I"/tebako-defines.h ]"
+   assertTrue ""$DIR_INS_I"/tebako-io.h was not installed" "[ -f "$DIR_INS_I"/tebako-io.h ]"
 }
 
 # ......................................................................
 # main
 DIR0="$( cd "$( dirname "$0" )" && pwd )"
-DIR_ROOT="$( cd "$DIR0"/../.. && pwd )"
-DIR_TESTS="$( cd "$DIR_ROOT"/tests && pwd )"
+DIR1="${DIR_ROOT:="$DIR0/../.."}"
+DIR_ROOT="$( cd "$DIR1" && pwd )"
+
+DIR_TESTS="$( cd "$DIR0/.." && pwd)"
+
+ASAN="${ASAN:=OFF}"
 
 echo "Running libdwarfs additional tests"
 . "$DIR_TESTS"/shunit2/shunit2

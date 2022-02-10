@@ -50,7 +50,9 @@ extern "C" {
     void drop_fs(void);
 
     char* tebako_getcwd(char* buf, size_t size);
+#ifdef WITH_GETWD
     char* tebako_getwd(char* buf);
+#endif
     int   tebako_chdir(const char* path);
 
 #if defined(__mode_t_defined) || defined(_MODE_T)

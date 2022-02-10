@@ -90,6 +90,7 @@ extern "C" char* tebako_getcwd(char* buf, size_t size) {
 *	LEGACY, DEPRECATED
 *	https://pubs.opengroup.org/onlinepubs/009695299/functions/getwd.html
 */
+#ifdef WITH_GETWD
 extern "C"	char* tebako_getwd(char* buf) {
 	char * ret = NULL;
 	if (buf == NULL) {
@@ -113,6 +114,7 @@ extern "C"	char* tebako_getwd(char* buf) {
 	}
 	return ret;
 }
+#endif
 
 /*
 * chdir()

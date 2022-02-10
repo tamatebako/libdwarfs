@@ -90,6 +90,7 @@ int main(int argc, char** argv)
 		free(r);
         if (!rOK) printf("failing\n");
 
+#ifdef WITH_GETWD
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -101,7 +102,7 @@ int main(int argc, char** argv)
 		printf("A call to 'getwd' returned %p (not NULL expected)\n", r);
 		rOK &= (r != NULL);
         if (!rOK) printf("failing\n");
-
+#endif
 		ret = mkdir(TEBAKIZE_PATH("directory-1"), S_IRWXU);
 		printf("A call to 'mkdir' returned %i (-1 expected)\n", ret);
 		rOK &= (ret == -1);
