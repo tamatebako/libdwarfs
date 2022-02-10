@@ -134,7 +134,7 @@ jobs:
           fetch-depth: 1
 
       - name: Run additional tests
-        run:  ${{ env.BREW_PREFIX }}/bash ${{ github.workspace }}/tests/scripts/tests.sh
+        run:  ${{ env.BREW_HOME }}/bin/bash ${{ github.workspace }}/tests/scripts/tests.sh
 
       - name: Upload tests
         if: ${{ matrix.os == 'macos-10.15' }}

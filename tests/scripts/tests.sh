@@ -34,9 +34,6 @@ set -o errexit -o pipefail -o noclobber -o nounset
 # $1 - an array of expected refs to shared libraries
 # $2 - an array of actual refs to shared libraries
 check_shared_libs() {
-   readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
-   assertEquals "readarray -t actual < <(ldd "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"
-   expected=("$@")
    expected_size="${#expected[@]}"
    actual_size="${#actual[@]}"
    assertEquals "The number of references to shared libraries does not meet our expectations" "$expected_size" "$actual_size"
@@ -65,7 +62,9 @@ test_linkage() {
          echo "... Address sanitizer os on ... skipping"
       else
          expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
-         check_shared_libs "${expected[@]}"
+         readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
+         assertEquals "readarray -t actual < <(ldd "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"        
+         check_shared_libs
       fi
 # Used to be:
 # Run ldd to check that wr-bin has been linked statically
@@ -74,6 +73,8 @@ test_linkage() {
 #        assertContains "$result" "not a dynamic executable"
    elif [[ "$OSTYPE" == "darwin"* ]]; then
          expected=("libc++.1.dylib" "libSystem.B.dylib")
+         readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin")
+         assertEquals "readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"        
          check_shared_libs "${expected[@]}"  
    elif [[ "$OSTYPE" == "cygwin" ]]; then
       echo "... cygwin ... skipping"
