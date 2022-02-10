@@ -94,6 +94,9 @@ jobs:
           echo 'LEVEL_UP<<EOF' >> $GITHUB_ENV
           ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
+          echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
+          brew --prefix" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
 
       - name: Process cache
         id: cache
