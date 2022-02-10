@@ -55,13 +55,14 @@ set(DEPS_BIN_DIR ${DEPS}/bin)
 set(DEPS_SBIN_DIR ${DEPS}/sbin)
 
 if(TEBAKO_BUILD_TARGET)
-  message("STATUS Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
-  add_compile_options("--target=${TEBAKO_BUILD_TARGET}")
-  add_link_options("--target=${TEBAKO_BUILD_TARGET}")
-#  set(ENV{CFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
-#  set(ENV{CXXFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
-#  set(ENV{LDFLAGS} "--target=${TEBAKO_BUILD_TARGET}")
-  set(CROSSFLAGS "--target=${TEBAKO_BUILD_TARGET}")
+  if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11" AND CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+    message("STATUS Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
+    add_compile_options("--target=${TEBAKO_BUILD_TARGET}")
+    add_link_options("--target=${TEBAKO_BUILD_TARGET}")
+    set(CROSSFLAGS "--target=${TEBAKO_BUILD_TARGET}")
+    set(JEMALLOC_HOST_OPTION "--host=arm-apple-darwin")
+else()
+  message(FATAL "MacOS [x86_64 --> arm64] is the only cross-compilation mode that is currently supported")
 endif()
 
 if(MKDWARFS)
@@ -327,20 +328,21 @@ endif(${WITH_GFLAGS_BUILD})
 
 if(${WITH_JEMALLOC_BUILD})
   set(__LIBJEMALLOC "${DEPS}/lib/libjemalloc.a")
-  
+
   if(CROSSFLAGS)
     set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure --host=arm-apple-darwin)
   else()
     set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure)
   endif()
-
+  
   ExternalProject_Add(${JEMALLOC_PRJ}
     PREFIX ${DEPS}
     URL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VER}/jemalloc-${JEMALLOC_VER}.tar.bz2
     URL_HASH SHA256=${JEMALLOC_HASH}
     DOWNLOAD_NO_PROGRESS true
     UPDATE_COMMAND ""
-    CONFIGURE_COMMAND ${JEMALLOC_CFG_CMD}
+    CONFIGURE_COMMAND ${JEMALLOC_SOURCE_DIR}/configure
+                        ${JEMALLOC_HOST_OPTION}
                         --srcdir=${JEMALLOC_SOURCE_DIR}
                         --prefix=${DEPS}
                         --enable-static

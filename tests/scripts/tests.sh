@@ -62,10 +62,10 @@ test_linkage() {
    echo "==> References to shared libraries test"
    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
       if [[ "$ASAN" == "ON"* ]]; then
-        echo "... Address sanitizer os on ... skipping"
+         echo "... Address sanitizer os on ... skipping"
       else
-        expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
-        check_shared_libs "${expected[@]}"
+         expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
+         check_shared_libs "${expected[@]}"
       fi
 # Used to be:
 # Run ldd to check that wr-bin has been linked statically
@@ -73,7 +73,8 @@ test_linkage() {
 #        assertEquals 1 "${PIPESTATUS[0]}"
 #        assertContains "$result" "not a dynamic executable"
    elif [[ "$OSTYPE" == "darwin"* ]]; then
-      echo "... MacOS ... skipping"
+         expected=("libc++.1.dylib" "libSystem.B.dylib")
+         check_shared_libs "${expected[@]}"  
    elif [[ "$OSTYPE" == "cygwin" ]]; then
       echo "... cygwin ... skipping"
    elif [[ "$OSTYPE" == "msys" ]]; then
