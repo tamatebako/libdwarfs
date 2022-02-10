@@ -44,7 +44,7 @@ on:
   workflow_dispatch:
 
 env:
-#  MAKEFLAGS: -j4
+  MAKEFLAGS: -j4
   BUILD_TYPE: Release
   CC: clang
   CXX: clang++
@@ -65,12 +65,10 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: macos-11.0 [x86_64 --> arm64]
+    runs-on: macos-11.0
     strategy:
       fail-fast: false
-      matrix:
-        os: [ macos-11.0 ]
     steps:
       - name: Select XCode 12.4 & SDK 11.1 for macos-11.0
         uses: maxim-lobanov/setup-xcode@v1
@@ -105,7 +103,7 @@ jobs:
             ${{ github.workspace }}/${{ env.DEPS }}
             ${{ env.LEVEL_UP }}/arm-homebrew
             ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
-          key: ${{ matrix.os }}-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
       - name: Install packages [for build system architecture]
         run: |

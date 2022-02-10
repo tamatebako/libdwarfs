@@ -327,17 +327,24 @@ endif(${WITH_GFLAGS_BUILD})
 
 if(${WITH_JEMALLOC_BUILD})
   set(__LIBJEMALLOC "${DEPS}/lib/libjemalloc.a")
+  
+  if(CROSSFLAGS)
+    set(JEMALLOC_CFG_CMD "${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS} CXXFLAGS=${CROSSFLAGS} ${JEMALLOC_SOURCE_DIR}/configure")
+  else()
+    set(JEMALLOC_CFG_CMD "${JEMALLOC_SOURCE_DIR}/configure")
+  endif()
+
   ExternalProject_Add(${JEMALLOC_PRJ}
     PREFIX ${DEPS}
     URL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VER}/jemalloc-${JEMALLOC_VER}.tar.bz2
     URL_HASH SHA256=${JEMALLOC_HASH}
     DOWNLOAD_NO_PROGRESS true
     UPDATE_COMMAND ""
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E CFLAGS=${CROSSFLAGS} CXXFLAGS=${CROSSFLAGS} ${JEMALLOC_SOURCE_DIR}/configure
-                               --srcdir=${JEMALLOC_SOURCE_DIR}
-                               --prefix=${DEPS}
-                               --enable-static
-                               --disable-shared
+    CONFIGURE_COMMAND ${JEMALLOC_CFG_CMD}
+                        --srcdir=${JEMALLOC_SOURCE_DIR}
+                        --prefix=${DEPS}
+                        --enable-static
+                        --disable-shared
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBJEMALLOC}
