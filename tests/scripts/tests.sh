@@ -72,7 +72,7 @@ test_linkage() {
 #        assertEquals 1 "${PIPESTATUS[0]}"
 #        assertContains "$result" "not a dynamic executable"
    elif [[ "$OSTYPE" == "darwin"* ]]; then
-         expected=("libc++.1.dylib" "libSystem.B.dylib")
+         expected=("libc++.1.dylib" "libSystem.B.dylib" "wr-bin")
          readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin")
          assertEquals "readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"        
          check_shared_libs "${expected[@]}"  
@@ -94,6 +94,10 @@ test_linkage() {
 # Check that tmp directory is cleaned upon shutdown
 test_C_bindings_and_temp_dir() {
    echo "==> C bindings and temp dir handling combined test"
+
+# Skip if cross-compiling
+# (Based on the assumption that the only possible cross compile scenario is MacOs [x86_64 --> arm 64])
+   [ "${TARGET:-}" == "arm64" ] && startSkipping
 
    mkdir "$DIR_TESTS"/temp
    assertEquals ""$DIR_TESTS"/temp failed" 0 "${PIPESTATUS[0]}"
@@ -118,6 +122,10 @@ test_C_bindings_and_temp_dir() {
 # Check that libdwarfs_wr, dwarfs utilities and all dependencies are installed as expected
 test_install_script() {
    echo "==> Install script test"
+
+# Skip if cross-compiling
+# (Based on the assumption that the only possible cross compile scenario is MacOs [x86_64 --> arm 64])
+   [ "${TARGET:-}" == "arm64" ] && startSkipping
 
    DIR_INSTALL="$DIR_ROOT"/install
    DIR_INS_B="$DIR_INSTALL"/bin
