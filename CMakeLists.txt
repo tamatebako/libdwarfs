@@ -329,7 +329,7 @@ if(${WITH_JEMALLOC_BUILD})
   set(__LIBJEMALLOC "${DEPS}/lib/libjemalloc.a")
   
   if(CROSSFLAGS)
-    set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure --host=arm-apple-macos11)
+    set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure --host=arm-apple-macos)
   else()
     set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure)
   endif()
