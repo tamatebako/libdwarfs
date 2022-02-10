@@ -329,7 +329,7 @@ if(${WITH_JEMALLOC_BUILD})
   set(__LIBJEMALLOC "${DEPS}/lib/libjemalloc.a")
   
   if(CROSSFLAGS)
-    set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure --host=arm-apple-macos)
+    set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure --host=arm-apple-darwin)
   else()
     set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure)
   endif()
@@ -410,6 +410,7 @@ if(${WITH_GFLAGS_BUILD})
 endif(${WITH_GFLAGS_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
+  add_dependencies(${DWARFS_PRJ} ${JEMALLOC_PRJ})
 endif(${WITH_JEMALLOC_BUILD})
 # ...................................................................
 # Tests

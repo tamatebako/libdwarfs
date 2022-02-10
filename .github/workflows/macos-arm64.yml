@@ -44,7 +44,7 @@ on:
   workflow_dispatch:
 
 env:
-#  MAKEFLAGS: -j4
+  MAKEFLAGS: -j4
   BUILD_TYPE: Release
   CC: clang
   CXX: clang++
@@ -52,7 +52,7 @@ env:
 # The folder for dwarfs and other dependenies
   DEPS: deps
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: "03"
+  CACHE_VER: "06"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
@@ -100,10 +100,13 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ${{ github.workspace }}/${{ env.DEPS }}
-            ${{ env.LEVEL_UP }}/arm-homebrew
             ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
+            ${{ env.LEVEL_UP }}/arm-homebrew
           key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+
+#            ${{ github.workspace }}/${{ env.DEPS }}
+
+
 
       - name: Install packages [for build system architecture]
         run: |
@@ -144,27 +147,27 @@ jobs:
           cd ${{ env.DWARFS_BUILD }}/build
           make install
 
-      - name: Configure [for targets system architecture]
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DTARGET_HOMEBREW=${{ env.LEVEL_UP }}/arm-homebrew                                  \
-                   -DTEBAKO_BUILD_TARGET=${{ env.TARGET }}-apple-macos11                               \
-                   -DMKDWARFS=${{ github.workspace }}/${{ env.DWARFS_BUILD }}/install/bin/mkdwarfs     \
-                   -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install                                \
-                   -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}                                            \
-                   -DWITH_TESTS=ON
+#      - name: Configure [for targets system architecture]
+#        run: |
+#          mkdir build
+#          cd build
+#          cmake .. -DTARGET_HOMEBREW=${{ env.LEVEL_UP }}/arm-homebrew                                  \
+#                   -DTEBAKO_BUILD_TARGET=${{ env.TARGET }}-apple-macos11                               \
+#                   -DMKDWARFS=${{ github.workspace }}/${{ env.DWARFS_BUILD }}/install/bin/mkdwarfs     \
+#                   -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install                                \
+#                   -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}                                            \
+#                   -DWITH_TESTS=ON
 
-      - name: Build [for targets system architecture]
-        run: |
-          cd build
-          cmake --build . --config ${{ env.BUILD_TYPE }}
+#      - name: Build [for targets system architecture]
+#        run: |
+#          cd build
+#          cmake --build . --config ${{ env.BUILD_TYPE }}
 
-      - name: Upload tests
-        uses: actions/upload-artifact@v2
-        with:
-          name: tests-${{ env.CC }}
-          retention-days: 1
-          path: |
-            ${{github.workspace}}/build/wr-bin
-            ${{github.workspace}}/build/wr-tests
+#      - name: Upload tests
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: tests-${{ env.CC }}
+#          retention-days: 1
+#          path: |
+#            ${{github.workspace}}/build/wr-bin
+#            ${{github.workspace}}/build/wr-tests
