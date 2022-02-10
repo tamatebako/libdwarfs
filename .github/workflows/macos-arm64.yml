@@ -95,7 +95,7 @@ jobs:
           ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
           echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
-          brew --prefix" >> $GITHUB_ENV
+          brew --prefix >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
 
       - name: Process cache
@@ -117,6 +117,10 @@ jobs:
           bison flex gnu-sed bash libarchive double-conversion boost jemalloc fmt glog
 
 # Note: we cannot rely on dependencies here since resolved dependencies will point to x86_64 version
+# TODO: use brew deps -n to create full list of dependencies rather then hardcode
+# (libarchive depends on ibb2 lz4 xz zstd zlib)
+# (boost depends on icu4c)
+# (glog depends on gflags)
       - name: Install packages for target host architecture
         if: steps.cache.outputs.cache-hit != 'true'
         run: |

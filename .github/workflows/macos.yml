@@ -101,7 +101,7 @@ jobs:
           echo ${{ env.GFLAGS_TAG }} >> key.txt
           echo ${{ env.JEMALLOC_VER }} >> key.txt
           echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
-          brew --prefix" >> $GITHUB_ENV
+          brew --prefix >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV          
 
       - name: Process cache
