@@ -107,10 +107,6 @@ jobs:
             ${{ env.LEVEL_UP }}/arm-homebrew
           key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
-#            ${{ github.workspace }}/${{ env.DEPS }}
-
-
-
       - name: Install packages [for build system architecture]
         run: |
           brew install \
