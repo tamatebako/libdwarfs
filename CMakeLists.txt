@@ -236,7 +236,7 @@ ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
   GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
   GIT_TAG ${DWARFS_TAG}
-#  UPDATE_COMMAND ""
+  UPDATE_COMMAND ""
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
              -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
              -DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}
@@ -416,7 +416,6 @@ if(${WITH_GFLAGS_BUILD})
 endif(${WITH_GFLAGS_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
-  add_dependencies(${DWARFS_PRJ} ${JEMALLOC_PRJ})
 endif(${WITH_JEMALLOC_BUILD})
 # ...................................................................
 # Tests
@@ -627,9 +626,6 @@ if(${WITH_TESTS})
                            ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}    pthread dl
     )
   endif()
-
-  #                         ${_LIBPTHREAD}
-  #                         ${_LIBDL}
 
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
