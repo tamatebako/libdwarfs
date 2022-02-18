@@ -57,17 +57,19 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 if (TEBAKO_BUILD_TARGET)
   if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
     if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11")
-      set(JEMALLOC_HOST_OPTION "--host=arm-apple-darwin --with-lg-vaddr=64")
+      set(JEMALLOC_HOST_OPTION --host=arm-apple-darwin --with-lg-vaddr=64)
+      set(CMAKE_OSX_ARCHITECTURES arm64)
     elseif(${TEBAKO_BUILD_TARGET} STREQUAL "x86_64-apple-macos11")
-      set(JEMALLOC_HOST_OPTION "--host=x86_64-apple-darwin --with-lg-vaddr=48")
+      set(JEMALLOC_HOST_OPTION --host=x86_64-apple-darwin --with-lg-vaddr=48)
+      set(CMAKE_OSX_ARCHITECTURES x86_64)
     else()
       message(FATAL_ERROR "Cannot cross-compile for target ${TEBAKO_BUILD_TARGET}")
     endif()
     message(STATUS "Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
-    add_compile_options("--target=${TEBAKO_BUILD_TARGET}")
-    add_link_options("--target=${TEBAKO_BUILD_TARGET}")
-    set(CROSSFLAGS "--target=${TEBAKO_BUILD_TARGET}")  
-    set(HOST_OPTION "--host=${TEBAKO_BUILD_TARGET}")
+    add_compile_options(--target=${TEBAKO_BUILD_TARGET})
+    add_link_options(--target=${TEBAKO_BUILD_TARGET})
+    set(CROSSFLAGS --target=${TEBAKO_BUILD_TARGET})  
+    set(HOST_OPTION --host=${TEBAKO_BUILD_TARGET})
   else()
     message(${CMAKE_HOST_SYSTEM_NAME})
     message(FATAL_ERROR "Cross-compilation is supported on MacOS only")
@@ -126,6 +128,7 @@ message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
 message(STATUS "Cross-compile options: ${CROSSFLAGS}")
 message(STATUS "Generic configure cross-compile options: ${HOST_OPTION}")
 message(STATUS "jemalloc configure cross-compile options: ${JEMALLOC_HOST_OPTION}")
+message(STATUS "CMAKE_OSX_ARCHITECTURES: ${CMAKE_OSX_ARCHITECTURES}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
@@ -323,6 +326,7 @@ if(${WITH_GLOG_BUILD})
                -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
                -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
                -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
     SOURCE_DIR ${GLOG_SOURCE_DIR}
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
@@ -349,10 +353,12 @@ if(${WITH_GFLAGS_BUILD})
                -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
                -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
                -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OCX_ARCHITECTURES}
     SOURCE_DIR ${GFLAGS_SOURCE_DIR}
     BINARY_DIR ${GFLAGS_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGFLAGS}
   )
+  add_dependencies(${GLOG_PRJ} ${GFLAGS_PRJ})
 endif(${WITH_GFLAGS_BUILD})
 
 # ...................................................................
@@ -367,13 +373,13 @@ if(${WITH_JEMALLOC_BUILD})
     URL_HASH SHA256=${JEMALLOC_HASH}
     DOWNLOAD_NO_PROGRESS true
     UPDATE_COMMAND ""
-    CONFIGURE_COMMAND ${JEMALLOC_SOURCE_DIR}/configure
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS}  CXXFLAGS=${CROSSFLAGS}
+                      ${JEMALLOC_SOURCE_DIR}/configure
                         ${JEMALLOC_HOST_OPTION}
                         --srcdir=${JEMALLOC_SOURCE_DIR}
                         --prefix=${DEPS}
                         --enable-static
                         --disable-shared
-                        --disable-documentation
                         --datarootdir=${DEPS}/share.dummy
                         --disable-syscall
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
