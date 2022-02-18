@@ -54,25 +54,24 @@ set(DEPS_LIB_DIR ${DEPS}/lib)
 set(DEPS_BIN_DIR ${DEPS}/bin)
 set(DEPS_SBIN_DIR ${DEPS}/sbin)
 
-if(TEBAKO_BUILD_TARGET)
-  if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11" AND CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
-    message("STATUS Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
+if (TEBAKO_BUILD_TARGET)
+  if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
+    if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11")
+      set(JEMALLOC_HOST_OPTION "--host=arm-apple-darwin --with-lg-vaddr=64")
+    elseif(${TEBAKO_BUILD_TARGET} STREQUAL "x86_64-apple-macos11")
+      set(JEMALLOC_HOST_OPTION "--host=x86_64-apple-darwin --with-lg-vaddr=48")
+    else()
+      message(FATAL_ERROR "Cannot cross-compile for target ${TEBAKO_BUILD_TARGET}")
+    endif()
+    message(STATUS "Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
     add_compile_options("--target=${TEBAKO_BUILD_TARGET}")
     add_link_options("--target=${TEBAKO_BUILD_TARGET}")
-    set(CROSSFLAGS "--target=${TEBAKO_BUILD_TARGET}")
-    set(JEMALLOC_HOST_OPTION "--host=arm-apple-darwin")
+    set(CROSSFLAGS "--target=${TEBAKO_BUILD_TARGET}")  
+    set(HOST_OPTION "--host=${TEBAKO_BUILD_TARGET}")
   else()
-    message(FATAL "MacOS [x86_64 --> arm64] is the only cross-compilation mode that is currently supported")
+    message(${CMAKE_HOST_SYSTEM_NAME})
+    message(FATAL_ERROR "Cross-compilation is supported on MacOS only")
   endif()
-endif()
-
-if(MKDWARFS)
-  set(TEBAKO_BUILD_SCOPE LIB)
-  message(STATUS "Using upstream mkdwarfs at ${MKDWARFS}")
-else()
-  set(TEBAKO_BUILD_SCOPE MKD)
-  set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs)
-  message(STATUS "Building mkdwarfs at ${MKDWARFS}")
 endif()
 
 # log level
@@ -106,10 +105,36 @@ if (WITH_COVERAGE OR WITH_ASAN)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Forced for code coverage or sanitizers" FORCE)
 endif()
 
+if (WITH_TESTS)
+  if(MKDWARFS)
+    set(TEBAKO_BUILD_SCOPE LIB)
+    message(STATUS "Using upstream mkdwarfs at ${MKDWARFS}")
+  else(MKDWARFS)
+    set(TEBAKO_BUILD_SCOPE MKD)
+    set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs)
+    message(STATUS "Building mkdwarfs at ${MKDWARFS}")
+  endif(MKDWARFS)
+endif(WITH_TESTS)
+
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "Build type was not specified. Defaulted to release")
   set(CMAKE_BUILD_TYPE Release)
 endif()
+
+message("Configuraion summary:")
+message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
+message(STATUS "Cross-compile options: ${CROSSFLAGS}")
+message(STATUS "Generic configure cross-compile options: ${HOST_OPTION}")
+message(STATUS "jemalloc configure cross-compile options: ${JEMALLOC_HOST_OPTION}")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  with ASAN: ${WITH_ASAN}")
+message(STATUS "  with coverage: ${WITH_COVERAGE}")
+message(STATUS "  with tests: ${WITH_TESTS}")
+if(WITH_TESTS)
+  message(STATUS "    using mkdwarfs at: ${MKDWARFS}")
+  message(STATUS "    with link tests: ${WITH_LINK_TESTS}")
+  message(STATUS "    using temporary native directory: ${USE_TEMP_FS}")
+endif(WITH_TESTS)
 
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_LINK_STATIC       ON)
@@ -124,7 +149,7 @@ set(DWARFS_CXX_FLAGS       "")
 # External projects
 
 def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.7")
-def_ext_prj_g(LIBARCHIVE "v3.5.1")
+def_ext_prj_t(LIBARCHIVE "3.5.2" "f0b19ff39c3c9a5898a219497ababbadab99d8178acc980155c7e1271089b5a0")
 
 if(${WITH_TESTS})
   def_ext_prj_g(INCBIN "348e36b")
@@ -132,7 +157,7 @@ endif(${WITH_TESTS})
 
 find_library(_LIBGLOG "libglog.a")
 if(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
-  message("glog static library was not found, building locally")
+  message(STATUS "glog static library was not found, building locally")
   set(WITH_GLOG_BUILD ON)
   def_ext_prj_g(GLOG "v0.5.0")
 else()
@@ -141,7 +166,7 @@ endif()
 
 find_library(_LIBGFLAGS "libgflags.a")
 if(${_LIBGFLAGS} STREQUAL "_LIBGFLAGS-NOTFOUND")
-  message("gflags static library was not found, building locally")
+  message(STATUS "gflags static library was not found, building locally")
   set(WITH_GFLAGS_BUILD ON)
   def_ext_prj_g(GFLAGS "v2.2.2")
 else()
@@ -149,26 +174,26 @@ else()
 endif()
 
 if(${WITH_JEMALLOC_BUILD})
-  message("Building jemalloc since homebrew version lacks support of weak symbols")
+  message(STATUS "jemalloc homebrew library is not good enough, building locally")
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
 else(${WITH_JEMALLOC_BUILD})
   find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
 endif(${WITH_JEMALLOC_BUILD})
 
 message("Collecting packages:")
-message("dwarfs     - " @${DWARFS_TAG}  " at " ${DWARFS_SOURCE_DIR})
-message("libarchive - " @${LIBARCHIVE_TAG} " at " ${LIBARCHIVE_SOURCE_DIR})
+message(STATUS "dwarfs     - " @${DWARFS_TAG}  " at " ${DWARFS_SOURCE_DIR})
+message(STATUS "libarchive - " v${LIBARCHIVE_VER} " at " ${LIBARCHIVE_SOURCE_DIR})
 if(${WITH_TESTS})
-  message("incbin     - " @${INCBIN_TAG} " at " ${INCBIN_SOURCE_DIR})
+  message(STATUS "incbin     - " @${INCBIN_TAG} " at " ${INCBIN_SOURCE_DIR})
 endif(${WITH_TESTS})
 if(${WITH_GLOG_BUILD})
-  message("glog       - " @${GLOG_TAG} " at " ${GLOG_SOURCE_DIR})
+  message(STATUS "glog       - " @${GLOG_TAG} " at " ${GLOG_SOURCE_DIR})
 endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
-  message("gflags     - " @${GFLAGS_TAG} " at " ${GFLAGS_SOURCE_DIR})
+  message(STATUS "gflags     - " @${GFLAGS_TAG} " at " ${GFLAGS_SOURCE_DIR})
 endif(${WITH_GFLAGS_BUILD})
 if(${WITH_JEMALLOC_BUILD})
-  message("jemalloc   - " v${JEMALLOC_VER} " at " ${JEMALLOC_SOURCE_DIR})
+  message(STATUS "jemalloc   - " v${JEMALLOC_VER} " at " ${JEMALLOC_SOURCE_DIR})
 endif(${WITH_JEMALLOC_BUILD})
 
 # ...................................................................
@@ -255,18 +280,24 @@ ExternalProject_Add(${DWARFS_PRJ}
 
 ExternalProject_Add(${LIBARCHIVE_PRJ}
   PREFIX "${DEPS}"
-  GIT_REPOSITORY "https://github.com/libarchive/libarchive.git"
-  GIT_TAG ${LIBARCHIVE_TAG}
+  URL http://www.libarchive.org/downloads/libarchive-${LIBARCHIVE_VER}.tar.xz
+  URL_HASH SHA256=${LIBARCHIVE_HASH}
+  DOWNLOAD_NO_PROGRESS true
   UPDATE_COMMAND ""
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
-             -DCMAKE_BUILD_TYPE=Release
-             -DENABLE_ICONV:BOOL=OFF
-             -DENABLE_LIBXML2:BOOL=OFF
-             -DENABLE_TEST:BOOL=OFF
-             -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-             -DCMAKE_C_FLAGS=${CROSSFLAGS}
-             -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
-             -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS} 
+                    ${LIBARCHIVE_SOURCE_DIR}/configure
+                      ${HOST_OPTION}
+                      --srcdir=${LIBARCHIVE_SOURCE_DIR}
+                      --prefix=${DEPS}
+                      --without-bz2lib 
+                      --without-libb2 
+                      --without-libiconv-prefix 
+                      --without-xml2 
+                      --without-expat 
+                      --without-cng
+                      --disable-bsdtar 
+                      --disable-bsdcat 
+                      --disable-bsdcpio                 
   SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBARCHIVE}
@@ -284,7 +315,7 @@ if(${WITH_GLOG_BUILD})
     UPDATE_COMMAND ""
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DBUILD_SHARED_LIBS:BOOL=OFF
-               -DWITH_GTEST:BOOL=OFF
+               -DWITH_GTEST=OFF
                -DCMAKE_CXX_STANDARD=17
                -DCMAKE_CXX_STANDARD_REQUIRED=ON
                -DCMAKE_CXX_EXTENSIONS=OFF
@@ -292,7 +323,7 @@ if(${WITH_GLOG_BUILD})
                -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
                -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
                -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
-      SOURCE_DIR ${GLOG_SOURCE_DIR}
+    SOURCE_DIR ${GLOG_SOURCE_DIR}
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
   )
@@ -330,12 +361,6 @@ endif(${WITH_GFLAGS_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   set(__LIBJEMALLOC "${DEPS}/lib/libjemalloc.a")
 
-  if(CROSSFLAGS)
-    set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure --host=arm-apple-darwin)
-  else()
-    set(JEMALLOC_CFG_CMD ${JEMALLOC_SOURCE_DIR}/configure)
-  endif()
-  
   ExternalProject_Add(${JEMALLOC_PRJ}
     PREFIX ${DEPS}
     URL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VER}/jemalloc-${JEMALLOC_VER}.tar.bz2
