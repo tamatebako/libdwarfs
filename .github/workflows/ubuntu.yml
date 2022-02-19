@@ -53,7 +53,7 @@ env:
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
-  LIBARCHIVE_VER: "v3.2.1"
+  LIBARCHIVE_VER: "3.5.2"
 
 jobs:
   build:

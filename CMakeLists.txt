@@ -58,9 +58,11 @@ if (TEBAKO_BUILD_TARGET)
   if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
     if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11")
       set(JEMALLOC_HOST_OPTION --host=arm-apple-darwin --with-lg-vaddr=64)
+      set(HOST_OPTION --host=arm-apple-darwin)
       set(CMAKE_OSX_ARCHITECTURES arm64)
     elseif(${TEBAKO_BUILD_TARGET} STREQUAL "x86_64-apple-macos11")
       set(JEMALLOC_HOST_OPTION --host=x86_64-apple-darwin --with-lg-vaddr=48)
+      set(HOST_OPTION --host=x86_64-apple-darwin)
       set(CMAKE_OSX_ARCHITECTURES x86_64)
     else()
       message(FATAL_ERROR "Cannot cross-compile for target ${TEBAKO_BUILD_TARGET}")
@@ -68,8 +70,7 @@ if (TEBAKO_BUILD_TARGET)
     message(STATUS "Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
     add_compile_options(--target=${TEBAKO_BUILD_TARGET})
     add_link_options(--target=${TEBAKO_BUILD_TARGET})
-    set(CROSSFLAGS --target=${TEBAKO_BUILD_TARGET})  
-    set(HOST_OPTION --host=${TEBAKO_BUILD_TARGET})
+    set(CROSSFLAGS --target=${TEBAKO_BUILD_TARGET})
   else()
     message(${CMAKE_HOST_SYSTEM_NAME})
     message(FATAL_ERROR "Cross-compilation is supported on MacOS only")
@@ -128,15 +129,16 @@ message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
 message(STATUS "Cross-compile options: ${CROSSFLAGS}")
 message(STATUS "Generic configure cross-compile options: ${HOST_OPTION}")
 message(STATUS "jemalloc configure cross-compile options: ${JEMALLOC_HOST_OPTION}")
-message(STATUS "CMAKE_OSX_ARCHITECTURES: ${CMAKE_OSX_ARCHITECTURES}")
+message(STATUS "CMake OSX architecture flag: ${CMAKE_OSX_ARCHITECTURES}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
 message(STATUS "  with tests: ${WITH_TESTS}")
 if(WITH_TESTS)
   message(STATUS "    using mkdwarfs at: ${MKDWARFS}")
+  message(STATUS "    test applications logging: ${TESTS_LOG_LEVEL}")
   message(STATUS "    with link tests: ${WITH_LINK_TESTS}")
-  message(STATUS "    using temporary native directory: ${USE_TEMP_FS}")
+  message(STATUS "    using temporary test directory: ${USE_TEMP_FS}")
 endif(WITH_TESTS)
 
 set(Boost_USE_STATIC_LIBS   ON)
@@ -287,20 +289,20 @@ ExternalProject_Add(${LIBARCHIVE_PRJ}
   URL_HASH SHA256=${LIBARCHIVE_HASH}
   DOWNLOAD_NO_PROGRESS true
   UPDATE_COMMAND ""
-  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS} 
+  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS}
                     ${LIBARCHIVE_SOURCE_DIR}/configure
                       ${HOST_OPTION}
                       --srcdir=${LIBARCHIVE_SOURCE_DIR}
                       --prefix=${DEPS}
-                      --without-bz2lib 
-                      --without-libb2 
-                      --without-libiconv-prefix 
-                      --without-xml2 
-                      --without-expat 
+                      --without-bz2lib
+                      --without-libb2
+                      --without-libiconv-prefix
+                      --without-xml2
+                      --without-expat
                       --without-cng
-                      --disable-bsdtar 
-                      --disable-bsdcat 
-                      --disable-bsdcpio                 
+                      --disable-bsdtar
+                      --disable-bsdcat
+                      --disable-bsdcpio
   SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBARCHIVE}
