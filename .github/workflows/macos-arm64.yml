@@ -52,7 +52,7 @@ env:
 # The folder for dwarfs and other dependenies
   DEPS: deps
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: "06"
+  CACHE_VER: "07"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
