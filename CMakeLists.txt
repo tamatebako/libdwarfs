@@ -57,7 +57,7 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 if (TEBAKO_BUILD_TARGET)
   if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
     if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11")
-      set(JEMALLOC_HOST_OPTION --host=arm-apple-darwin --with-lg-vaddr=64)
+      set(JEMALLOC_HOST_OPTION --host=arm-apple-darwin)
       set(HOST_OPTION --host=arm-apple-darwin)
       set(CMAKE_OSX_ARCHITECTURES arm64)
     elseif(${TEBAKO_BUILD_TARGET} STREQUAL "x86_64-apple-macos11")
@@ -356,7 +356,7 @@ if(${WITH_GFLAGS_BUILD})
                -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
                -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
                -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OCX_ARCHITECTURES}
+               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
     SOURCE_DIR ${GFLAGS_SOURCE_DIR}
     BINARY_DIR ${GFLAGS_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGFLAGS}

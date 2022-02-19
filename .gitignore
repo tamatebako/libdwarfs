@@ -38,6 +38,8 @@ build
 
 # External dependencies
 deps
+dwarfs-arm64
+dwarfs-x86_64
 
 # Generated files
 tests/tebako-fs.cpp
