@@ -57,7 +57,7 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 if (TEBAKO_BUILD_TARGET)
   if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
     if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11")
-      set(JEMALLOC_HOST_OPTION --host=arm-apple-darwin)
+      set(JEMALLOC_HOST_OPTION --host=arm-apple-darwin --with-lg-page=16)
       set(HOST_OPTION --host=arm-apple-darwin)
       set(CMAKE_OSX_ARCHITECTURES arm64)
     elseif(${TEBAKO_BUILD_TARGET} STREQUAL "x86_64-apple-macos11")
@@ -304,6 +304,7 @@ ExternalProject_Add(${LIBARCHIVE_PRJ}
                       --disable-bsdtar
                       --disable-bsdcat
                       --disable-bsdcpio
+                      --enable-shared=no
   SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBARCHIVE}
