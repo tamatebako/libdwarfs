@@ -290,21 +290,16 @@ ExternalProject_Add(${LIBARCHIVE_PRJ}
   URL_HASH SHA256=${LIBARCHIVE_HASH}
   DOWNLOAD_NO_PROGRESS true
   UPDATE_COMMAND ""
-  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS}
-                    ${LIBARCHIVE_SOURCE_DIR}/configure
-                      ${HOST_OPTION}
-                      --srcdir=${LIBARCHIVE_SOURCE_DIR}
-                      --prefix=${DEPS}
-                      --without-bz2lib
-                      --without-libb2
-                      --without-libiconv-prefix
-                      --without-xml2
-                      --without-expat
-                      --without-cng
-                      --disable-bsdtar
-                      --disable-bsdcat
-                      --disable-bsdcpio
-                      --enable-shared=no
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+             -DCMAKE_BUILD_TYPE=Release
+             -DENABLE_ICONV:BOOL=OFF
+             -DENABLE_LIBXML2:BOOL=OFF
+             -DENABLE_TEST:BOOL=OFF
+             -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+             -DCMAKE_C_FLAGS=${CROSSFLAGS}
+             -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+             -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+             -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
   SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBARCHIVE}
