@@ -52,7 +52,7 @@ env:
 # The folder for dwarfs and other dependenies
   DEPS: deps
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: "08"
+  CACHE_VER: "09"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
@@ -104,6 +104,7 @@ jobs:
         with:
           path: |
             ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
+            ${{ github.workspace }}/${{ env.DEPS }}
             ${{ env.LEVEL_UP }}/arm-homebrew
           key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
