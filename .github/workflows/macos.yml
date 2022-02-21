@@ -57,7 +57,7 @@ env:
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
-  LIBARCHIVE_TAG: "v3.2.1"
+  LIBARCHIVE_VER: "3.5.2"
   GLOG_TAG: "v0.5.0"
   GFLAGS_TAG: "v2.2.2"
 # Tarball dependencies
@@ -96,13 +96,13 @@ jobs:
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.LIBARCHIVE_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
           echo ${{ env.GLOG_TAG }} >> key.txt
           echo ${{ env.GFLAGS_TAG }} >> key.txt
           echo ${{ env.JEMALLOC_VER }} >> key.txt
           echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
           brew --prefix >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV          
+          echo 'EOF' >> $GITHUB_ENV
 
       - name: Process cache
         uses: actions/cache@v2

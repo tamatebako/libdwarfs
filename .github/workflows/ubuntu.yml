@@ -53,7 +53,7 @@ env:
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.7"
-  LIBARCHIVE_TAG: "v3.2.1"
+  LIBARCHIVE_VER: "3.5.2"
 
 jobs:
   build:
@@ -87,7 +87,7 @@ jobs:
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.LIBARCHIVE_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
 
       - name: Process cache
         uses: actions/cache@v2
