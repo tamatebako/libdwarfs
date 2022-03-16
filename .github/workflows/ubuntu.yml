@@ -34,6 +34,7 @@ on:
       - '.github/workflows/macos.yml'
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
+      - '.github/workflows/lint.yml'
   pull_request:
     branches: [ main ]
     paths-ignore:
@@ -43,6 +44,7 @@ on:
       - '.github/workflows/macos.yml'
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
+      - '.github/workflows/lint.yml'
   workflow_dispatch:
 
 env:
