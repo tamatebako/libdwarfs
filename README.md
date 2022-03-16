@@ -1,6 +1,6 @@
 ##  CI status 
 
-[![Ubuntu](https://github.com/tamatebako/libdwarfs/actions/workflows/ubuntu-build.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/ubuntu-build.yml)   [![MacOS](https://github.com/tamatebako/libdwarfs/actions/workflows/macos.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/macos.yml) [![MacOS-arm64](https://github.com/tamatebako/libdwarfs/actions/workflows/macos-arm64.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/macos-arm64.yml) 
+[![Ubuntu](https://github.com/tamatebako/libdwarfs/actions/workflows/ubuntu-build.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/ubuntu-build.yml)   [![MacOS](https://github.com/tamatebako/libdwarfs/actions/workflows/macos.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/macos.yml) [![MacOS-arm64](https://github.com/tamatebako/libdwarfs/actions/workflows/macos-arm64.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/macos-arm64.yml) [![lint](https://github.com/tamatebako/libdwarfs/actions/workflows/lint.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/lint.yml)
 
 ##  libdwarfs wrapper
 
