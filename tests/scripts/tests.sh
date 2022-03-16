@@ -40,7 +40,7 @@ check_shared_libs() {
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
-         if [[ "${actual[i]}" =~ "$exp" ]]; then
+         if [[ "${actual[i]}" == *"$exp"* ]]; then
            unset 'actual[i]'
          fi
       done
@@ -169,4 +169,5 @@ DIR_TESTS="$( cd "$DIR0/.." && pwd)"
 ASAN="${ASAN:=OFF}"
 
 echo "Running libdwarfs additional tests"
+# shellcheck source=/dev/null
 . "$DIR_TESTS"/shunit2/shunit2
