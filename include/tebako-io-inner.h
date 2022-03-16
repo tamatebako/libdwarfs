@@ -30,15 +30,19 @@
 #pragma once
 
 const int DWARFS_IO_CONTINUE = 0;
+// DWARFS_IO_ERROR is a real error
 const int DWARFS_IO_ERROR = -1;
+// DWARFS_INVALID_FD is a suggestion that given file descriptor point to *real* fs
 const int DWARFS_INVALID_FD = -2;
+// DWARFS_S_LINK_OUTSIDE indicates a soft link from memfs towards an entity outside memfs
+const int DWARFS_S_LINK_OUTSIDE = -3;
 
 union tebako_dirent;
 
-int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept;
-int dwarfs_stat(const char* path, struct stat* buf) noexcept ;
+int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept;
 int dwarfs_lstat(const char* path, struct stat* buf) noexcept;
 int dwarfs_readlink(const char* path, std::string& lnk) noexcept;
+int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept ;
 
 int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept;
 int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept;

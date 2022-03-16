@@ -37,7 +37,7 @@ on:
       - '.github/workflows/ubuntu.yml'
       - '.github/workflows/macos-arm64.yml'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'

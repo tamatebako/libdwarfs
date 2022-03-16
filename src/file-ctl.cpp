@@ -33,35 +33,22 @@
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
- /*
- * tebaco_access
- * tebaco_stat
- *
- * https://pubs.opengroup.org/onlinepubs/9699919799/
- */
-
 int tebako_access(const char* path, int amode) {
 	int ret = -1;
 	if (path == NULL) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
 	}
 	else {
+		std::string lnk;
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, path);
-		ret = p_path ? dwarfs_access(p_path, amode, getuid(), getgid()) : access(path, amode);
-	}
-	return ret;
-}
-
-int tebako_stat(const char* path, struct stat* buf) {
-	int ret = -1;
-	if (path == NULL) {
-		TEBAKO_SET_LAST_ERROR(ENOENT);
-	}
-	else {
-		tebako_path_t t_path;
-		const char* p_path = to_tebako_path(t_path, path);
-		ret = p_path ? dwarfs_stat(p_path, buf) : stat(path, buf);
+		if (p_path) {
+			ret = dwarfs_access(p_path, amode, getuid(), getgid(), lnk);
+			if (ret == DWARFS_S_LINK_OUTSIDE) ret = access(lnk.c_str(), amode);
+		}
+		else {
+			ret = access(path, amode);
+		}
 	}
 	return ret;
 }
@@ -97,6 +84,26 @@ ssize_t tebako_readlink(const char* path, char* buf, size_t bufsize) {
 		}
 		else {
 			ret = ::readlink(path, buf, bufsize);
+		}
+	}
+	return ret;
+}
+
+int tebako_stat(const char* path, struct stat* buf) {
+	int ret = -1;
+	if (path == NULL) {
+		TEBAKO_SET_LAST_ERROR(ENOENT);
+	}
+	else {
+		std::string lnk;
+		tebako_path_t t_path;
+		const char* p_path = to_tebako_path(t_path, path);
+		if (p_path) {
+			ret = dwarfs_stat(p_path, buf, lnk);
+			if (ret == DWARFS_S_LINK_OUTSIDE) ret = stat(lnk.c_str(), buf);
+		}
+		else {
+			ret = stat(path, buf);
 		}
 	}
 	return ret;

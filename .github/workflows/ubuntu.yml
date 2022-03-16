@@ -35,7 +35,7 @@ on:
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'

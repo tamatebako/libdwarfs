@@ -53,7 +53,7 @@ class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
 public:
 	sync_tebako_fdtable(void) : folly::Synchronized<tebako_fdtable*>(new tebako_fdtable) { }
 
-	int open(const char* path, int flags)  noexcept;
+	int open(const char* path, int flags, std::string& lnk)  noexcept;
 	int openat(int vfd, const char* path, int flags) noexcept;
 	int close(int vfd) noexcept;
 	void close_all(void) noexcept;
