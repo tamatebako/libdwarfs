@@ -40,7 +40,7 @@ check_shared_libs() {
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
-         if [[ "${actual[i]}" =~ $exp ]]; then
+         if [[ "${actual[i]}" =~ "$exp" ]]; then
            unset 'actual[i]'
          fi
       done
@@ -63,7 +63,7 @@ test_linkage() {
       else
          expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
          readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
-         assertEquals "readarray -t actual < <(ldd "$DIR_ROOT"/wr-bin) failed" 0 "${PIPESTATUS[0]}"
+         assertEquals "readarray -t actual < <(ldd $DIR_ROOT/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
       fi
 # Used to be:
@@ -74,7 +74,7 @@ test_linkage() {
    elif [[ "$OSTYPE" == "darwin"* ]]; then
          expected=("libc++.1.dylib" "libSystem.B.dylib" "wr-bin")
          readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin")
-         assertEquals "readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"
+         assertEquals "readarray -t actual < <(otool -L $DIR_ROOT/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs "${expected[@]}"
    elif [[ "$OSTYPE" == "cygwin" ]]; then
       echo "... cygwin ... skipping"
@@ -100,22 +100,22 @@ test_C_bindings_and_temp_dir() {
    [ "${TARGET:-}" == "arm64" ] && startSkipping
 
    mkdir "$DIR_TESTS"/temp
-   assertEquals ""$DIR_TESTS"/temp failed" 0 "${PIPESTATUS[0]}"
+   assertEquals "$DIR_TESTS/temp failed" 0 "${PIPESTATUS[0]}"
 
    ls /tmp > "$DIR_TESTS"/temp/before
-   assertEquals "ls /tmp > "$DIR_TESTS"/temp/before failed" 0 "${PIPESTATUS[0]}"
+   assertEquals "ls /tmp > $DIR_TESTS/temp/before failed" 0 "${PIPESTATUS[0]}"
 
    "$DIR_ROOT"/wr-bin
-   assertEquals ""$DIR_ROOT"/wr-bin failed" 0 "${PIPESTATUS[0]}"
+   assertEquals "$DIR_ROOT/wr-bin failed" 0 "${PIPESTATUS[0]}"
 
    ls /tmp > "$DIR_TESTS"/temp/after
-   assertEquals "ls /tmp > "$DIR_TESTS"/temp/after failed" 0 "${PIPESTATUS[0]}"
+   assertEquals "ls /tmp > $DIR_TESTS/temp/after failed" 0 "${PIPESTATUS[0]}"
 
    diff "$DIR_TESTS"/temp/before "$DIR_TESTS"/temp/after
-   assertEquals ""$DIR_TESTS"/temp/before "$DIR_TESTS"/temp/after differ" 0 "${PIPESTATUS[0]}"
+   assertEquals "$DIR_TESTS/temp/before $DIR_TESTS/temp/after differ" 0 "${PIPESTATUS[0]}"
 
    rm -rf "$DIR_TESTS"/temp
-   assertEquals "rm -rf "$DIR_TESTS"/temp  failed" 0 "${PIPESTATUS[0]}"
+   assertEquals "rm -rf $DIR_TESTS/temp  failed" 0 "${PIPESTATUS[0]}"
 }
 
 # ......................................................................
@@ -144,18 +144,18 @@ test_install_script() {
 #   assertTrue ""$DIR_INS_B"/dwarfsck was not installed" "[ -f "$DIR_INS_B"/dwarfsck ]"
 #   assertTrue ""$DIR_INS_B"/dwarfsextract was not installed" "[ -f "$DIR_INS_B"/dwarfsextract ]"
 
-   assertTrue ""$DIR_INS_B"/mkdwarfs was not installed" "[ -f "$DIR_INS_B"/mkdwarfs ]"
-   assertTrue ""$DIR_INS_L"/libdwarfs-wr.a was not installed" "[ -f "$DIR_INS_L"/libdwarfs-wr.a ]"
-   assertTrue ""$DIR_INS_L"/libdwarfs.a was not installed" "[ -f "$DIR_INS_L"/libdwarfs.a ]"
-   assertTrue ""$DIR_INS_L"/libfsst.a was not installed" "[ -f "$DIR_INS_L"/libfsst.a ]"
-   assertTrue ""$DIR_INS_L"/libfolly.a was not installed" "[ -f "$DIR_INS_L"/libfolly.a ]"
-   assertTrue ""$DIR_INS_L"/libmetadata_thrift.a was not installed" "[ -f "$DIR_INS_L"/libmetadata_thrift.a ]"
-   assertTrue ""$DIR_INS_L"/libthrift_light.a was not installed" "[ -f "$DIR_INS_L"/libthrift_light.a ]"
-   assertTrue ""$DIR_INS_L"/libxxhash.a was not installed" "[ -f "$DIR_INS_L"/libxxhash.a ]"
-   assertTrue ""$DIR_INS_L"/libzstd.a was not installed" "[ -f "$DIR_INS_L"/libzstd.a ]"
-   assertTrue ""$DIR_INS_L"/libarchive.a was not installed" "[ -f "$DIR_INS_L"/libarchive.a ]"
-   assertTrue ""$DIR_INS_I"/tebako-defines.h was not installed" "[ -f "$DIR_INS_I"/tebako-defines.h ]"
-   assertTrue ""$DIR_INS_I"/tebako-io.h was not installed" "[ -f "$DIR_INS_I"/tebako-io.h ]"
+   assertTrue "$DIR_INS_B/mkdwarfs was not installed" "[ -f $DIR_INS_B/mkdwarfs ]"
+   assertTrue "$DIR_INS_L/libdwarfs-wr.a was not installed" "[ -f $DIR_INS_L/libdwarfs-wr.a ]"
+   assertTrue "$DIR_INS_L/libdwarfs.a was not installed" "[ -f $DIR_INS_L/libdwarfs.a ]"
+   assertTrue "$DIR_INS_L/libfsst.a was not installed" "[ -f $DIR_INS_L/libfsst.a ]"
+   assertTrue "$DIR_INS_L/libfolly.a was not installed" "[ -f $DIR_INS_L/libfolly.a ]"
+   assertTrue "$DIR_INS_L/libmetadata_thrift.a was not installed" "[ -f $DIR_INS_L/libmetadata_thrift.a ]"
+   assertTrue "$DIR_INS_L/libthrift_light.a was not installed" "[ -f $DIR_INS_L/libthrift_light.a ]"
+   assertTrue "$DIR_INS_L/libxxhash.a was not installed" "[ -f $DIR_INS_L/libxxhash.a ]"
+   assertTrue "$DIR_INS_L/libzstd.a was not installed" "[ -f $DIR_INS_L/libzstd.a ]"
+   assertTrue "$DIR_INS_L/libarchive.a was not installed" "[ -f $DIR_INS_L/libarchive.a ]"
+   assertTrue "$DIR_INS_I/tebako-defines.h was not installed" "[ -f $DIR_INS_I/tebako-defines.h ]"
+   assertTrue "$DIR_INS_I/tebako-io.h was not installed" "[ -f $DIR_INS_I/tebako-io.h ]"
 }
 
 # ......................................................................
