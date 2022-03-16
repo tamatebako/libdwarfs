@@ -504,7 +504,7 @@ if(${WITH_TESTS})
     else(${USE_TEMP_FS})
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-        COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.*
+        COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     endif(${USE_TEMP_FS})

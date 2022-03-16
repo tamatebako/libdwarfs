@@ -150,6 +150,8 @@ jobs:
     needs: build
     name: Run MacOS-10.15 binaries on MacOS-11.0
     runs-on: macos-11.0
+    env:
+      TEBAKO_CROSS_TEST: ON
     strategy:
       fail-fast: false
     steps:
