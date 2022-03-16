@@ -40,7 +40,7 @@ check_shared_libs() {
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
-         if [[ "${actual[i]}" =~ "$exp" ]]; then
+         if [[ "${actual[i]}" =~ $exp ]]; then
            unset 'actual[i]'
          fi
       done
@@ -63,7 +63,7 @@ test_linkage() {
       else
          expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
          readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
-         assertEquals "readarray -t actual < <(ldd "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"
+         assertEquals "readarray -t actual < <(ldd "$DIR_ROOT"/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
       fi
 # Used to be:
