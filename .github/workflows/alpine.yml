@@ -88,7 +88,7 @@ jobs:
             binutils-dev libarchive-dev libevent-dev acl-dev       \
             double-conversion-dev lz4-dev openssl-dev xz-dev       \
             libunwind-dev libdwarf-dev glog-dev elfutils-dev       \
-            clang libevent-static openssl-libs-static
+            clang libevent-static openssl-libs-static lz4-static   \
 
       - name: Checkout
         uses: actions/checkout@v3
