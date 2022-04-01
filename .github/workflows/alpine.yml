@@ -1,0 +1,148 @@
+# Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+# All rights reserved.
+# This file is a part of tamatebako
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+name: Alpine
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.github/workflows/ubuntu.yml'
+      - '.github/workflows/macos.yml'
+      - '.github/workflows/macos-arm64.yml'
+      - 'cmake/def_darwin_env.cmake'
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.github/workflows/ubuntu.yml'
+      - '.github/workflows/macos.yml'
+      - '.github/workflows/macos-arm64.yml'
+      - 'cmake/def_darwin_env.cmake'
+  workflow_dispatch:
+
+env:
+  MAKEFLAGS: -j4
+# The folder for dwarfs and other dependenies
+  DEPS: deps
+  CACHE_VER: "07"
+# GitHub dependencies'
+  INCBIN_TAG: "348e36b"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.8"
+  LIBARCHIVE_VER: "3.5.2"
+
+jobs:
+  build:
+    name: alpine-latest [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - CC: gcc
+            CXX: g++
+            ASAN: 'OFF'
+            LOG_LEVEL: 'trace'
+          - CC: clang
+            CXX: clang++
+            ASAN: 'OFF'
+            LOG_LEVEL: 'warn'
+          - CC: clang
+            CXX: clang++
+            ASAN: 'ON'
+            LOG_LEVEL: 'warn'
+    env: ${{ matrix.env }}
+    steps:
+      - name: Install packages
+        run: |
+          apk --no-cache --upgrade add build-base cmake git bash   \
+            autoconf boost-static boost-dev fmt-dev flex-dev bison \
+            binutils-dev libarchive-dev libevent-dev acl-dev       \
+            double-conversion-dev lz4-dev openssl-dev xz-dev       \
+            libunwind-dev libdwarf-dev glog-dev elfutils-dev       \
+            clang 
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create deps folder
+        run: |
+          mkdir ${{github.workspace}}/${{env.DEPS}}
+          echo "Keys" > key.txt
+          echo ${{ env.DWARFS_TAG }} >> key.txt
+          echo ${{ env.INCBIN_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
+
+      - name: Process cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/${{env.DEPS}}
+          key:  alpine-latest-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+
+#      - name: Install libjemalloc 5 (bionic)
+#        if: ${{ matrix.os == 'ubuntu-18.04' }}
+#        run: |
+#          sudo apt-get remove libjemalloc-dev
+#          wget -q https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
+#          tar -xf jemalloc-5.2.1.tar.bz2
+#          cd jemalloc-5.2.1
+#          ./configure --prefix='/usr'
+#          make
+#          sudo make install
+
+#      - name: Configure
+#        run: cmake -B ${{ github.workspace }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+
+#      - name: Build
+#        run: cmake --build ${{github.workspace}}
+
+#      - name: Run unit tests
+#        run: make test
+
+#      - name: Checkout shell test framework
+#        uses: actions/checkout@v2
+#        with:
+#          repository: kward/shunit2
+#          path: ${{github.workspace}}/tests/shunit2
+#          fetch-depth: 1
+
+#      - name: Run additional tests
+#        run:  ${{github.workspace}}/tests/scripts/tests.sh
+
+#      - name: Upload tests
+#        if: ${{ matrix.os == 'ubuntu-18.04' && env.ASAN == 'OFF' }}
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: tests-${{ matrix.env.CC }}
+#          retention-days: 1
+#          path: |
+#            ${{github.workspace}}/wr-bin
+#            ${{github.workspace}}/wr-tests

@@ -34,6 +34,7 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/alpine.yml'
       - '.github/workflows/ubuntu.yml'
       - '.github/workflows/macos-arm64.yml'
   pull_request:
@@ -42,6 +43,7 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/alpine.yml'
       - '.github/workflows/ubuntu.yml'
       - '.github/workflows/macos-arm64.yml'
   workflow_dispatch:
@@ -56,7 +58,7 @@ env:
   CACHE_VER: "07"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "libdwarfs_wr_v0.1.7"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.8"
   LIBARCHIVE_VER: "3.5.2"
   GLOG_TAG: "v0.5.0"
   GFLAGS_TAG: "v2.2.2"

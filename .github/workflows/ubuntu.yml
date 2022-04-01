@@ -31,6 +31,7 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/alpine.yml'
       - '.github/workflows/macos.yml'
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
@@ -40,6 +41,7 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/alpine.yml'
       - '.github/workflows/macos.yml'
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
@@ -52,7 +54,7 @@ env:
   CACHE_VER: "07"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "libdwarfs_wr_v0.1.7"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.8"
   LIBARCHIVE_VER: "3.5.2"
 
 jobs:
@@ -94,7 +96,6 @@ jobs:
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
           key:  ${{ matrix.os }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
-
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1804-README.md
