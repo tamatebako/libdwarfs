@@ -92,6 +92,12 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Patch system includes
+        if: ${{ matrix.env.CC == 'clang' }}
+        run: tools/ci-scripts/patch-system-includes.sh
 
       - name: Create deps folder
         run: |
