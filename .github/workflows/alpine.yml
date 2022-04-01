@@ -83,7 +83,7 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          apk --no-cache --upgrade add build-base cmake git bash   \
+          apk --no-cache --upgrade add build-base cmake git bash \
             autoconf boost-static boost-dev fmt-dev flex-dev bison \
             binutils-dev libarchive-dev libevent-dev acl-dev       \
             double-conversion-dev lz4-dev openssl-dev zlib-dev     \
