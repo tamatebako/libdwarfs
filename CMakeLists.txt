@@ -655,14 +655,13 @@ if(${WITH_TESTS})
   if(OSTYPE_RES EQUAL 0)
     message(STATUS "OSTYPE: '${OSTYPE_TXT}'")
   else(OSTYPE_RES EQUAL 0)
-    message(FATAL "Failed to detect OSTYPE: ${OSTYPE_TXT}")
+    message(FATAL_ERROR "Failed to detect OSTYPE: ${OSTYPE_TXT}")
   endif(OSTYPE_RES EQUAL 0)
 
-  string(REGEX MATCH "^linux-musl.*" IS_CLANG_AND_MUSL "${OSTYPE_TXT}")
-  if(IS_CLANG_AND_MUSL)
-    message(STATUS "Clang and musl")
+  if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
+    message(STATUS "Adding __musl__ compile definition")
     add_compile_definitions(__musl__)
-  endif(IS_CLANG_AND_MUSL)
+  endif()
 
   add_executable(wr-bin
     "include/tebako-pch.h"
