@@ -187,6 +187,15 @@ else()
   set(WITH_FMT_BUILD OFF)
 endif()
 
+find_library(_LIBDC "libdouble-conversion.a")
+if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
+  message(STATUS "double-conversion static library was not found, building locally")
+  set(WITH_DC_BUILD ON)
+  def_ext_prj_g(DC "v3.2.0")
+else()
+  set(WITH_DC_BUILD OFF)
+endif()
+
 if(${WITH_JEMALLOC_BUILD})
   message(STATUS "jemalloc homebrew library is not good enough, building locally")
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
@@ -209,6 +218,9 @@ endif(${WITH_GFLAGS_BUILD})
 if(${WITH_FMT_BUILD})
   message(STATUS "fmt        - " @${FMT_TAG} " at " ${FMT_SOURCE_DIR})
 endif(${WITH_FMT_BUILD})
+if(${WITH_DC_BUILD})
+  message(STATUS "double-conversion - " @${DC_TAG} " at " ${DC_SOURCE_DIR})
+endif(${WITH_DC_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   message(STATUS "jemalloc   - " v${JEMALLOC_VER} " at " ${JEMALLOC_SOURCE_DIR})
 endif(${WITH_JEMALLOC_BUILD})
@@ -397,6 +409,29 @@ if(${WITH_FMT_BUILD})
 endif(${WITH_FMT_BUILD})
 
 # ...................................................................
+# double-conversion
+
+if(${WITH_DC_BUILD})
+  set(__LIBDC "${DEPS}/lib/libdouble-conversion.a")
+  ExternalProject_Add(${DC_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/google/double-conversion.git"
+    GIT_TAG ${DC_TAG}
+    UPDATE_COMMAND ""
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+               -DCMAKE_BUILD_TYPE=Release
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
+               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+    SOURCE_DIR ${DC_SOURCE_DIR}
+    BINARY_DIR ${DC_BINARY_DIR}
+    BUILD_BYPRODUCTS ${__LIBDC}
+  )
+endif(${WITH_DC_BUILD})
+
+# ...................................................................
 # jemalloc
 
 if(${WITH_JEMALLOC_BUILD})
@@ -483,6 +518,9 @@ endif(${WITH_GFLAGS_BUILD})
 if(${WITH_FMT_BUILD})
   add_dependencies(dwarfs-wr ${FMT_PRJ})
 endif(${WITH_FMT_BUILD})
+if(${WITH_DC_BUILD})
+  add_dependencies(dwarfs-wr ${DC_PRJ})
+endif(${WITH_DC_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
 endif(${WITH_JEMALLOC_BUILD})
@@ -587,7 +625,6 @@ if(${WITH_TESTS})
 
   find_package(Boost 1.65 REQUIRED COMPONENTS date_time filesystem program_options system)
 
-  find_library(_LIBDC "libdouble-conversion.a" REQUIRED)
   find_library(_LIBEVENT "libevent.a" REQUIRED)
   find_library(_LIBCRYPTO "libcrypto.a" REQUIRED)
   find_library(_LIBLZ4 "liblz4.a" REQUIRED)
@@ -688,7 +725,14 @@ if(${WITH_TESTS})
     list(APPEND _LIBRARIES ${_LIBFMT})
   endif(${WITH_FMT_BUILD})
 
-  list(APPEND _LIBRARIES ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
+  if(${WITH_DC_BUILD})
+    add_dwarfs_library(_LIBFMT ${DC_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBDC)
+  else(${WITH_DC_BUILD})
+    list(APPEND _LIBRARIES ${_LIBDC})
+  endif(${WITH_DC_BUILD})
+
+  list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
   if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBLZMA})
@@ -737,6 +781,10 @@ endif(${WITH_GFLAGS_BUILD})
 if(${WITH_FMT_BUILD})
   install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(${WITH_FMT_BUILD})
+
+if(${WITH_DC_BUILD})
+  install(FILES ${__LIBDC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif(${WITH_DC_BUILD})
 
 if(${WITH_JEMALLOC_BUILD})
   install(FILES ${__LIBJEMALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
