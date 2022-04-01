@@ -112,6 +112,20 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+	TEST_F(LnTests, tebako_softlink_to_dir_open) {
+		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-dir-1/file-in-directory-2.txt"), O_RDONLY);
+		EXPECT_LT(0, fh);
+
+		char readbuf[32];
+		const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
+
+		int ret = tebako_read(fh, readbuf, num2read);
+		EXPECT_EQ(num2read, ret);
+		EXPECT_EQ(0, strncmp(readbuf, "This is a file in the second directory", num2read));
+
+		ret = tebako_close(fh);
+		EXPECT_EQ(0, ret);
+	}
 
 	TEST_F(LnTests, tebako_hardlink) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("h-link-to-file-2"), O_RDONLY);
@@ -252,7 +266,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
-	TEST_F(LnTests, tebako_stat_link_towards_outside_of_memfs) {
+	TEST_F(LnTests, tebako_stat_link_outside_of_memfs) {
 		if (!cross_test) {
 			struct stat st;
 			int ret = tebako_stat(TEBAKIZE_PATH("s-link-outside-of-memfs"), &st);
