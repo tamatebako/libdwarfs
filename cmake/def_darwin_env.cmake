@@ -25,6 +25,7 @@
 #
 
 set(WITH_JEMALLOC_BUILD OFF)
+set(GNU_BASH "bash")
 
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 # If we are cross compiling TARGET_HOMEBREW will point to homebrew environment for target
@@ -46,6 +47,17 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     message(FATAL_ERROR "Could not find target brew setup at ${TARGET_HOMEBREW}")
   endif()
 
+  execute_process(
+    COMMAND brew --prefix bash
+    RESULT_VARIABLE BREW_BASH
+    OUTPUT_VARIABLE BREW_BASH_PREFIX
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if (BREW_BASH EQUAL 0 AND EXISTS "${BREW_BASH_PREFIX}")
+    message(STATUS "Found GNU bash keg installed by Homebrew at ${BREW_BASH_PREFIX}")
+    set(GNU_BASH "${BREW_BASH_PREFIX}/bin/bash")
+  endif()
+  
   message(STATUS "Using target brew environment at ${TARGET_BREW_PREFIX}")
   set(CMAKE_PREFIX_PATH "${TARGET_BREW_PREFIX};${TARGET_BREW_PREFIX}/opt/openssl@1.1;${TARGET_BREW_PREFIX}/opt/zlib")
   include_directories("${TARGET_BREW_PREFIX}/include")

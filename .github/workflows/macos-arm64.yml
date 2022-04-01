@@ -94,7 +94,7 @@ jobs:
           echo ${{ env.GFLAGS_TAG }} >> key.txt
           echo ${{ env.JEMALLOC_VER }} >> key.txt
           echo 'LEVEL_UP<<EOF' >> $GITHUB_ENV
-          ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
+          tools/ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
           echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
           brew --prefix >> $GITHUB_ENV
@@ -123,8 +123,8 @@ jobs:
       - name: Install packages for target host architecture
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          ci-scripts/arm-brew-setup.sh ${{ env.LEVEL_UP }}
-          ci-scripts/arm-brew-install.sh ${{ env.LEVEL_UP }} libb2 lz4 xz zstd zlib libarchive        \
+          tools/ci-scripts/arm-brew-setup.sh ${{ env.LEVEL_UP }}
+          tools/ci-scripts/arm-brew-install.sh ${{ env.LEVEL_UP }} libb2 lz4 xz zstd zlib libarchive  \
                                 icu4c boost fmt openssl@1.1 libevent libsodium double-conversion      \
                                 gflags glog jemalloc
 
