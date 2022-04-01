@@ -645,6 +645,25 @@ if(${WITH_TESTS})
     add_link_options(-static-libstdc++)
   endif()
 
+  execute_process(
+    COMMAND "${GNU_BASH}" 
+            "-c"
+            "echo \$OSTYPE"
+    RESULT_VARIABLE OSTYPE_RES
+    OUTPUT_VARIABLE OSTYPE_TXT
+  )
+  if(OSTYPE_RES EQUAL 0)
+    message(STATUS "OSTYPE: '${OSTYPE_TXT}'")
+  else(OSTYPE_RES EQUAL 0)
+    message(FATAL "Failed to detect OSTYPE: ${OSTYPE_TXT}")
+  endif(OSTYPE_RES EQUAL 0)
+
+  string(REGEX MATCH "^linux-musl.*" IS_CLANG_AND_MUSL "${OSTYPE_TXT}")
+  if(IS_CLANG_AND_MUSL)
+    message(STATUS "Clang and musl")
+    add_compile_definitions(__musl__)
+  endif(IS_CLANG_AND_MUSL)
+
   add_executable(wr-bin
     "include/tebako-pch.h"
     "include/tebako-defines.h"
