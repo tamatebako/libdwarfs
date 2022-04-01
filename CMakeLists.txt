@@ -178,6 +178,15 @@ else()
   set(WITH_GFLAGS_BUILD OFF)
 endif()
 
+find_library(_LIBGFLAGS "libfmt.a")
+if(${_LIBGFLAGS} STREQUAL "_LIBFMT-NOTFOUND")
+  message(STATUS "fmt static library was not found, building locally")
+  set(WITH_FMT_BUILD ON)
+  def_ext_prj_g(FMT "8.1.1")
+else()
+  set(WITH_FMT_BUILD OFF)
+endif()
+
 if(${WITH_JEMALLOC_BUILD})
   message(STATUS "jemalloc homebrew library is not good enough, building locally")
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
@@ -197,9 +206,13 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   message(STATUS "gflags     - " @${GFLAGS_TAG} " at " ${GFLAGS_SOURCE_DIR})
 endif(${WITH_GFLAGS_BUILD})
+if(${WITH_FMT_BUILD})
+  message(STATUS "fmt        - " @${FMT_TAG} " at " ${FMT_SOURCE_DIR})
+endif(${WITH_FMT_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   message(STATUS "jemalloc   - " v${JEMALLOC_VER} " at " ${JEMALLOC_SOURCE_DIR})
 endif(${WITH_JEMALLOC_BUILD})
+
 
 # ...................................................................
 # incbin
@@ -361,6 +374,29 @@ if(${WITH_GFLAGS_BUILD})
 endif(${WITH_GFLAGS_BUILD})
 
 # ...................................................................
+# fmt
+
+if(${WITH_FMT_BUILD})
+  set(__LIBFMT "${DEPS}/lib/libfmt.a")
+  ExternalProject_Add(${FMT_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/fmtlib/fmt.git"
+    GIT_TAG ${FMT_TAG}
+    UPDATE_COMMAND ""
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+               -DCMAKE_BUILD_TYPE=Release
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
+               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+    SOURCE_DIR ${FMT_SOURCE_DIR}
+    BINARY_DIR ${FMT_BINARY_DIR}
+    BUILD_BYPRODUCTS ${__LIBFMT}
+  )
+endif(${WITH_FMT_BUILD})
+
+# ...................................................................
 # jemalloc
 
 if(${WITH_JEMALLOC_BUILD})
@@ -444,6 +480,9 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   add_dependencies(dwarfs-wr ${GFLAGS_PRJ})
 endif(${WITH_GFLAGS_BUILD})
+if(${WITH_FMT_BUILD})
+  add_dependencies(dwarfs-wr ${FMT_PRJ})
+endif(${WITH_FMT_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
 endif(${WITH_JEMALLOC_BUILD})
@@ -643,6 +682,13 @@ if(${WITH_TESTS})
     list(APPEND _LIBRARIES ${_LIBGFLAGS})
   endif(${WITH_GFLAGS_BUILD})
 
+  if(${WITH_FMT_BUILD})
+    add_dwarfs_library(_LIBFMT ${FMT_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBFMT)
+  else(${WITH_FMT_BUILD})
+    list(APPEND _LIBRARIES ${_LIBFMT})
+  endif(${WITH_FMT_BUILD})
+
   list(APPEND _LIBRARIES ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
 
   if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
@@ -688,6 +734,10 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   install(FILES ${__LIBGFLAGS} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(${WITH_GFLAGS_BUILD})
+
+if(${WITH_FMT_BUILD})
+  install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif(${WITH_FMT_BUILD})
 
 if(${WITH_JEMALLOC_BUILD})
   install(FILES ${__LIBJEMALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR})

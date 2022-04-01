@@ -123,16 +123,13 @@ jobs:
           make install
 
       - name: Configure
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake . -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
-#      - name: Build
-#        run: cmake --build ${{github.workspace}}
+      - name: Build
+        run: cmake --build .
 
-#      - name: Run unit tests
-#        run: make test
+      - name: Run unit tests
+        run: make test
 
 #      - name: Checkout shell test framework
 #        uses: actions/checkout@v2
