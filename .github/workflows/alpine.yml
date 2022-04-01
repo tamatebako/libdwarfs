@@ -89,6 +89,7 @@ jobs:
             double-conversion-dev lz4-dev openssl-dev xz-dev       \
             libunwind-dev libdwarf-dev glog-dev elfutils-dev       \
             clang libevent-static openssl-libs-static lz4-static   \
+            zlib-dev zlib-static
 
       - name: Checkout
         uses: actions/checkout@v3
