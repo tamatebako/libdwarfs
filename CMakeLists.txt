@@ -178,8 +178,8 @@ else()
   set(WITH_GFLAGS_BUILD OFF)
 endif()
 
-find_library(_LIBGFLAGS "libfmt.a")
-if(${_LIBGFLAGS} STREQUAL "_LIBFMT-NOTFOUND")
+find_library(_LIBFMT "libfmt.a")
+if(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
   message(STATUS "fmt static library was not found, building locally")
   set(WITH_FMT_BUILD ON)
   def_ext_prj_g(FMT "8.1.1")
@@ -587,7 +587,6 @@ if(${WITH_TESTS})
 
   find_package(Boost 1.65 REQUIRED COMPONENTS date_time filesystem program_options system)
 
-  find_library(_LIBFMT "libfmt.a" REQUIRED)
   find_library(_LIBDC "libdouble-conversion.a" REQUIRED)
   find_library(_LIBEVENT "libevent.a" REQUIRED)
   find_library(_LIBCRYPTO "libcrypto.a" REQUIRED)
