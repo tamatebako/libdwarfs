@@ -726,7 +726,7 @@ if(${WITH_TESTS})
   endif(${WITH_FMT_BUILD})
 
   if(${WITH_DC_BUILD})
-    add_dwarfs_library(_LIBFMT ${DC_PRJ} wr-bin)
+    add_dwarfs_library(_LIBDC ${DC_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBDC)
   else(${WITH_DC_BUILD})
     list(APPEND _LIBRARIES ${_LIBDC})
