@@ -86,10 +86,15 @@ jobs:
           apk --no-cache --upgrade add build-base cmake git bash   \
             autoconf boost-static boost-dev fmt-dev flex-dev bison \
             binutils-dev libarchive-dev libevent-dev acl-dev       \
-            double-conversion-dev lz4-dev openssl-dev xz-dev       \
+            double-conversion-dev lz4-dev openssl-dev zlib-dev     \
             libunwind-dev libdwarf-dev glog-dev elfutils-dev       \
-            clang libevent-static openssl-libs-static lz4-static   \
-            zlib-dev zlib-static libunwind-static acl-static
+            libevent-static openssl-libs-static lz4-static xz-dev  \ 
+            zlib-static libunwind-static acl-static       
+
+      - name: Install clang
+        if: ${{ matrix.env.CC == 'clang' }}
+        run: |
+          apk --no-cache --upgrade add clang compiler-rt
 
       - name: Checkout
         uses: actions/checkout@v3
