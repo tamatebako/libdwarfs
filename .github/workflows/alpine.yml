@@ -95,7 +95,7 @@ jobs:
 
       - name: Create deps folder
         run: |
-          mkdir ${{github.workspace}}/${{env.DEPS}}
+          mkdir ${{env.DEPS}}
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
@@ -104,7 +104,7 @@ jobs:
       - name: Process cache
         uses: actions/cache@v2
         with:
-          path: ${{github.workspace}}/${{env.DEPS}}
+          path: ${{env.DEPS}}
           key:  alpine-latest-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
 #      - name: Install libjemalloc 5 (bionic)
