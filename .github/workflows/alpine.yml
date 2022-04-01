@@ -122,8 +122,11 @@ jobs:
           make -j4
           make install
 
-#      - name: Configure
-#        run: cmake -B ${{ github.workspace }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
 #      - name: Build
 #        run: cmake --build ${{github.workspace}}
