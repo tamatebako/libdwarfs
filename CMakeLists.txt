@@ -374,13 +374,13 @@ if(${WITH_JEMALLOC_BUILD})
     UPDATE_COMMAND ""
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS}  CXXFLAGS=${CROSSFLAGS}
                       ${JEMALLOC_SOURCE_DIR}/configure
-                        ${JEMALLOC_HOST_OPTION}
-                        --srcdir=${JEMALLOC_SOURCE_DIR}
-                        --prefix=${DEPS}
-                        --enable-static
-                        --disable-shared
-                        --datarootdir=${DEPS}/share.dummy
-                        --disable-syscall
+                      ${JEMALLOC_HOST_OPTION}
+                      --srcdir=${JEMALLOC_SOURCE_DIR}
+                      --prefix=${DEPS}
+                      --enable-static
+                      --disable-shared
+                      --datarootdir=${DEPS}/share.dummy
+                      --disable-syscall
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBJEMALLOC}

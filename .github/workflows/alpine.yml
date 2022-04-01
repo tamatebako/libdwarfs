@@ -91,7 +91,7 @@ jobs:
             clang 
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Create deps folder
         run: |
@@ -107,16 +107,14 @@ jobs:
           path: ${{env.DEPS}}
           key:  alpine-latest-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
-#      - name: Install libjemalloc 5 (bionic)
-#        if: ${{ matrix.os == 'ubuntu-18.04' }}
-#        run: |
-#          sudo apt-get remove libjemalloc-dev
-#          wget -q https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
-#          tar -xf jemalloc-5.2.1.tar.bz2
-#          cd jemalloc-5.2.1
-#          ./configure --prefix='/usr'
-#          make
-#          sudo make install
+      - name: Build libjemalloc
+        run: |
+          wget -q https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
+          tar -xf jemalloc-5.2.1.tar.bz2
+          cd jemalloc-5.2.1
+          ./configure
+          make -j4
+          make install
 
 #      - name: Configure
 #        run: cmake -B ${{ github.workspace }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
