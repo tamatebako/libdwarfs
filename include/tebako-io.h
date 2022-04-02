@@ -55,7 +55,7 @@ extern "C" {
 #endif
     int   tebako_chdir(const char* path);
 
-/*
+/* Another option -- to be cleaned if 'defined(_SYS_STAT_H)' works
 #if defined(__mode_t_defined) || defined(_MODE_T) || defined(__NEED_mode_t)
     __mode_t_defined    -- Ubuntu/GNU
     _MODE_T             -- Darwin
@@ -74,7 +74,7 @@ extern "C" {
     ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
 #endif
 
-/*
+/* Another option -- to be cleaned if 'defined(_UNISTD_H)' works
 #if defined(__off_t_defined) || defined(_OFF_T) || defined(__NEED_off_t)
     __off_t_defined    -- Ubuntu/GNU
     _OFF_T             -- Darwin

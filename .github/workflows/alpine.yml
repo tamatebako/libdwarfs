@@ -145,8 +145,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: kward/shunit2
-          path: ${{github.workspace}}/tests/shunit2
+          path: tests/shunit2
           fetch-depth: 1
 
-#      - name: Run additional tests
-#        run:  ${{github.workspace}}/tests/scripts/tests.sh
+      - name: Run additional tests
+        run:  tests/scripts/tests.sh

@@ -57,35 +57,40 @@ check_shared_libs() {
 # Run ldd to check that wr-bin has been linked to expected set of shared libraries
 test_linkage() {
    echo "==> References to shared libraries test"
-   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-      if [[ "$ASAN" == "ON"* ]]; then
-         echo "... Address sanitizer os on ... skipping"
-      else
+   if [[ "$ASAN" == "ON"* ]]; then
+      echo "... Address sanitizer is on ... skipping"
+   else
+      if [[ "$OSTYPE" == "linux-gnu"* ]]; then
          expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
          readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
          assertEquals "readarray -t actual < <(ldd "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
-      fi
 # Used to be:
 # Run ldd to check that wr-bin has been linked statically
 #        result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
 #        assertEquals 1 "${PIPESTATUS[0]}"
 #        assertContains "$result" "not a dynamic executable"
-   elif [[ "$OSTYPE" == "darwin"* ]]; then
+      if [[ "$OSTYPE" == "linux-musl"* ]]; then
+         expected=("libgcc_s.so" "libc.musl-x86_64.so" "ld-musl-x86_64.so")
+         readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
+         assertEquals "readarray -t actual < <(ldd "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"
+         check_shared_libs
+      elif [[ "$OSTYPE" == "darwin"* ]]; then
          expected=("libc++.1.dylib" "libSystem.B.dylib" "wr-bin")
          readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin")
          assertEquals "readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs "${expected[@]}"
-   elif [[ "$OSTYPE" == "cygwin" ]]; then
-      echo "... cygwin ... skipping"
-   elif [[ "$OSTYPE" == "msys" ]]; then
-      echo "... msys ... skipping"
-   elif [[ "$OSTYPE" == "win32" ]]; then
-      echo "... win32 ... skipping"
-   elif [[ "$OSTYPE" == "freebsd"* ]]; then
-      echo "... freebsd ... skipping"
-   else
-      echo "... unknown - $OSTYPE ... skipping"
+      elif [[ "$OSTYPE" == "cygwin" ]]; then
+         echo "... cygwin ... skipping"
+      elif [[ "$OSTYPE" == "msys" ]]; then
+         echo "... msys ... skipping"
+      elif [[ "$OSTYPE" == "win32" ]]; then
+         echo "... win32 ... skipping"
+      elif [[ "$OSTYPE" == "freebsd"* ]]; then
+         echo "... freebsd ... skipping"
+      else
+         echo "... unknown - $OSTYPE ... skipping"
+      fi
    fi
 }
 
