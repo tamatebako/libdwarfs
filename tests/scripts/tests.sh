@@ -73,7 +73,7 @@ test_linkage() {
       elif [[ "$OSTYPE" == "linux-musl"* ]]; then
          expected=("libgcc_s.so" "libc.musl-x86_64.so" "ld-musl-x86_64.so")
          readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
-         assertEquals "readarray -t actual < <(ldd "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"
+         assertEquals "readarray -t actual < <(ldd $DIR_ROOT/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
       elif [[ "$OSTYPE" == "darwin"* ]]; then
          expected=("libc++.1.dylib" "libSystem.B.dylib" "wr-bin")
