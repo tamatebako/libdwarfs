@@ -112,6 +112,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+/*
 	TEST_F(LnTests, tebako_softlink_to_dir_open) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-dir-1/file-in-directory-2.txt"), O_RDONLY);
 		EXPECT_LT(0, fh);
@@ -126,6 +127,7 @@ namespace {
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);
 	}
+*/
 
 	TEST_F(LnTests, tebako_hardlink) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("h-link-to-file-2"), O_RDONLY);
