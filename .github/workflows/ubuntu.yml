@@ -50,7 +50,6 @@ on:
   workflow_dispatch:
 
 env:
-  MAKEFLAGS: -j4
 # The folder for dwarfs and other dependenies
   DEPS: deps
   CACHE_VER: "08"
@@ -58,6 +57,10 @@ env:
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.8"
   LIBARCHIVE_VER: "3.5.2"
+# Misc
+  DEBIAN_FRONTEND: "noninteractive"
+  TZ: "Etc/UTC"
+  MAKEFLAGS: -j4
 
 jobs:
   build:
