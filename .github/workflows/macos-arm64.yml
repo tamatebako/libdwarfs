@@ -130,7 +130,7 @@ jobs:
 
       - name: Checkout dwarfs [for build system architecture]
         if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: tamatebako/dwarfs
           path: ${{ env.DWARFS_BUILD }}
