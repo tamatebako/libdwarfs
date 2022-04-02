@@ -83,6 +83,7 @@ jobs:
 #            CXX: clang++
 #            ASAN: 'ON'
 #            LOG_LEVEL: 'warn'
+# 'compiler-rt' apk is required to support ASAN
     env: ${{ matrix.env }}
     steps:
       - name: Install packages
@@ -99,8 +100,6 @@ jobs:
         if: ${{ matrix.env.CC == 'clang' }}
         run: |
           apk --no-cache --upgrade add clang
-# Potentially required by ASAN
-# compiler-rt
 
       - name: Checkout
         uses: actions/checkout@v3
