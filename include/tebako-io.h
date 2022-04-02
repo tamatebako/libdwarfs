@@ -60,8 +60,8 @@ extern "C" {
     __mode_t_defined    -- Ubuntu/GNU
     _MODE_T             -- Darwin
     __NEED_mode_t       -- Alpine/musl
-*/
     int   tebako_mkdir(const char* path, mode_t mode);
+*/
 #endif
 
     int   tebako_access(const char* path, int amode);
@@ -79,13 +79,19 @@ extern "C" {
     __off_t_defined    -- Ubuntu/GNU
     _OFF_T             -- Darwin
     __NEED_off_t       -- Alpine/musl
+    ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
+    off_t tebako_lseek(int vfd, off_t offset, int whence);
 */
+#endif
+
+#if defined(_UNISTD_H) || defined(_UNISTD_H_)
     ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
     off_t tebako_lseek(int vfd, off_t offset, int whence);
 #endif
 
 /* struct stat is defined only if sys/stat.h has been included */
 #if defined(_SYS_STAT_H) || defined(_SYS_STAT_H_)
+    int   tebako_mkdir(const char* path, mode_t mode);
     int   tebako_stat(const char* path, struct stat* buf);
     int   tebako_fstat(int vfd, struct stat* buf);
     int   tebako_lstat(const char* path, struct stat* buf);

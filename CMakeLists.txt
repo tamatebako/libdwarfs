@@ -659,7 +659,7 @@ if(${WITH_TESTS})
   endif(OSTYPE_RES EQUAL 0)
 
   if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
-    message(STATUS "Adding __musl__ compile definition")
+    message(STATUS "Adding __musl__ compile definitions")
     add_compile_definitions(__musl__)
   endif()
 
