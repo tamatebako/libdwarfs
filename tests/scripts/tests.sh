@@ -70,7 +70,7 @@ test_linkage() {
 #        result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
 #        assertEquals 1 "${PIPESTATUS[0]}"
 #        assertContains "$result" "not a dynamic executable"
-      if [[ "$OSTYPE" == "linux-musl"* ]]; then
+      elif [[ "$OSTYPE" == "linux-musl"* ]]; then
          expected=("libgcc_s.so" "libc.musl-x86_64.so" "ld-musl-x86_64.so")
          readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
          assertEquals "readarray -t actual < <(ldd "$DIR_ROOT/wr-bin") failed" 0 "${PIPESTATUS[0]}"
