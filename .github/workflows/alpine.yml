@@ -93,7 +93,7 @@ jobs:
             double-conversion-dev lz4-dev openssl-dev zlib-dev     \
             libunwind-dev libdwarf-dev glog-dev elfutils-dev       \
             libevent-static openssl-libs-static lz4-static xz-dev  \
-            zlib-static libunwind-static acl-static
+            zlib-static libunwind-static acl-static tar
 
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
