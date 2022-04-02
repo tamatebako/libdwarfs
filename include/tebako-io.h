@@ -55,14 +55,14 @@ extern "C" {
 #endif
     int   tebako_chdir(const char* path);
 
-#if defined(__mode_t_defined) || defined(_MODE_T) || defined(__NEED_mode_t)
 /*
+#if defined(__mode_t_defined) || defined(_MODE_T) || defined(__NEED_mode_t)
     __mode_t_defined    -- Ubuntu/GNU
     _MODE_T             -- Darwin
     __NEED_mode_t       -- Alpine/musl
     int   tebako_mkdir(const char* path, mode_t mode);
-*/
 #endif
+*/
 
     int   tebako_access(const char* path, int amode);
     int   tebako_open(int nargs, const char* path, int flags, ...);
@@ -74,15 +74,15 @@ extern "C" {
     ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
 #endif
 
-#if defined(__off_t_defined) || defined(_OFF_T) || defined(__NEED_off_t)
 /*
+#if defined(__off_t_defined) || defined(_OFF_T) || defined(__NEED_off_t)
     __off_t_defined    -- Ubuntu/GNU
     _OFF_T             -- Darwin
     __NEED_off_t       -- Alpine/musl
     ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
     off_t tebako_lseek(int vfd, off_t offset, int whence);
-*/
 #endif
+*/
 
 #if defined(_UNISTD_H) || defined(_UNISTD_H_)
     ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);

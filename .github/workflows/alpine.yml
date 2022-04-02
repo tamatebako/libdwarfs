@@ -75,10 +75,12 @@ jobs:
             CXX: clang++
             ASAN: 'OFF'
             LOG_LEVEL: 'warn'
-          - CC: clang
-            CXX: clang++
-            ASAN: 'ON'
-            LOG_LEVEL: 'warn'
+# ASAN libraries are not there for clang 12, but it looks like it will be ready with clng 13
+# (as a part of compiler-rt package)            
+#          - CC: clang
+#            CXX: clang++
+#            ASAN: 'ON'
+#            LOG_LEVEL: 'warn'
     env: ${{ matrix.env }}
     steps:
       - name: Install packages
@@ -94,7 +96,9 @@ jobs:
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
         run: |
-          apk --no-cache --upgrade add clang compiler-rt
+          apk --no-cache --upgrade add clang
+# Potentially required by ASAN
+# compiler-rt
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -137,22 +141,12 @@ jobs:
       - name: Run unit tests
         run: make test
 
-#      - name: Checkout shell test framework
-#        uses: actions/checkout@v2
-#        with:
-#          repository: kward/shunit2
-#          path: ${{github.workspace}}/tests/shunit2
-#          fetch-depth: 1
+      - name: Checkout shell test framework
+        uses: actions/checkout@v2
+        with:
+          repository: kward/shunit2
+          path: ${{github.workspace}}/tests/shunit2
+          fetch-depth: 1
 
 #      - name: Run additional tests
 #        run:  ${{github.workspace}}/tests/scripts/tests.sh
-
-#      - name: Upload tests
-#        if: ${{ matrix.os == 'ubuntu-18.04' && env.ASAN == 'OFF' }}
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: tests-${{ matrix.env.CC }}
-#          retention-days: 1
-#          path: |
-#            ${{github.workspace}}/wr-bin
-#            ${{github.workspace}}/wr-tests
