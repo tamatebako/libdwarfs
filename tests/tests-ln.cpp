@@ -36,6 +36,7 @@ namespace {
 	class LnTests : public testing::Test {
 	protected:
 		static fs::path tmp_path;
+		static bool cross_test;
 		static bool path_initialized;
 		static void SetUpTestSuite() {
 			load_fs(&gfsData[0],
@@ -63,6 +64,8 @@ namespace {
 
 				delete[] dir_name;
 			}
+
+			cross_test = (std::getenv("TEBAKO_CROSS_TEST") != NULL);
 		}
 
 		static void TearDownTestSuite() {
@@ -72,7 +75,9 @@ namespace {
 			path_initialized = false;
 			drop_fs();
 		}
+
 	};
+	bool LnTests::cross_test = false;
 	bool LnTests::path_initialized = false;
 	fs::path LnTests::tmp_path;
 
@@ -107,6 +112,22 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+/*
+	TEST_F(LnTests, tebako_softlink_to_dir_open) {
+		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-dir-1/file-in-directory-2.txt"), O_RDONLY);
+		EXPECT_LT(0, fh);
+
+		char readbuf[32];
+		const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
+
+		int ret = tebako_read(fh, readbuf, num2read);
+		EXPECT_EQ(num2read, ret);
+		EXPECT_EQ(0, strncmp(readbuf, "This is a file in the second directory", num2read));
+
+		ret = tebako_close(fh);
+		EXPECT_EQ(0, ret);
+	}
+*/
 
 	TEST_F(LnTests, tebako_hardlink) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("h-link-to-file-2"), O_RDONLY);
@@ -246,6 +267,81 @@ namespace {
 		ret = tebako_lstat("link2false", &st);
 		EXPECT_EQ(0, ret);
 	}
-#endif
 
+	TEST_F(LnTests, tebako_stat_link_outside_of_memfs) {
+		if (!cross_test) {
+			struct stat st;
+			int ret = tebako_stat(TEBAKIZE_PATH("s-link-outside-of-memfs"), &st);
+			EXPECT_EQ(0, ret);
+		}
+		else {
+			GTEST_SKIP();
+		}
+	}
+
+	TEST_F(LnTests, tebako_open_link_outside_of_memfs) {
+		if (!cross_test) {
+			int fh = tebako_open(2, TEBAKIZE_PATH("s-link-outside-of-memfs"), O_RDONLY);
+			EXPECT_LT(0, fh);
+
+			char readbuf[32];
+			const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
+
+			int ret = tebako_read(fh, readbuf, num2read);
+			EXPECT_EQ(num2read, ret);
+			EXPECT_EQ(0, strncmp(readbuf, "This is just a file outside of memfs that will be symlinked from inside memfs", num2read));
+
+			ret = tebako_close(fh);
+			EXPECT_EQ(0, ret);
+		}
+		else {
+			GTEST_SKIP();
+		}
+	}
+
+	TEST_F(LnTests, tebako_open_dir_outside_of_memfs) {
+		if (!cross_test) {
+			DIR* dirp = tebako_opendir(TEBAKIZE_PATH("s-dir-outside-of-memfs"));
+			EXPECT_TRUE(dirp != NULL);
+			if (dirp != NULL) {
+				struct dirent* entry;
+				std::string fname = "a-file-outside-of-memfs.txt";
+				bool found = false;
+				while ((entry= tebako_readdir(dirp)) != NULL) {
+					if (fname == entry->d_name) found = true;
+				}
+				EXPECT_TRUE(found);
+			}
+		}
+		else {
+			GTEST_SKIP();
+		}
+	}
+
+	TEST_F(LnTests, tebako_scan_dir_outside_of_memfs) {
+		if (!cross_test) {
+			std::string fname = "a-file-outside-of-memfs.txt";
+			bool found = false;
+			struct dirent** namelist;
+			int n = tebako_scandir(TEBAKIZE_PATH("s-dir-outside-of-memfs"), &namelist, NULL, alphasort);
+			EXPECT_EQ(n, 3);
+			EXPECT_TRUE(namelist != NULL);
+			if (n > 0 && namelist != NULL) {
+				for (int i = 0; i < n; i++) {
+					EXPECT_TRUE(namelist[i] != NULL);
+					if (namelist[i]) {
+						if (fname == namelist[i]->d_name) found = true;
+						free(namelist[i]);
+					}
+				}
+				free(namelist);
+			}
+			EXPECT_TRUE(found);
+		}
+		else {
+			GTEST_SKIP();
+		}
+	}
+
+#endif
 }

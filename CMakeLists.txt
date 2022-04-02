@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.10)
+project(libdwarfs-wr VERSION 0.1.11)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -153,7 +153,7 @@ set(DWARFS_CXX_FLAGS       "")
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.7")
+def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.8")
 def_ext_prj_t(LIBARCHIVE "3.5.2" "f0b19ff39c3c9a5898a219497ababbadab99d8178acc980155c7e1271089b5a0")
 
 if(${WITH_TESTS})
@@ -178,6 +178,24 @@ else()
   set(WITH_GFLAGS_BUILD OFF)
 endif()
 
+find_library(_LIBFMT "libfmt.a")
+if(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
+  message(STATUS "fmt static library was not found, building locally")
+  set(WITH_FMT_BUILD ON)
+  def_ext_prj_g(FMT "8.1.1")
+else()
+  set(WITH_FMT_BUILD OFF)
+endif()
+
+find_library(_LIBDC "libdouble-conversion.a")
+if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
+  message(STATUS "double-conversion static library was not found, building locally")
+  set(WITH_DC_BUILD ON)
+  def_ext_prj_g(DC "v3.2.0")
+else()
+  set(WITH_DC_BUILD OFF)
+endif()
+
 if(${WITH_JEMALLOC_BUILD})
   message(STATUS "jemalloc homebrew library is not good enough, building locally")
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
@@ -197,9 +215,16 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   message(STATUS "gflags     - " @${GFLAGS_TAG} " at " ${GFLAGS_SOURCE_DIR})
 endif(${WITH_GFLAGS_BUILD})
+if(${WITH_FMT_BUILD})
+  message(STATUS "fmt        - " @${FMT_TAG} " at " ${FMT_SOURCE_DIR})
+endif(${WITH_FMT_BUILD})
+if(${WITH_DC_BUILD})
+  message(STATUS "double-conversion - " @${DC_TAG} " at " ${DC_SOURCE_DIR})
+endif(${WITH_DC_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   message(STATUS "jemalloc   - " v${JEMALLOC_VER} " at " ${JEMALLOC_SOURCE_DIR})
 endif(${WITH_JEMALLOC_BUILD})
+
 
 # ...................................................................
 # incbin
@@ -361,6 +386,52 @@ if(${WITH_GFLAGS_BUILD})
 endif(${WITH_GFLAGS_BUILD})
 
 # ...................................................................
+# fmt
+
+if(${WITH_FMT_BUILD})
+  set(__LIBFMT "${DEPS}/lib/libfmt.a")
+  ExternalProject_Add(${FMT_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/fmtlib/fmt.git"
+    GIT_TAG ${FMT_TAG}
+    UPDATE_COMMAND ""
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+               -DCMAKE_BUILD_TYPE=Release
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
+               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+    SOURCE_DIR ${FMT_SOURCE_DIR}
+    BINARY_DIR ${FMT_BINARY_DIR}
+    BUILD_BYPRODUCTS ${__LIBFMT}
+  )
+endif(${WITH_FMT_BUILD})
+
+# ...................................................................
+# double-conversion
+
+if(${WITH_DC_BUILD})
+  set(__LIBDC "${DEPS}/lib/libdouble-conversion.a")
+  ExternalProject_Add(${DC_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/google/double-conversion.git"
+    GIT_TAG ${DC_TAG}
+    UPDATE_COMMAND ""
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+               -DCMAKE_BUILD_TYPE=Release
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
+               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
+               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+    SOURCE_DIR ${DC_SOURCE_DIR}
+    BINARY_DIR ${DC_BINARY_DIR}
+    BUILD_BYPRODUCTS ${__LIBDC}
+  )
+endif(${WITH_DC_BUILD})
+
+# ...................................................................
 # jemalloc
 
 if(${WITH_JEMALLOC_BUILD})
@@ -374,13 +445,13 @@ if(${WITH_JEMALLOC_BUILD})
     UPDATE_COMMAND ""
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS}  CXXFLAGS=${CROSSFLAGS}
                       ${JEMALLOC_SOURCE_DIR}/configure
-                        ${JEMALLOC_HOST_OPTION}
-                        --srcdir=${JEMALLOC_SOURCE_DIR}
-                        --prefix=${DEPS}
-                        --enable-static
-                        --disable-shared
-                        --datarootdir=${DEPS}/share.dummy
-                        --disable-syscall
+                      ${JEMALLOC_HOST_OPTION}
+                      --srcdir=${JEMALLOC_SOURCE_DIR}
+                      --prefix=${DEPS}
+                      --enable-static
+                      --disable-shared
+                      --datarootdir=${DEPS}/share.dummy
+                      --disable-syscall
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBJEMALLOC}
@@ -444,6 +515,12 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   add_dependencies(dwarfs-wr ${GFLAGS_PRJ})
 endif(${WITH_GFLAGS_BUILD})
+if(${WITH_FMT_BUILD})
+  add_dependencies(dwarfs-wr ${FMT_PRJ})
+endif(${WITH_FMT_BUILD})
+if(${WITH_DC_BUILD})
+  add_dependencies(dwarfs-wr ${DC_PRJ})
+endif(${WITH_DC_BUILD})
 if(${WITH_JEMALLOC_BUILD})
   add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
 endif(${WITH_JEMALLOC_BUILD})
@@ -476,53 +553,58 @@ if(${WITH_TESTS})
   set_target_properties(empty PROPERTIES POSITION_INDEPENDENT_CODE ON)
   set_target_properties(empty PROPERTIES C_VISIBILITY_PRESET hidden)
 
-  add_custom_target(PREPACKAGED_FILESYSTEM ALL
+  add_custom_target(PACKAGED_FILESYSTEM_STEP_1 ALL
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/*empty.* ${DATA_TEST_DIR}/directory-1
   )
 
-  add_dependencies(PREPACKAGED_FILESYSTEM empty)
+  add_dependencies(PACKAGED_FILESYSTEM_STEP_1 empty)
 
   if (${WITH_LINK_TESTS})
+    add_custom_target(PACKAGED_FILESYSTEM_STEP_2 ALL
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-file-2 s-link-to-file-1 s-link-to-dir-1 s-link-outside-of-memfs s-dir-outside-of-memfs
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/a-file-outside-of-memfs.txt s-link-outside-of-memfs
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files s-dir-outside-of-memfs
+    )
+    add_dependencies(PACKAGED_FILESYSTEM_STEP_2 PACKAGED_FILESYSTEM_STEP_1)
+
     if (${USE_TEMP_FS})
-      add_custom_target(PACKAGED_FILESYSTEM ALL
-        COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-file-2 s-link-to-file-1 s-link-to-dir-1
-        COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
-        COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
-        COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
+      add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     else(${USE_TEMP_FS})
-      add_custom_target(PACKAGED_FILESYSTEM ALL
-        COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-file-2 s-link-to-file-1 s-link-to-dir-1
-        COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
-        COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
-        COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
+      add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-        COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.*
+        COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     endif(${USE_TEMP_FS})
+    add_dependencies(PACKAGED_FILESYSTEM_STEP_3 PACKAGED_FILESYSTEM_STEP_2)
+
   else(${WITH_LINK_TESTS})
     if (${USE_TEMP_FS})
-      add_custom_target(PACKAGED_FILESYSTEM ALL
+      add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     else(${USE_TEMP_FS})
-      add_custom_target(PACKAGED_FILESYSTEM ALL
+      add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     endif(${USE_TEMP_FS})
+    add_dependencies(PACKAGED_FILESYSTEM_STEP_3 PACKAGED_FILESYSTEM_STEP_1)
   endif(${WITH_LINK_TESTS})
 
-  add_dependencies(PACKAGED_FILESYSTEM ${DWARFS_PRJ} PREPACKAGED_FILESYSTEM)
+  add_dependencies(PACKAGED_FILESYSTEM_STEP_3 ${DWARFS_PRJ})
 
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs.cpp.in
@@ -548,8 +630,6 @@ if(${WITH_TESTS})
 
   find_package(Boost 1.65 REQUIRED COMPONENTS date_time filesystem program_options system)
 
-  find_library(_LIBFMT "libfmt.a" REQUIRED)
-  find_library(_LIBDC "libdouble-conversion.a" REQUIRED)
   find_library(_LIBEVENT "libevent.a" REQUIRED)
   find_library(_LIBCRYPTO "libcrypto.a" REQUIRED)
   find_library(_LIBLZ4 "liblz4.a" REQUIRED)
@@ -568,6 +648,24 @@ if(${WITH_TESTS})
 
   if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     add_link_options(-static-libstdc++)
+  endif()
+
+  execute_process(
+    COMMAND "${GNU_BASH}"
+            "-c"
+            "echo \$OSTYPE"
+    RESULT_VARIABLE OSTYPE_RES
+    OUTPUT_VARIABLE OSTYPE_TXT
+  )
+  if(OSTYPE_RES EQUAL 0)
+    message(STATUS "OSTYPE: '${OSTYPE_TXT}'")
+  else(OSTYPE_RES EQUAL 0)
+    message(FATAL_ERROR "Failed to detect OSTYPE: ${OSTYPE_TXT}")
+  endif(OSTYPE_RES EQUAL 0)
+
+  if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
+    message(STATUS "Adding __musl__ compile definitions")
+    add_compile_definitions(__musl__)
   endif()
 
   add_executable(wr-bin
@@ -608,8 +706,8 @@ if(${WITH_TESTS})
   target_link_libraries(wr-tests dwarfs-wr ${GTEST_LDFLAGS})
   gtest_add_tests(TARGET wr-tests)
 
-  add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM)
-  add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM wr-bin)
+  add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM_STEP_3)
+  add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM_STEP_3 wr-bin)
 
 # ...................................................................
 # The libraries that are build by dwarfs project
@@ -643,7 +741,21 @@ if(${WITH_TESTS})
     list(APPEND _LIBRARIES ${_LIBGFLAGS})
   endif(${WITH_GFLAGS_BUILD})
 
-  list(APPEND _LIBRARIES ${_LIBFMT} ${Boost_LIBRARIES} ${_LIBDC} ${_LIBEVENT})
+  if(${WITH_FMT_BUILD})
+    add_dwarfs_library(_LIBFMT ${FMT_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBFMT)
+  else(${WITH_FMT_BUILD})
+    list(APPEND _LIBRARIES ${_LIBFMT})
+  endif(${WITH_FMT_BUILD})
+
+  if(${WITH_DC_BUILD})
+    add_dwarfs_library(_LIBDC ${DC_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBDC)
+  else(${WITH_DC_BUILD})
+    list(APPEND _LIBRARIES ${_LIBDC})
+  endif(${WITH_DC_BUILD})
+
+  list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
   if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBLZMA})
@@ -688,6 +800,14 @@ endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   install(FILES ${__LIBGFLAGS} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(${WITH_GFLAGS_BUILD})
+
+if(${WITH_FMT_BUILD})
+  install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif(${WITH_FMT_BUILD})
+
+if(${WITH_DC_BUILD})
+  install(FILES ${__LIBDC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif(${WITH_DC_BUILD})
 
 if(${WITH_JEMALLOC_BUILD})
   install(FILES ${__LIBJEMALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR})

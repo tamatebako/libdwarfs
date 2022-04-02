@@ -34,16 +34,20 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/alpine.yml'
       - '.github/workflows/ubuntu.yml'
       - '.github/workflows/macos-arm64.yml'
+      - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/alpine.yml'
       - '.github/workflows/ubuntu.yml'
       - '.github/workflows/macos-arm64.yml'
+      - '.github/workflows/lint.yml'
   workflow_dispatch:
 
 env:
@@ -53,10 +57,10 @@ env:
   CXX: clang++
 # The folder for dwarfs and other dependenies
   DEPS: deps
-  CACHE_VER: "07"
+  CACHE_VER: "08"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "libdwarfs_wr_v0.1.7"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.8"
   LIBARCHIVE_VER: "3.5.2"
   GLOG_TAG: "v0.5.0"
   GFLAGS_TAG: "v2.2.2"
@@ -86,7 +90,7 @@ jobs:
           xcode-version: '12.4'
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -127,7 +131,7 @@ jobs:
         run: ./wr-tests
 
       - name: Checkout shell test framework
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: kward/shunit2
           path: ${{ github.workspace }}/tests/shunit2
@@ -150,6 +154,8 @@ jobs:
     needs: build
     name: Run MacOS-10.15 binaries on MacOS-11.0
     runs-on: macos-11.0
+    env:
+      TEBAKO_CROSS_TEST: ON
     strategy:
       fail-fast: false
     steps:

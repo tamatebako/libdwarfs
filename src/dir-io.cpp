@@ -82,25 +82,33 @@ extern "C" DIR* tebako_opendir(const char* dirname) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
 	}
 	else {
+		int vfd;
 		tebako_path_t t_path;
+		std::string r_dirname = dirname;
 		const char* p_path = to_tebako_path(t_path, dirname);
 
-		if (!p_path) {
-			ret = ::opendir(dirname);
-			if (ret != NULL) {
-				sync_tebako_kfdtable::kfdtable.insert(reinterpret_cast<uintptr_t>(ret));
+		if (p_path) {
+			vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY, r_dirname);
+			switch(vfd) {
+				case DWARFS_S_LINK_OUTSIDE:
+					break;
+				case DWARFS_INVALID_FD:
+					ret = NULL;
+					TEBAKO_SET_LAST_ERROR(ENOENT);
+					break;
+				case DWARFS_IO_ERROR:
+					ret = NULL;
+					break;
+				default:
+					ret = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
+					break;
 			}
 		}
-		else {
-			int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY);
-			if (vfd < 0) {
-				if (vfd == DWARFS_INVALID_FD) {
-					TEBAKO_SET_LAST_ERROR(ENOENT);
-				}
-				ret = NULL;
-			}
-			else {
-				ret = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
+
+		if (!p_path || vfd == DWARFS_S_LINK_OUTSIDE) {
+			ret = ::opendir(r_dirname.c_str());
+			if (ret != NULL) {
+				sync_tebako_kfdtable::kfdtable.insert(reinterpret_cast<uintptr_t>(ret));
 			}
 		}
 	}
@@ -219,16 +227,20 @@ extern "C" int tebako_scandir(const char* dirname, struct dirent*** namelist,
 		TEBAKO_SET_LAST_ERROR(ENOENT);
 	}
 	else {
+		int vfd;
+		std::string dirname_r = dirname;
 		DIR* dirp = NULL;
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, dirname);
 
-		if (!p_path) {
-			ret = ::scandir(dirname, namelist, sel, compar);
+		if (p_path) {
+			vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY, dirname_r);
+		}
+		if (!p_path || vfd == DWARFS_S_LINK_OUTSIDE) {
+			ret = ::scandir(dirname_r.c_str(), namelist, sel, compar);
 		}
 		else {
 			if (namelist != NULL) {
-				int vfd = sync_tebako_fdtable::fdtable.open(p_path, O_RDONLY | O_DIRECTORY);
 				if (vfd == DWARFS_INVALID_FD) {
 					TEBAKO_SET_LAST_ERROR(ENOENT);
 					vfd = DWARFS_IO_ERROR;

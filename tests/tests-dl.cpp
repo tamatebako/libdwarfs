@@ -29,7 +29,7 @@
 
 #include "tests.h"
 
-#if not __MACH__
+#if not (__MACH__ || __musl__)
 #include <gnu/lib-names.h>
 #endif
 
@@ -104,6 +104,8 @@ namespace {
 		char* error;
 #if __MACH__
         handle = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY | RTLD_GLOBAL);
+#elif __musl__
+ 		handle = dlopen("/usr/lib/libc.so", RTLD_LAZY | RTLD_GLOBAL);
 #else
 		handle = dlopen(LIBM_SO, RTLD_LAZY | RTLD_GLOBAL);
 #endif

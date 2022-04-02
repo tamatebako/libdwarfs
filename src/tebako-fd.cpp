@@ -38,7 +38,7 @@ using namespace std;
 
 sync_tebako_fdtable sync_tebako_fdtable::fdtable;
 
-int sync_tebako_fdtable::open(const char* path, int flags)  noexcept {
+int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk)  noexcept {
 	int ret = DWARFS_IO_ERROR;
 	if (flags & (O_RDWR | O_WRONLY | O_TRUNC)) {
 		//	[EROFS] The named file resides on a read - only file system and either O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set in the oflag argument.
@@ -47,35 +47,43 @@ int sync_tebako_fdtable::open(const char* path, int flags)  noexcept {
 	else {
 		try {
 			auto fd = make_shared<tebako_fd>(path);
-			if (dwarfs_stat(path, &fd->st) == 0) {
-				if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
-					// [ENOTDIR] ... or O_DIRECTORY was specified and the path argument resolves to a non - directory file.
-					TEBAKO_SET_LAST_ERROR(ENOTDIR);
-				}
-				else {
-					fd->handle = new int;
-					if (fd->handle == NULL) {
-						TEBAKO_SET_LAST_ERROR(ENOMEM);
+			switch (dwarfs_stat(path, &fd->st, lnk))
+			{
+				case DWARFS_IO_CONTINUE:
+					if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
+						// [ENOTDIR] ... or O_DIRECTORY was specified and the path argument resolves to a non - directory file.
+						TEBAKO_SET_LAST_ERROR(ENOTDIR);
 					}
 					else {
-						// get a dummy fd from the system
-						ret = dup(0);
-						if (ret == DWARFS_IO_ERROR) {
-							// [EMFILE]  All file descriptors available to the process are currently open.
-							TEBAKO_SET_LAST_ERROR(EMFILE);
+						fd->handle = new int;
+						if (fd->handle == NULL) {
+							TEBAKO_SET_LAST_ERROR(ENOMEM);
 						}
 						else {
-							// construct a handle (mainly) for win32
-							*fd->handle = ret;
-							(**wlock())[ret] = fd;
+							// get a dummy fd from the system
+							ret = dup(0);
+							if (ret == DWARFS_IO_ERROR) {
+								// [EMFILE]  All file descriptors available to the process are currently open.
+								TEBAKO_SET_LAST_ERROR(EMFILE);
+							}
+							else {
+								// construct a handle (mainly) for win32
+								*fd->handle = ret;
+								(**wlock())[ret] = fd;
+							}
 						}
 					}
-				}
-			}
-			else {
-				//	[ENOENT] O_CREAT is not set and a component of path does not name an existing file, or O_CREAT is set and a component of the path prefix of path does not name an existing file, or path points to an empty string.
-				//	[EROFS] The named file resides on a read - only file system and either O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set in the oflag argument.
-				TEBAKO_SET_LAST_ERROR((flags & O_CREAT) ? EROFS : ENOENT);
+					break;
+				case DWARFS_S_LINK_OUTSIDE:
+					ret = DWARFS_S_LINK_OUTSIDE;
+					break;
+				default:
+				/* DWARFS_IO_ERROR   */
+				/* DWARFS_INVALID_FD */
+					//	[ENOENT] O_CREAT is not set and a component of path does not name an existing file, or O_CREAT is set and a component of the path prefix of path does not name an existing file, or path points to an empty string.
+					//	[EROFS] The named file resides on a read - only file system and either O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set in the oflag argument.
+					TEBAKO_SET_LAST_ERROR((flags & O_CREAT) ? EROFS : ENOENT);
+					break;
 			}
 		}
 		catch (bad_alloc&) {

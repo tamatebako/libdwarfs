@@ -155,12 +155,12 @@ extern "C" int load_fs( const void* data,
 
     }
 
-    catch (std::exception const& e) {
-        std::cerr << "error: " << e.what() << std::endl;
-        return 1;
-    }
     catch (std::filesystem::filesystem_error const& e) {
         std::cerr << e.what() << std::endl;
+        return 1;
+    }
+    catch (std::exception const& e) {
+        std::cerr << "error: " << e.what() << std::endl;
         return 1;
     }
     catch (...) {
@@ -251,9 +251,9 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, uint32_t inode, Args&&...
     return ret;
 }
 
-int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid) noexcept {
+int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept {
     struct stat st;
-    int ret = dwarfs_stat(path, &st);
+    int ret = dwarfs_stat(path, &st, lnk);
     if (ret == DWARFS_IO_CONTINUE) {
         ret = dwarfs_inode_access(st.st_ino, amode, uid, gid);
     }
@@ -266,25 +266,21 @@ int dwarfs_lstat(const char* path, struct stat* buf) noexcept {
         __func__, path, buf);
 }
 
-int dwarfs_stat(const char* path, struct stat* buf) noexcept {
+int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept {
     int ret = safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
               { [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
                   __func__, path, buf);
     try {
         if (ret == DWARFS_IO_CONTINUE && S_ISLNK(buf->st_mode)) {
-            std::string lnk;
             ret = dwarfs_readlink(path, lnk);
             if (ret == DWARFS_IO_CONTINUE) {
                 fs::path p_new = path;
                 fs::path p_lnk = lnk;
-                if (p_lnk.is_relative()) {
-                    p_new.replace_filename(lnk);
-                }
-                else {
-                    p_new = lnk;
-                }
+                if (p_lnk.is_relative())    p_new.replace_filename(lnk);
+                else                        p_new = lnk;
                 p_new = p_new.lexically_normal();
-                ret = tebako_stat(p_new.c_str(), buf);
+                if (is_tebako_path(p_new.c_str()))  ret = tebako_stat(p_new.c_str(), buf);
+                else                                ret = DWARFS_S_LINK_OUTSIDE;
            }
         }
     }

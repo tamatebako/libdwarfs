@@ -31,16 +31,20 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/alpine.yml'
       - '.github/workflows/ubuntu.yml'
       - '.github/workflows/macos.yml'
+      - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.github/workflows/alpine.yml'
       - '.github/workflows/ubuntu.yml'
       - '.github/workflows/macos.yml'
+      - '.github/workflows/lint.yml'
   workflow_dispatch:
 
 env:
@@ -52,10 +56,10 @@ env:
 # The folder for dwarfs and other dependenies
   DEPS: deps
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: "09"
+  CACHE_VER: "10"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "libdwarfs_wr_v0.1.7"
+  DWARFS_TAG: "libdwarfs_wr_v0.1.8"
   LIBARCHIVE_VER: "3.5.2"
   GLOG_TAG: "v0.5.0"
   GFLAGS_TAG: "v2.2.2"
@@ -76,7 +80,7 @@ jobs:
           xcode-version: '12.4'
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -92,7 +96,7 @@ jobs:
           echo ${{ env.GFLAGS_TAG }} >> key.txt
           echo ${{ env.JEMALLOC_VER }} >> key.txt
           echo 'LEVEL_UP<<EOF' >> $GITHUB_ENV
-          ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
+          tools/ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
           echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
           brew --prefix >> $GITHUB_ENV
@@ -121,14 +125,14 @@ jobs:
       - name: Install packages for target host architecture
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          ci-scripts/arm-brew-setup.sh ${{ env.LEVEL_UP }}
-          ci-scripts/arm-brew-install.sh ${{ env.LEVEL_UP }} libb2 lz4 xz zstd zlib libarchive        \
+          tools/ci-scripts/arm-brew-setup.sh ${{ env.LEVEL_UP }}
+          tools/ci-scripts/arm-brew-install.sh ${{ env.LEVEL_UP }} libb2 lz4 xz zstd zlib libarchive  \
                                 icu4c boost fmt openssl@1.1 libevent libsodium double-conversion      \
                                 gflags glog jemalloc
 
       - name: Checkout dwarfs [for build system architecture]
         if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: tamatebako/dwarfs
           path: ${{ env.DWARFS_BUILD }}
