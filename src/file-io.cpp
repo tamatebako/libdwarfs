@@ -53,14 +53,16 @@ extern "C" int tebako_open(int nargs, const char* path, int flags, ...)
 	}
 	else {
 		tebako_path_t t_path;
+		std::string r_path = path;
 		const char* p_path = to_tebako_path(t_path, path);
 
 		if (p_path) {
-			return sync_tebako_fdtable::fdtable.open(p_path, flags);
+			// This call will change r_path value if it is a link inside memfs pointing outside of memfs
+			ret = sync_tebako_fdtable::fdtable.open(p_path, flags, r_path);
 		}
-		else {
+		if (!p_path || ret == DWARFS_S_LINK_OUTSIDE) {
 			if (nargs == 2) {
-				ret = open(path, flags);
+				ret = open(r_path.c_str(), flags);
 			}
 			else {
 				va_list args;
@@ -71,7 +73,7 @@ extern "C" int tebako_open(int nargs, const char* path, int flags, ...)
 // this va_arg has undefined behavior because arguments will be promoted to 'int'
 				mode = (mode_t)va_arg(args, int);
 				va_end(args);
-				ret = ::open(path, flags, mode);
+				ret = ::open(r_path.c_str(), flags, mode);
 			}
 		}
 	}

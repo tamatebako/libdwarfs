@@ -35,8 +35,9 @@ on:
       - '.github/workflows/macos.yml'
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
+      - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -45,6 +46,7 @@ on:
       - '.github/workflows/macos.yml'
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
+      - '.github/workflows/lint.yml'
   workflow_dispatch:
 
 env:
@@ -194,6 +196,8 @@ jobs:
     needs: build
     name: Run Ubuntu-18.04 binaries on Ubuntu-20.04 [CC ${{ matrix.env }}]
     runs-on: ubuntu-20.04
+    env:
+      TEBAKO_CROSS_TEST: ON
     strategy:
       fail-fast: false
       matrix:

@@ -224,7 +224,6 @@ const char* to_tebako_path(tebako_path_t t_path, const char* path) {
 		}
 	}
 	catch (...) {
-		printf("!!!!!!!!! to_tebako_path has failed %s\n", path);
 	}
 	return p_path;
 }
