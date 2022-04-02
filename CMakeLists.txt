@@ -651,7 +651,7 @@ if(${WITH_TESTS})
   endif()
 
   execute_process(
-    COMMAND "${GNU_BASH}" 
+    COMMAND "${GNU_BASH}"
             "-c"
             "echo \$OSTYPE"
     RESULT_VARIABLE OSTYPE_RES

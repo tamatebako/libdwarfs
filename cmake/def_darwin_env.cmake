@@ -57,7 +57,7 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     message(STATUS "Found GNU bash keg installed by Homebrew at ${BREW_BASH_PREFIX}")
     set(GNU_BASH "${BREW_BASH_PREFIX}/bin/bash")
   endif()
-  
+
   message(STATUS "Using target brew environment at ${TARGET_BREW_PREFIX}")
   set(CMAKE_PREFIX_PATH "${TARGET_BREW_PREFIX};${TARGET_BREW_PREFIX}/opt/openssl@1.1;${TARGET_BREW_PREFIX}/opt/zlib")
   include_directories("${TARGET_BREW_PREFIX}/include")

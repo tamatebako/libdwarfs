@@ -9,6 +9,7 @@ on:
       - .github/workflows/ubuntu.yml
       - .github/workflows/macos.yml
       - .github/workflows/macos-arm64.yml
+      - .github/workflows/alpine.yml
       - 'cmake/def_darwin_env.cmake'
   pull_request:
     branches: [ main ]
@@ -19,6 +20,7 @@ on:
       - .github/workflows/ubuntu.yml
       - .github/workflows/macos.yml
       - .github/workflows/macos-arm64.yml
+      - .github/workflows/alpine.yml
       - 'cmake/def_darwin_env.cmake'
   workflow_dispatch:
 

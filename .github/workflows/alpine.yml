@@ -35,8 +35,9 @@ on:
       - '.github/workflows/macos.yml'
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
+      - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -45,6 +46,7 @@ on:
       - '.github/workflows/macos.yml'
       - '.github/workflows/macos-arm64.yml'
       - 'cmake/def_darwin_env.cmake'
+      - '.github/workflows/lint.yml'
   workflow_dispatch:
 
 env:
@@ -76,7 +78,7 @@ jobs:
             ASAN: 'OFF'
             LOG_LEVEL: 'warn'
 # ASAN libraries are not there for clang 12, but it looks like it will be ready with clng 13
-# (as a part of compiler-rt package)            
+# (as a part of compiler-rt package)
 #          - CC: clang
 #            CXX: clang++
 #            ASAN: 'ON'
@@ -91,7 +93,7 @@ jobs:
             double-conversion-dev lz4-dev openssl-dev zlib-dev     \
             libunwind-dev libdwarf-dev glog-dev elfutils-dev       \
             libevent-static openssl-libs-static lz4-static xz-dev  \
-            zlib-static libunwind-static acl-static       
+            zlib-static libunwind-static acl-static
 
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
