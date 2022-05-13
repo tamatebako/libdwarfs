@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.11)
+project(libdwarfs-wr VERSION 0.1.12)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -124,12 +124,31 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+execute_process(
+  COMMAND "${GNU_BASH}"
+          "-c"
+          "echo \$OSTYPE"
+  RESULT_VARIABLE OSTYPE_RES
+  OUTPUT_VARIABLE OSTYPE_TXT
+)
+if(OSTYPE_RES EQUAL 0)
+  message(STATUS "OSTYPE: '${OSTYPE_TXT}'")
+else(OSTYPE_RES EQUAL 0)
+  message(FATAL_ERROR "Failed to detect OSTYPE: ${OSTYPE_TXT}")
+endif(OSTYPE_RES EQUAL 0)
+
+if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
+  set(IS_MUSL ON)
+endif()
+
+
 message("Configuraion summary:")
 message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
 message(STATUS "Cross-compile options: ${CROSSFLAGS}")
 message(STATUS "Generic configure cross-compile options: ${HOST_OPTION}")
 message(STATUS "jemalloc configure cross-compile options: ${JEMALLOC_HOST_OPTION}")
 message(STATUS "CMake OSX architecture flag: ${CMAKE_OSX_ARCHITECTURES}")
+message(STATUS "musl: ${IS_MUSL}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
@@ -164,9 +183,16 @@ find_library(_LIBGLOG "libglog.a")
 if(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
   message(STATUS "glog static library was not found, building locally")
   set(WITH_GLOG_BUILD ON)
-  def_ext_prj_g(GLOG "v0.5.0")
 else()
   set(WITH_GLOG_BUILD OFF)
+endif()
+
+if(${WITH_GLOG_BUILD})
+  if(${IS_MUSL})
+    def_ext_prj_g(GLOG "v0.5.0")
+  else()
+    def_ext_prj_g(GLOG "v0.6.0")
+  endif()
 endif()
 
 find_library(_LIBGFLAGS "libgflags.a")
@@ -650,23 +676,9 @@ if(${WITH_TESTS})
     add_link_options(-static-libstdc++)
   endif()
 
-  execute_process(
-    COMMAND "${GNU_BASH}"
-            "-c"
-            "echo \$OSTYPE"
-    RESULT_VARIABLE OSTYPE_RES
-    OUTPUT_VARIABLE OSTYPE_TXT
-  )
-  if(OSTYPE_RES EQUAL 0)
-    message(STATUS "OSTYPE: '${OSTYPE_TXT}'")
-  else(OSTYPE_RES EQUAL 0)
-    message(FATAL_ERROR "Failed to detect OSTYPE: ${OSTYPE_TXT}")
-  endif(OSTYPE_RES EQUAL 0)
-
-  if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
-    message(STATUS "Adding __musl__ compile definitions")
+  if (IS_MUSL)
     add_compile_definitions(__musl__)
-  endif()
+  endif(IS_MUSL)
 
   add_executable(wr-bin
     "include/tebako-pch.h"
