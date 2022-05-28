@@ -56,24 +56,24 @@ namespace {
 	TEST_F(DlTests, tebako_dlopen_no_file) {
 		errno = 0;
 		void* dlptr = tebako_dlopen(TEBAKIZE_PATH("no_file"), RTLD_LAZY | RTLD_GLOBAL);
-		EXPECT_EQ(NULL, dlptr);
+		EXPECT_EQ(dlptr, nullptr);
 		EXPECT_EQ(ENOENT, errno);
 	}
 
 	TEST_F(DlTests, tebako_dlopen_no_file_pass_through) {
 		errno = 0;
 		void* dlptr = tebako_dlopen("/bin/no_file", RTLD_LAZY | RTLD_GLOBAL);
-		EXPECT_EQ(NULL, dlptr);
+		EXPECT_EQ(dlptr, nullptr);
 // TODO
 // For some reason if ASAN is enabled errno equals 0 here
-//		EXPECT_EQ(ENOENT, errno);
+		EXPECT_NE(dlerror(), nullptr);
 	}
 
 	TEST_F(DlTests, tebako_dlopen_absolute_path) {
 		void *handle;
 		handle = tebako_dlopen(TEBAKIZE_PATH("directory-1/libempty.so"), RTLD_LAZY | RTLD_GLOBAL);
-		EXPECT_TRUE(handle != NULL);
-        if (handle != NULL) {
+		EXPECT_NE(handle, nullptr);
+        if (handle != nullptr) {
 			EXPECT_EQ(0, dlclose(handle));
 		}
 	}
@@ -83,7 +83,7 @@ namespace {
 		void* handle;
 		handle = tebako_dlopen("libempty.so", RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_TRUE(handle != NULL);
-		if (handle != NULL) {
+		if (handle != nullptr) {
 			EXPECT_EQ(0, dlclose(handle));
 		}
 	}
@@ -92,8 +92,8 @@ namespace {
 		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-3/level-1/level-2///")));
 		void* handle;
 		handle = tebako_dlopen("../../../directory-1/libempty.so", RTLD_LAZY | RTLD_GLOBAL);
-		EXPECT_TRUE(handle != NULL);
-		if (handle != NULL) {
+		EXPECT_NE(handle, nullptr);
+		if (handle != nullptr) {
 			EXPECT_EQ(0, dlclose(handle));
 		}
 	}
@@ -109,7 +109,7 @@ namespace {
 #else
 		handle = dlopen(LIBM_SO, RTLD_LAZY | RTLD_GLOBAL);
 #endif
-		EXPECT_TRUE(handle != NULL);
+		EXPECT_NE(handle, nullptr);
 
 		// sqrt = (double (*)(double)) dlsym(handle, "sqrt");
 
