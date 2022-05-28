@@ -37,7 +37,15 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-static folly::Synchronized<int> tebako_dl_errno(0);
+struct tebako_dlerror_data {
+	int err;
+	string fname;
+	tebako_dlerror_data(int e, const char* f): err(e), fname(f) { };
+	tebako_dlerror_data(void): err(0), fname("") { };
+};
+
+static folly::Synchronized<tebako_dlerror_data> tebako_dlerror_stash;
+static char tebako_dlerror_msg[TEBAKO_PATH_LENGTH + 1024];
 
 typedef map<string, string> tebako_dltable;
 
@@ -107,18 +115,18 @@ public:
 				int fh_in = tebako_open(2, path, O_RDONLY);
 				size_t f_size = 0;
 				if (fh_in < 0) {
-					*tebako_dl_errno.wlock() = ENOENT;
+					*tebako_dlerror_stash.wlock() = tebako_dlerror_data(ENOENT, path);
 					fh_in = -1;
 				}
 				else {
 					struct stat st;
 					if (tebako_fstat(fh_in, &st) == -1) {
-						*tebako_dl_errno.wlock() = EIO;
+						*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
 					}
 					else {
 						int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT, st.st_mode);
 						if (fh_out == -1) {
-							*tebako_dl_errno.wlock() = EIO;
+							*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
 						}
 						else {
 							f_size = st.st_size;
@@ -139,7 +147,7 @@ public:
 						}
 						else {
 							::unlink(mapped.c_str());
-							*tebako_dl_errno.wlock() = EIO;
+							*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
 						}
 						::close(fh_out);
 					}
@@ -147,7 +155,7 @@ public:
 				}
 			}
 			catch(...) {
-				*tebako_dl_errno.wlock() = ENOMEM;
+				*tebako_dlerror_stash.wlock() = tebako_dlerror_data(ENOMEM, path);
 			}
 		}
 		return ret;
@@ -180,8 +188,14 @@ extern "C"	void* tebako_dlopen(const char* path, int flags) {
 }
 
 extern "C"	char* tebako_dlerror(void) {
-	int last_dl_errno = tebako_dl_errno.exchange(0);
-	char* native_dlerror = ::dlerror();
-	char* ret = last_dl_errno ? strerror(last_dl_errno) : native_dlerror;
+	string tebako_dlerror_text;
+	tebako_dlerror_data last_dl_error = tebako_dlerror_stash.exchange(tebako_dlerror_data());
+	if (last_dl_error.err != 0) {
+		tebako_dlerror_text = last_dl_error.fname + ": cannot open shared object file: " + strerror(last_dl_error.err);
+		strncpy(tebako_dlerror_msg, tebako_dlerror_text.c_str(), sizeof(tebako_dlerror_msg)/sizeof(char)-1);
+		tebako_dlerror_msg[sizeof(tebako_dlerror_msg)/sizeof(char)-1] = '\0';
+	}
+	char* native_dlerror_msg = ::dlerror();
+	char* ret = last_dl_error.err ? tebako_dlerror_msg : native_dlerror_msg;
 	return ret;
 }

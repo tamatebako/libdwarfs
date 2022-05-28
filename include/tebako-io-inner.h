@@ -45,6 +45,6 @@ int dwarfs_readlink(const char* path, std::string& lnk) noexcept;
 int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept ;
 
 int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept;
-int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept;
+int dwarfs_inode_relative_stat(int vfd, uint32_t inode, const char* path, struct stat* buf, bool follow) noexcept;
 ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept;
 int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;

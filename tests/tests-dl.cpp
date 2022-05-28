@@ -57,14 +57,16 @@ namespace {
 		errno = 0;
 		void* dlptr = tebako_dlopen(TEBAKIZE_PATH("no_file"), RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_EQ(dlptr, nullptr);
-		EXPECT_EQ(ENOENT, errno);
+		char *r = tebako_dlerror();
+		std::string expected = std::string(TEBAKIZE_PATH("no_file")) + ": cannot open shared object file: No such file or directory";
+		EXPECT_EQ(expected, r);
 	}
 
 	TEST_F(DlTests, tebako_dlopen_no_file_pass_through) {
 		errno = 0;
 		void* dlptr = tebako_dlopen("/bin/no_file", RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_EQ(dlptr, nullptr);
-		EXPECT_NE(tebako_dlerror(), nullptr);
+		EXPECT_NE(tebako_dlerror(), nullptr) ; // Specific otput cannot be guaranteed accross diffrent OSs
 	}
 
 	TEST_F(DlTests, tebako_dlopen_absolute_path) {

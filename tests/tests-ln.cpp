@@ -343,5 +343,41 @@ namespace {
 		}
 	}
 
+	TEST_F(LnTests, tebako_fstatat_link_follow_absolute) {
+		struct stat buf;
+		int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, 0);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(strlen("This is a file in the first directory"), buf.st_size);		// Content of the file
+	}
+
+	TEST_F(LnTests, tebako_fstatat_link_nofollow_absolute) {
+		struct stat buf;
+		int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, AT_SYMLINK_NOFOLLOW);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"), buf.st_size);		    // The link itself
+	}
+
+/*	TEST_F(LnTests, tebako_fstatat_link_follow_relative) {
+		struct stat buf;
+		int fd = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY | O_DIRECTORY);
+		EXPECT_LT(0, fd);
+		int ret = tebako_fstatat(fd, "s-link-to-file-1", &buf, 0);
+		EXPECT_EQ(0, ret);
+		ret = tebako_close(fd);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(strlen("This is a file in the first directory"), buf.st_size);		// Content of the file
+	}
+*/
+	TEST_F(LnTests, tebako_fstatat_link_nofollow_relative) {
+		struct stat buf;
+		int fd = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY | O_DIRECTORY);
+		EXPECT_LT(0, fd);
+		int ret = tebako_fstatat(fd, "s-link-to-file-1", &buf, AT_SYMLINK_NOFOLLOW);
+		EXPECT_EQ(0, ret);
+		ret = tebako_close(fd);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"), buf.st_size);		    // The link itself
+	}
+
 #endif
 }
