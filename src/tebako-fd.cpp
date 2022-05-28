@@ -122,7 +122,7 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept {
 				if (ret == DWARFS_IO_CONTINUE) {
 					try {
 						auto fd = make_shared<tebako_fd>(path);
-						if (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st) == 0) {
+						if (dwarfs_inode_relative_stat(vfd, stfd.st_ino, path, &fd->st, true /* FIXME */) == 0) {
 							if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
 								// [ENOTDIR] ... or O_DIRECTORY was specified and the path argument resolves to a non - directory file.
 								TEBAKO_SET_LAST_ERROR(ENOTDIR);
@@ -274,7 +274,7 @@ off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence)  noexcept {
 	return ret;
 }
 
-int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st) noexcept {
+int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st, bool follow) noexcept {
 	struct stat stfd;
 	int ret = fstat(vfd, &stfd);
 	if (ret == DWARFS_IO_CONTINUE) {
@@ -285,7 +285,7 @@ int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st) noe
 		else {
 			ret = dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid());
 			if (ret == DWARFS_IO_CONTINUE) {
-				ret = dwarfs_inode_relative_stat(stfd.st_ino, path, st);
+				ret = dwarfs_inode_relative_stat(vfd, stfd.st_ino, path, st, follow);
 			}
 			else {
 				TEBAKO_SET_LAST_ERROR(ENOENT);
