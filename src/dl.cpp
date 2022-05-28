@@ -37,6 +37,8 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+static folly::Synchronized<int> tebako_dl_errno(0);
+
 typedef map<string, string> tebako_dltable;
 
 class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
@@ -105,18 +107,18 @@ public:
 				int fh_in = tebako_open(2, path, O_RDONLY);
 				size_t f_size = 0;
 				if (fh_in < 0) {
-					TEBAKO_SET_LAST_ERROR(ENOENT);
+					*tebako_dl_errno.wlock() = ENOENT;
 					fh_in = -1;
 				}
 				else {
 					struct stat st;
 					if (tebako_fstat(fh_in, &st) == -1) {
-						TEBAKO_SET_LAST_ERROR(EIO);
+						*tebako_dl_errno.wlock() = EIO;
 					}
 					else {
 						int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT, st.st_mode);
 						if (fh_out == -1) {
-							TEBAKO_SET_LAST_ERROR(EIO);
+							*tebako_dl_errno.wlock() = EIO;
 						}
 						else {
 							f_size = st.st_size;
@@ -137,7 +139,7 @@ public:
 						}
 						else {
 							::unlink(mapped.c_str());
-							TEBAKO_SET_LAST_ERROR(EIO);
+							*tebako_dl_errno.wlock() = EIO;
 						}
 						::close(fh_out);
 					}
@@ -145,7 +147,7 @@ public:
 				}
 			}
 			catch(...) {
-				TEBAKO_SET_LAST_ERROR(ENOMEM);
+				*tebako_dl_errno.wlock() = ENOMEM;
 			}
 		}
 		return ret;
@@ -157,10 +159,8 @@ sync_tebako_dltable sync_tebako_dltable::dltable;
 
 extern "C"	void* tebako_dlopen(const char* path, int flags) {
 	void* ret = NULL;
-//  ...
-//	If filename is NULL, then the returned handle is for the main program.
-//  ...
 	if (path == NULL) {
+//	If filename is NULL, then the returned handle is for the main program.
 		ret = ::dlopen(path, flags);
 	}
 	else {
@@ -176,5 +176,12 @@ extern "C"	void* tebako_dlopen(const char* path, int flags) {
 			}
 		}
 	}
+	return ret;
+}
+
+extern "C"	char* tebako_dlerror(void) {
+	int last_dl_errno = tebako_dl_errno.exchange(0);
+	char* native_dlerror = ::dlerror();
+	char* ret = last_dl_errno ? strerror(last_dl_errno) : native_dlerror;
 	return ret;
 }

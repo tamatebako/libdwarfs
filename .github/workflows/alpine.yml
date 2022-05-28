@@ -52,7 +52,7 @@ on:
 env:
 # The folder for dwarfs and other dependenies
   DEPS: deps
-  CACHE_VER: "09"
+  CACHE_VER: "11"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "libdwarfs_wr_v0.1.8"

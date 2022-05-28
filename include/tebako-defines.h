@@ -95,6 +95,7 @@
  #define pread(...)         tebako_pread(__VA_ARGS__)
  #define readv(...)         tebako_readv(__VA_ARGS__)
  #define dlopen(...)        tebako_dlopen(__VA_ARGS__)
+ #define dlerror            tebako_dlerror
  #define access(...)        tebako_access(__VA_ARGS__)
  #define mkdir(...)         tebako_mkdir(__VA_ARGS__)
  #define getattrlist(...)   tebako_getattrlist(__VA_ARGS__)

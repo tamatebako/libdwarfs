@@ -64,9 +64,7 @@ namespace {
 		errno = 0;
 		void* dlptr = tebako_dlopen("/bin/no_file", RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_EQ(dlptr, nullptr);
-// TODO
-// For some reason if ASAN is enabled errno equals 0 here
-		EXPECT_NE(dlerror(), nullptr);
+		EXPECT_NE(tebako_dlerror(), nullptr);
 	}
 
 	TEST_F(DlTests, tebako_dlopen_absolute_path) {
