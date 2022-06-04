@@ -174,7 +174,7 @@ set(DWARFS_CXX_FLAGS       "")
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.8")
+def_ext_prj_g(DWARFS "maxirmx-v0.1.9")
 def_ext_prj_t(LIBARCHIVE "3.5.2" "f0b19ff39c3c9a5898a219497ababbadab99d8178acc980155c7e1271089b5a0")
 
 if(${WITH_TESTS})
@@ -376,6 +376,7 @@ if(${WITH_GLOG_BUILD})
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
   )
+  add_dependencies(${DWARFS_PRJ} ${GFLOG_PRJ})
 endif(${WITH_GLOG_BUILD})
 
 # ...................................................................
@@ -404,6 +405,7 @@ if(${WITH_GFLAGS_BUILD})
     BUILD_BYPRODUCTS ${__LIBGFLAGS}
   )
   add_dependencies(${GLOG_PRJ} ${GFLAGS_PRJ})
+  add_dependencies(${DWARFS_PRJ} ${GFLAGS_PRJ})
 endif(${WITH_GFLAGS_BUILD})
 
 # ...................................................................
@@ -427,6 +429,7 @@ if(${WITH_FMT_BUILD})
     BINARY_DIR ${FMT_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBFMT}
   )
+  add_dependencies(${DWARFS_PRJ} ${FMT_PRJ})
 endif(${WITH_FMT_BUILD})
 
 # ...................................................................
