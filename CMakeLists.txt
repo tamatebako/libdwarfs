@@ -456,6 +456,7 @@ if(${WITH_DC_BUILD})
     BINARY_DIR ${DC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBDC}
   )
+  add_dependencies(${DWARFS_PRJ} ${DC_PRJ})
 endif(${WITH_DC_BUILD})
 
 # ...................................................................
