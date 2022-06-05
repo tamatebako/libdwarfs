@@ -55,7 +55,7 @@ env:
   CACHE_VER: "09"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "libdwarfs_wr_v0.1.8"
+  DWARFS_TAG: "maxirmx-v0.1.9"
   LIBARCHIVE_VER: "3.5.2"
 # Misc
   DEBIAN_FRONTEND: "noninteractive"
