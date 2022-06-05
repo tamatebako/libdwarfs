@@ -376,7 +376,7 @@ if(${WITH_GLOG_BUILD})
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
   )
-  add_dependencies(${DWARFS_PRJ} ${GFLOG_PRJ})
+  add_dependencies(${DWARFS_PRJ} ${GLOG_PRJ})
 endif(${WITH_GLOG_BUILD})
 
 # ...................................................................
