@@ -100,7 +100,7 @@ jobs:
           apk --no-cache --upgrade add build-base cmake git bash   \
             autoconf boost-static boost-dev flex-dev bison         \
             binutils-dev libarchive-dev libevent-dev acl-dev       \
-            double-conversion-dev lz4-dev openssl-dev zlib-dev     \
+            lz4-dev openssl-dev zlib-dev gflags gflags-dev                          \
             libunwind-dev libdwarf-dev elfutils-dev                \
             libevent-static openssl-libs-static lz4-static xz-dev  \
             zlib-static libunwind-static acl-static tar
