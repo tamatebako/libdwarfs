@@ -54,6 +54,9 @@ set(DEPS_LIB_DIR ${DEPS}/lib)
 set(DEPS_BIN_DIR ${DEPS}/bin)
 set(DEPS_SBIN_DIR ${DEPS}/sbin)
 
+include_directories(${DEPS_INCLUDE_DIR})
+link_directories(${DEPS_LIB_DIR})
+
 if (TEBAKO_BUILD_TARGET)
   if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
     if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11")
