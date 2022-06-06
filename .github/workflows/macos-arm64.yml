@@ -56,10 +56,10 @@ env:
 # The folder for dwarfs and other dependenies
   DEPS: deps
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: "11"
+  CACHE_VER: "12"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "libdwarfs_wr_v0.1.8"
+  DWARFS_TAG: "maxirmx-v0.1.9"
   LIBARCHIVE_VER: "3.5.2"
   GLOG_TAG: "v0.5.0"
   GFLAGS_TAG: "v2.2.2"
