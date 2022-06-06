@@ -177,7 +177,7 @@ set(DWARFS_CXX_FLAGS       "")
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "maxirmx-v0.1.9")
+def_ext_prj_g(DWARFS "tebako-v0.2.0")
 def_ext_prj_t(LIBARCHIVE "3.5.2" "f0b19ff39c3c9a5898a219497ababbadab99d8178acc980155c7e1271089b5a0")
 
 if(${WITH_TESTS})

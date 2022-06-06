@@ -55,7 +55,7 @@ env:
   CACHE_VER: "14"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "maxirmx-v0.1.9"
+  DWARFS_TAG: "tebako-v0.2.0"
   LIBARCHIVE_VER: "3.5.2"
 # Misc
   DEBIAN_FRONTEND: "noninteractive"
@@ -94,7 +94,7 @@ jobs:
 # do not provide static versions so we build them locally
 # using apk in parallel would create a risk of version mismatch since
 # folly 'prefers' globally installed shared library
-# ideal solution would be to build from source static libraries for 
+# ideal solution would be to build from source static libraries for
 # already installed shared versions but it may be overcomplicated
         run: |
           apk --no-cache --upgrade add build-base cmake git bash   \

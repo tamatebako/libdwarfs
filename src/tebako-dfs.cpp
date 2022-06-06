@@ -299,21 +299,21 @@ int dwarfs_readlink(const char* path, std::string& lnk) noexcept {
 
 int dwarfs_inode_readlink(uint32_t inode, std::string& lnk) noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, std::string&)>
-    { [](filesystem_v2* fs, uint32_t inode, std::string& lnk) -> int { 
+    { [](filesystem_v2* fs, uint32_t inode, std::string& lnk) -> int {
             auto pi = fs->find(inode);
-            return pi ? fs->readlink(*pi, &lnk) : DWARFS_IO_ERROR; 
-        } 
+            return pi ? fs->readlink(*pi, &lnk) : DWARFS_IO_ERROR;
+        }
     },
     __func__, inode, lnk);
 }
 
 int dwarfs_inode_relative_stat(int vfd, uint32_t inode, const char* path, struct stat* buf, bool follow) noexcept {
     int ret = safe_dwarfs_call(
-        std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)> { 
+        std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)> {
             [] (filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int {
                 auto pi = fs->find(inode, path);
                 return pi ? fs->getattr(*pi, buf) : ENOENT;
-            } 
+            }
         },
         __func__, inode, path, buf);
         try {
@@ -326,7 +326,7 @@ int dwarfs_inode_relative_stat(int vfd, uint32_t inode, const char* path, struct
 //                        if (p_lnk.is_relative())    p_new.replace_filename(lnk);
 //                        else                        p_new = lnk;
 //                        p_new = p_new.lexically_normal();
-//                        if (is_tebako_path(p_new.c_str()))  
+//                        if (is_tebako_path(p_new.c_str()))
 ret = tebako_fstatat(vfd, lnk.c_str(), buf, 0);
 //                        else                                ret = DWARFS_S_LINK_OUTSIDE;
                     }
