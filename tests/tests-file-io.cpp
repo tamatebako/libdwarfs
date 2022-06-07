@@ -273,7 +273,7 @@ namespace {
 		const char* pattern = "Just a file";
 		const int num2read = strlen(pattern);
 		EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf)/sizeof(readbuf[0])));
-		EXPECT_EQ(0, strncmp(readbuf, "Just a file", num2read));
+		EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
 
 		EXPECT_EQ(0, tebako_close(fh1));
 		EXPECT_EQ(0, tebako_close(fh2));
@@ -291,7 +291,7 @@ namespace {
 		const char* pattern = "Just a file";
 		const int num2read = strlen(pattern);
 		EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
-		EXPECT_EQ(0, strncmp(readbuf, "Just a file", num2read));
+		EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
 
 		EXPECT_EQ(0, tebako_close(fh1));
 		EXPECT_EQ(0, tebako_close(fh2));

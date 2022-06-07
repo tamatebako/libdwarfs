@@ -118,16 +118,18 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept {
 				//	....
 				//	However, Linux does not support O_SEARCH (
 				//  So, We will assume that it is not set
-				ret = dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid());
-				if (ret == DWARFS_IO_CONTINUE) {
+				if (dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid()) == DWARFS_IO_CONTINUE) {
 					try {
 						auto fd = make_shared<tebako_fd>(path);
-						if (dwarfs_inode_relative_stat(vfd, stfd.st_ino, path, &fd->st, true /* FIXME */) == 0) {
+						if (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st, (flags & O_NOFOLLOW) == 0) == DWARFS_IO_CONTINUE) {
 							if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
 								// [ENOTDIR] ... or O_DIRECTORY was specified and the path argument resolves to a non - directory file.
 								TEBAKO_SET_LAST_ERROR(ENOTDIR);
-							}
-							else {
+							} else if (S_ISLNK(fd->st.st_mode) && (flags & O_NOFOLLOW)) {
+								//    [O_NOFOLLOW] If the trailing component (i.e., basename) of pathname is
+								//                 a symbolic link, then the open fails, with the error ELOOP.								
+								TEBAKO_SET_LAST_ERROR(ELOOP);
+							} else {
 								fd->handle = new int;
 								if (fd->handle == NULL) {
 									TEBAKO_SET_LAST_ERROR(ENOMEM);
@@ -285,7 +287,7 @@ int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st, boo
 		else {
 			ret = dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid());
 			if (ret == DWARFS_IO_CONTINUE) {
-				ret = dwarfs_inode_relative_stat(vfd, stfd.st_ino, path, st, follow);
+				ret = dwarfs_inode_relative_stat(stfd.st_ino, path, st, follow);
 			}
 			else {
 				TEBAKO_SET_LAST_ERROR(ENOENT);

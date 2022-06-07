@@ -357,7 +357,7 @@ namespace {
 		EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"), buf.st_size);		    // The link itself
 	}
 
-/*	TEST_F(LnTests, tebako_fstatat_link_follow_relative) {
+	TEST_F(LnTests, tebako_fstatat_link_follow_relative) {
 		struct stat buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY | O_DIRECTORY);
 		EXPECT_LT(0, fd);
@@ -367,7 +367,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 		EXPECT_EQ(strlen("This is a file in the first directory"), buf.st_size);		// Content of the file
 	}
-*/
+
 	TEST_F(LnTests, tebako_fstatat_link_nofollow_relative) {
 		struct stat buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY | O_DIRECTORY);
@@ -379,5 +379,35 @@ namespace {
 		EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"), buf.st_size);		    // The link itself
 	}
 
+	TEST_F(LnTests, tebako_openat_link_nofollow_relative) {
+		int fh1 = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY);
+		EXPECT_LT(0, fh1);
+
+		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("")));
+		int fh2 = tebako_openat(3, fh1, "s-link-to-file-1", O_RDONLY|O_NOFOLLOW);
+		EXPECT_EQ(-1, fh2);		
+		EXPECT_EQ(ELOOP, errno);
+
+		EXPECT_EQ(-1, tebako_close(fh2));
+		EXPECT_EQ(0, tebako_close(fh1));
+	}
+
+	TEST_F(LnTests, tebako_openat_link_follow_absolute) {
+		int fh1 = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY);
+		EXPECT_LT(0, fh1);
+
+		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("")));
+		int fh2 = tebako_openat(3, AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), O_RDONLY);
+		EXPECT_LT(0, fh2);
+
+		char readbuf[64];
+		const char* pattern = "This is a file in the first directory";
+		const int num2read = strlen(pattern);
+		EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
+		EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
+
+		EXPECT_EQ(0, tebako_close(fh1));
+		EXPECT_EQ(0, tebako_close(fh2));
+	}
 #endif
 }
