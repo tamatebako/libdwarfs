@@ -392,12 +392,13 @@ namespace {
 		EXPECT_EQ(0, tebako_close(fh1));
 	}
 
-	TEST_F(LnTests, tebako_open_link_nofollow) {
+/*	TEST_F(LnTests, tebako_open_link_nofollow) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-file-1"), O_RDONLY|O_NOFOLLOW);
 		EXPECT_EQ(-1, fh);
 		EXPECT_EQ(ELOOP, errno);
 
 		EXPECT_EQ(-1, tebako_close(fh));
 	}
+*/
 #endif
 }
