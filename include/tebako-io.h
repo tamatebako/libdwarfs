@@ -117,6 +117,7 @@ extern "C" {
 #endif
 
     void* tebako_dlopen(const char* path, int flags);
+    char* tebako_dlerror(void);
 
 /* struct attr is defined only if sys/attr.h has been included */
 #if defined(_SYS_ATTR_H_) || defined(_SYS_ATTR_H_)

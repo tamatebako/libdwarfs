@@ -343,5 +343,62 @@ namespace {
 		}
 	}
 
+	TEST_F(LnTests, tebako_fstatat_link_follow_absolute) {
+		struct stat buf;
+		int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, 0);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(strlen("This is a file in the first directory"), buf.st_size);		// Content of the file
+	}
+
+	TEST_F(LnTests, tebako_fstatat_link_nofollow_absolute) {
+		struct stat buf;
+		int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, AT_SYMLINK_NOFOLLOW);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"), buf.st_size);		    // The link itself
+	}
+
+	TEST_F(LnTests, tebako_fstatat_link_follow_relative) {
+		struct stat buf;
+		int fd = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY | O_DIRECTORY);
+		EXPECT_LT(0, fd);
+		int ret = tebako_fstatat(fd, "s-link-to-file-1", &buf, 0);
+		EXPECT_EQ(0, ret);
+		ret = tebako_close(fd);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(strlen("This is a file in the first directory"), buf.st_size);		// Content of the file
+	}
+
+	TEST_F(LnTests, tebako_fstatat_link_nofollow_relative) {
+		struct stat buf;
+		int fd = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY | O_DIRECTORY);
+		EXPECT_LT(0, fd);
+		int ret = tebako_fstatat(fd, "s-link-to-file-1", &buf, AT_SYMLINK_NOFOLLOW);
+		EXPECT_EQ(0, ret);
+		ret = tebako_close(fd);
+		EXPECT_EQ(0, ret);
+		EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"), buf.st_size);		    // The link itself
+	}
+
+	TEST_F(LnTests, tebako_openat_link_nofollow_relative) {
+		int fh1 = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY);
+		EXPECT_LT(0, fh1);
+
+		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("")));
+		int fh2 = tebako_openat(3, fh1, "s-link-to-file-1", O_RDONLY|O_NOFOLLOW);
+		EXPECT_EQ(-1, fh2);		
+		EXPECT_EQ(ELOOP, errno);
+
+		EXPECT_EQ(-1, tebako_close(fh2));
+		EXPECT_EQ(0, tebako_close(fh1));
+	}
+
+/*	TEST_F(LnTests, tebako_open_link_nofollow) {
+		int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-file-1"), O_RDONLY|O_NOFOLLOW);
+		EXPECT_EQ(-1, fh);
+		EXPECT_EQ(ELOOP, errno);
+
+		EXPECT_EQ(-1, tebako_close(fh));
+	}
+*/
 #endif
 }

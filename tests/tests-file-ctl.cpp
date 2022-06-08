@@ -226,7 +226,7 @@ namespace {
 		struct stat buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
 		EXPECT_LT(0, fd);
-		int ret = tebako_fstatat(fd, "bin/bash", &buf, 0);
+		int ret = tebako_fstatat(fd, "/bin/bash", &buf, 0);
 		EXPECT_EQ(0, ret);
 		ret = tebako_close(fd);
 		EXPECT_EQ(0, ret);

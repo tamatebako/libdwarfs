@@ -28,7 +28,7 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
-project(libdwarfs-wr VERSION 0.1.12)
+project(libdwarfs-wr VERSION 0.2.0)
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -53,6 +53,9 @@ set(DEPS_INCLUDE_DIR ${DEPS}/include)
 set(DEPS_LIB_DIR ${DEPS}/lib)
 set(DEPS_BIN_DIR ${DEPS}/bin)
 set(DEPS_SBIN_DIR ${DEPS}/sbin)
+
+include_directories(${DEPS_INCLUDE_DIR})
+link_directories(${DEPS_LIB_DIR})
 
 if (TEBAKO_BUILD_TARGET)
   if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
@@ -139,6 +142,8 @@ endif(OSTYPE_RES EQUAL 0)
 
 if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
   set(IS_MUSL ON)
+else()
+  set(IS_MUSL OFF)
 endif()
 
 
@@ -172,7 +177,7 @@ set(DWARFS_CXX_FLAGS       "")
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "libdwarfs_wr_v0.1.8")
+def_ext_prj_g(DWARFS "tebako-v0.2.0")
 def_ext_prj_t(LIBARCHIVE "3.5.2" "f0b19ff39c3c9a5898a219497ababbadab99d8178acc980155c7e1271089b5a0")
 
 if(${WITH_TESTS})
@@ -183,16 +188,9 @@ find_library(_LIBGLOG "libglog.a")
 if(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
   message(STATUS "glog static library was not found, building locally")
   set(WITH_GLOG_BUILD ON)
-else()
-  set(WITH_GLOG_BUILD OFF)
-endif()
-
-if(${WITH_GLOG_BUILD})
-  if(${IS_MUSL})
-    def_ext_prj_g(GLOG "v0.5.0")
+  def_ext_prj_g(GLOG "v0.6.0")
   else()
-    def_ext_prj_g(GLOG "v0.6.0")
-  endif()
+  set(WITH_GLOG_BUILD OFF)
 endif()
 
 find_library(_LIBGFLAGS "libgflags.a")
@@ -381,6 +379,7 @@ if(${WITH_GLOG_BUILD})
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
   )
+  add_dependencies(${DWARFS_PRJ} ${GLOG_PRJ})
 endif(${WITH_GLOG_BUILD})
 
 # ...................................................................
@@ -409,6 +408,7 @@ if(${WITH_GFLAGS_BUILD})
     BUILD_BYPRODUCTS ${__LIBGFLAGS}
   )
   add_dependencies(${GLOG_PRJ} ${GFLAGS_PRJ})
+  add_dependencies(${DWARFS_PRJ} ${GFLAGS_PRJ})
 endif(${WITH_GFLAGS_BUILD})
 
 # ...................................................................
@@ -432,6 +432,7 @@ if(${WITH_FMT_BUILD})
     BINARY_DIR ${FMT_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBFMT}
   )
+  add_dependencies(${DWARFS_PRJ} ${FMT_PRJ})
 endif(${WITH_FMT_BUILD})
 
 # ...................................................................
@@ -455,6 +456,7 @@ if(${WITH_DC_BUILD})
     BINARY_DIR ${DC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBDC}
   )
+  add_dependencies(${DWARFS_PRJ} ${DC_PRJ})
 endif(${WITH_DC_BUILD})
 
 # ...................................................................
@@ -503,8 +505,10 @@ configure_file(
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
 
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${DEPS_INCLUDE_DIR}
                     ${INCBIN_SOURCE_DIR}
                     ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift
                     ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include ${BREW_PREFIX}/include

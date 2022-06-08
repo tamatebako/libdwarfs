@@ -159,10 +159,10 @@ extern "C" int tebako_fstatat(int vfd, const char* path, struct stat* buf, int f
 	try {
 		std::filesystem::path std_path(path);
 		if (std_path.is_absolute() || vfd == AT_FDCWD) {
-			ret = (flag== AT_SYMLINK_NOFOLLOW) ? tebako_lstat(path, buf) : tebako_stat(path, buf);
+			ret = (flag & AT_SYMLINK_NOFOLLOW) ? tebako_lstat(path, buf) : tebako_stat(path, buf);
 		}
 		else {
-			ret = sync_tebako_fdtable::fdtable.fstatat(vfd, path, buf);
+			ret = sync_tebako_fdtable::fdtable.fstatat(vfd, path, buf, (flag & AT_SYMLINK_NOFOLLOW) == 0);
 			if (ret == DWARFS_INVALID_FD) {
 				ret = ::fstatat(vfd, path, buf, flag);
 			}

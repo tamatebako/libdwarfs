@@ -37,7 +37,7 @@
 #include <tebako-dirent.h>
 #include <tebako-mfs.h>
 
-namespace fs = std::filesystem;
+namespace stdfs = std::filesystem;
 
 namespace dwarfs {
 
@@ -155,7 +155,7 @@ extern "C" int load_fs( const void* data,
 
     }
 
-    catch (std::filesystem::filesystem_error const& e) {
+    catch (stdfs::filesystem_error const& e) {
         std::cerr << e.what() << std::endl;
         return 1;
     }
@@ -274,8 +274,8 @@ int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept {
         if (ret == DWARFS_IO_CONTINUE && S_ISLNK(buf->st_mode)) {
             ret = dwarfs_readlink(path, lnk);
             if (ret == DWARFS_IO_CONTINUE) {
-                fs::path p_new = path;
-                fs::path p_lnk = lnk;
+                stdfs::path p_new = path;
+                stdfs::path p_lnk = lnk;
                 if (p_lnk.is_relative())    p_new.replace_filename(lnk);
                 else                        p_new = lnk;
                 p_new = p_new.lexically_normal();
@@ -283,6 +283,10 @@ int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept {
                 else                                ret = DWARFS_S_LINK_OUTSIDE;
            }
         }
+    }
+    catch (dwarfs::system_error const& e) {
+        TEBAKO_SET_LAST_ERROR(e.get_errno());
+        ret = DWARFS_IO_ERROR;
     }
     catch (...) {
         ret = DWARFS_IO_ERROR;
@@ -297,13 +301,60 @@ int dwarfs_readlink(const char* path, std::string& lnk) noexcept {
         __func__, path, lnk);
 }
 
-int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf) noexcept {
-    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)>
-    { [](filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int {
+int dwarfs_inode_readlink(uint32_t inode, std::string& lnk) noexcept {
+    return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, std::string&)>
+    { [](filesystem_v2* fs, uint32_t inode, std::string& lnk) -> int {
             auto pi = fs->find(inode);
-            return pi ? fs->getattr(*pi, buf) : ENOENT;
-        } },
+            return pi ? fs->readlink(*pi, &lnk) : DWARFS_IO_ERROR;
+        }
+    },
+    __func__, inode, lnk);
+}
+
+static int internal_getattr_relative(uint32_t inode, stdfs::path p_path, struct stat* buf) {
+    int ret = DWARFS_IO_ERROR;
+    auto locked = usd.rlock();
+    auto p = *locked;
+    if (p) {
+        auto pi = p->fs.find(inode);
+        for (auto p_it = p_path.begin(); p_it != p_path.end(); ++p_it) {
+            if (!pi) break;
+            pi = p->fs.find(pi->inode_num(), p_it->c_str());
+        }
+        ret =  pi ? p->fs.getattr(*pi, buf) : ENOENT;
+    }
+    return ret;
+}
+
+int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf, bool follow) noexcept {
+    int ret = safe_dwarfs_call(
+        std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)> {
+            [] (filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int {
+                auto pi = fs->find(inode, path);
+                return pi ? fs->getattr(*pi, buf) : ENOENT;
+            }
+        },
         __func__, inode, path, buf);
+        try {
+                if (ret == DWARFS_IO_CONTINUE && S_ISLNK(buf->st_mode) && follow) {
+                    std::string lnk;
+                    ret = dwarfs_inode_readlink(buf->st_ino, lnk);
+                    if (ret == DWARFS_IO_CONTINUE) {
+                        stdfs::path p_path(lnk);
+                        if (p_path.is_relative()) ret =  internal_getattr_relative(inode, p_path, buf);
+                        else                      ret =  tebako_stat(p_path.c_str(), buf);  
+                    }
+                }
+        }
+        catch (dwarfs::system_error const& e) {
+            TEBAKO_SET_LAST_ERROR(e.get_errno());
+            ret = DWARFS_IO_ERROR;
+        }
+        catch (...) {
+            ret = DWARFS_IO_ERROR;
+            TEBAKO_SET_LAST_ERROR(ENOMEM);
+        }
+    return ret;
 }
 
 int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept {
