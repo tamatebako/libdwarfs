@@ -101,7 +101,7 @@ namespace {
 	}
 
 	TEST_F(FileIOTests, tebako_open_not_dir) {
-		int ret = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY | O_DIRECTORY);
+		int ret = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY|O_DIRECTORY);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOTDIR, errno);
 	}
@@ -112,8 +112,8 @@ namespace {
 		EXPECT_EQ(EBADF, errno);
 	}
 
-	TEST_F(FileIOTests, tebako_open_read_close_absolute_path) {
-		int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY );
+	TEST_F(FileIOTests, tebako_open_read_close_absolute_path_with_nofollow) {
+		int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY|O_NOFOLLOW);
 		EXPECT_LT(0, fh);
 
 		char readbuf[32];
@@ -263,10 +263,10 @@ namespace {
 		EXPECT_EQ(0, tebako_close(fh1));
 	}
 
-	TEST_F(FileIOTests, tebako_openat_not_relative) {
-		int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY);
+	TEST_F(FileIOTests, tebako_openat_not_relative_with_nofollow) {
+		int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY|O_NOFOLLOW);
 		EXPECT_LT(0, fh1);
-		int fh2 = tebako_openat(3, fh1, TEBAKIZE_PATH("file.txt"), O_RDONLY);
+		int fh2 = tebako_openat(3, fh1, TEBAKIZE_PATH("file.txt"), O_RDONLY|O_NOFOLLOW);
 		EXPECT_LT(0, fh2);
 
 		char readbuf[32];
