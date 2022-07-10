@@ -49,6 +49,7 @@ on:
 env:
   CC: clang
   CXX: clang++
+  CACHE_VER: 20
 
 jobs:
   build:

@@ -43,6 +43,9 @@ on:
       - '!.github/workflows/ubuntu.yml'
   workflow_dispatch:
 
+env:
+  CACHE_VER: 20
+
 jobs:
   build:
     name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
