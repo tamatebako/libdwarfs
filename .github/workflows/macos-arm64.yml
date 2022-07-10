@@ -31,41 +31,23 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/alpine.yml'
-      - '.github/workflows/ubuntu.yml'
-      - '.github/workflows/macos.yml'
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/macos-arm64.yml'
   pull_request:
     branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/alpine.yml'
-      - '.github/workflows/ubuntu.yml'
-      - '.github/workflows/macos.yml'
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/macos-arm64.yml'
   workflow_dispatch:
 
 env:
-  MAKEFLAGS: -j4
-  BUILD_TYPE: Release
   CC: clang
   CXX: clang++
   TARGET: arm64
-# The folder for dwarfs and other dependenies
-  DEPS: deps
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: "12"
-# GitHub dependencies'
-  INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "tebako-v0.3.0"
-  LIBARCHIVE_VER: "3.5.2"
-  GLOG_TAG: "v0.5.0"
-  GFLAGS_TAG: "v2.2.2"
-# Tarball dependencies
-  JEMALLOC_VER: "5.2.1"
-  JEMALLOC_HASH: "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6"
 
 jobs:
   build:
@@ -83,6 +65,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+
+      - name: Setup environment
+        run: cat common.env >> $GITHUB_ENV
 
       - name: Create deps folders and keys
         run: |

@@ -31,36 +31,17 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/ubuntu.yml'
-      - '.github/workflows/macos.yml'
-      - '.github/workflows/macos-arm64.yml'
-      - 'cmake/def_darwin_env.cmake'
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/alpine.yml'
   pull_request:
     branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/ubuntu.yml'
-      - '.github/workflows/macos.yml'
-      - '.github/workflows/macos-arm64.yml'
-      - 'cmake/def_darwin_env.cmake'
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/alpine.yml'
   workflow_dispatch:
-
-env:
-# The folder for dwarfs and other dependenies
-  DEPS: deps
-  CACHE_VER: "14"
-# GitHub dependencies'
-  INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "tebako-v0.3.0"
-  LIBARCHIVE_VER: "3.5.2"
-# Misc
-  DEBIAN_FRONTEND: "noninteractive"
-  TZ: "Etc/UTC"
-  MAKEFLAGS: -j4
 
 jobs:
   build:
@@ -114,6 +95,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+
+      - name: Setup environment
+        run: cat common.env ubuntu.env >> $GITHUB_ENV
 
       - name: Patch system includes
         if: ${{ matrix.env.CC == 'clang' }}
