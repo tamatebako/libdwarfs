@@ -48,6 +48,7 @@ env:
   CXX: clang++
   TARGET: arm64
   DWARFS_BUILD: dwarfs-x86_64
+  CACHE_VER: 20
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'

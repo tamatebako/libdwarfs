@@ -49,6 +49,7 @@ on:
 env:
   CC: clang
   CXX: clang++
+  CACHE_VER: 20
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'

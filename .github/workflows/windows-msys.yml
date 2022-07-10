@@ -51,10 +51,12 @@ on:
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
+env:
+  CACHE_VER: 21
 
 jobs:
   build:
-    name: windows-msys [${{ matrix.env.sys }} CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    name: windows-msys [${{ matrix.env.sys }}, CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -77,7 +79,7 @@ jobs:
       - name: Setup MSys
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{matrix.env.sys}}
+          msystem: ${{ matrix.env.sys }}
           path-type: minimal
           update: true
           install: >-
@@ -106,3 +108,23 @@ jobs:
 
       - name: Setup environment
         run: cat common.env >> $GITHUB_ENV
+
+      - name: Create deps folder
+        run: |
+          mkdir ${{ env.DEPS }}
+          echo "Keys" > key.txt
+          echo ${{ env.DWARFS_TAG }} >> key.txt
+          echo ${{ env.INCBIN_TAG }} >> key.txt
+          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
+
+      - name: Process cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/${{env.DEPS}}
+          key:  windows-msys-${{ matrix.env.sys }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DWITH_TESTS=ON -DWITH_LINK_TESTS=OFF -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
