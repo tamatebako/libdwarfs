@@ -44,8 +44,13 @@ option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
 include(ExternalProject)
 include(GNUInstallDirs)
 include(CheckSymbolExists)
-include(${CMAKE_SOURCE_DIR}/cmake/def_ext_prj.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/def_darwin_env.cmake)
+
+# This is the default that will be overwritten for MacOS and MSys
+set(GNU_BASH "bash")
+
+include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/macos-environment.cmake)
+include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/msys-environment.cmake)
+include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/def-external-project.cmake)
 
 # Various locations for external projects
 set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
@@ -148,6 +153,12 @@ else()
   set(IS_MUSL OFF)
 endif()
 
+if("${OSTYPE_TXT}" MATCHES "^darwin.*")
+  message(STATUS "jemalloc homebrew library is not good enough, building locally")
+  set(WITH_JEMALLOC_BUILD ON)
+else()
+  set(WITH_JEMALLOC_BUILD OFF)
+endif()
 
 message("Configuraion summary:")
 message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
@@ -155,7 +166,6 @@ message(STATUS "Cross-compile options: ${CROSSFLAGS}")
 message(STATUS "Generic configure cross-compile options: ${HOST_OPTION}")
 message(STATUS "jemalloc configure cross-compile options: ${JEMALLOC_HOST_OPTION}")
 message(STATUS "CMake OSX architecture flag: ${CMAKE_OSX_ARCHITECTURES}")
-message(STATUS "musl: ${IS_MUSL}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
@@ -179,7 +189,7 @@ set(DWARFS_CXX_FLAGS       "")
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.2.1")
+def_ext_prj_g(DWARFS "tebako-v0.3.3")
 
 if(${WITH_TESTS})
   def_ext_prj_g(INCBIN "348e36b")
@@ -222,7 +232,6 @@ else()
 endif()
 
 if(${WITH_JEMALLOC_BUILD})
-  message(STATUS "jemalloc homebrew library is not good enough, building locally")
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
 else(${WITH_JEMALLOC_BUILD})
   find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
