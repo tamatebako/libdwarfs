@@ -28,10 +28,20 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
 
 namespace fs = std::filesystem;
+
+char* tebako_path_assign(tebako_path_t out, std::string in) {
+		strncpy(out, in.c_str(), TEBAKO_PATH_LENGTH);
+		out[TEBAKO_PATH_LENGTH] = '\0';
+		return out;
+}
+
+char* tebako_path_assign(tebako_path_t out, fs::path in) {
+		return tebako_path_assign(out, in.string());
+}
 
 //  Current working direcory (within tebako memfs)
 //  RW lock implemented with folly tooling
@@ -47,11 +57,7 @@ public:
 
 //	Gets current working directory
 	virtual const char* get_cwd(tebako_path_t cwd) {
-		const char* n = p.c_str();
-		size_t len = std::min(strlen(n), TEBAKO_PATH_LENGTH);
-		memcpy(cwd, n, len);
-		cwd[len] = '\0';
-		return cwd;
+		return tebako_path_assign(cwd, p);
 	}
 
 //	Sets current working directory to lexically normal path
@@ -76,11 +82,7 @@ public:
 		const char* ret = NULL;
 		if (path != NULL) {
 			fs::path rpath = (p / path).lexically_normal();
-			const char* rp = rpath.c_str();
-			size_t len = std::min(strlen(rp), TEBAKO_PATH_LENGTH);
-			memcpy(expanded_path, rp, len);
-			expanded_path[len] = '\0';
-			ret = expanded_path;
+			ret = tebako_path_assign(expanded_path, rpath);
 		}
 		return ret;
 	}
@@ -178,7 +180,7 @@ bool is_tebako_path(const char* path) {
             || ((strncmp(path, "\\\\?\\", 4) == 0 || strncmp(path, "//?/", 4) == 0) &&
                 (strncmp(path + 5, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0 ||
                  strncmp(path + 5, ":\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-                )
+                ))
 #endif
             ));
 }
@@ -213,18 +215,13 @@ const char* to_tebako_path(tebako_path_t t_path, const char* path) {
 	    p = p.lexically_normal();
 	    auto locked = tebako_cwd.rlock();
 	    if ((*locked) && (*locked)->is_in() && p.is_relative()) {
-		    p_path = (*locked)->expand_path(t_path, p.c_str());
+		    p_path = (*locked)->expand_path(t_path, p.string().c_str());
 	    }
 		else if (is_tebako_path(path)) {
-			const char* pp = p.c_str();
-			size_t len = std::min(strlen(pp), TEBAKO_PATH_LENGTH);
-			memcpy(t_path, pp, len);
-			t_path[len] = '\0';
-			p_path = t_path;
+			p_path = tebako_path_assign(t_path, p);
 		}
 	}
 	catch (...) {
 	}
 	return p_path;
 }
-

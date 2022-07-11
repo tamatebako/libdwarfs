@@ -28,18 +28,13 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
-/*
-*   getcwd()
-*   https://pubs.opengroup.org/onlinepubs/9699919799/
-*/
-
-extern "C" char* tebako_getcwd(char* buf, size_t size) {
-		char _cwd[TEBAKO_PATH_LENGTH];
+char* tebako_getcwd(char* buf, size_t size) {
+		tebako_path_t _cwd;
 		const char* cwd = tebako_get_cwd(_cwd);
 		size_t len = strlen(cwd);
 		if (len) {
@@ -91,7 +86,7 @@ extern "C" char* tebako_getcwd(char* buf, size_t size) {
 *	https://pubs.opengroup.org/onlinepubs/009695299/functions/getwd.html
 */
 #ifdef WITH_GETWD
-extern "C"	char* tebako_getwd(char* buf) {
+char* tebako_getwd(char* buf) {
 	char * ret = NULL;
 	if (buf == NULL) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
@@ -116,13 +111,7 @@ extern "C"	char* tebako_getwd(char* buf) {
 }
 #endif
 
-/*
-* chdir()
-* https://pubs.opengroup.org/onlinepubs/9699919799/
-*
-*/
-
-extern "C"	int tebako_chdir(const char* path) {
+int tebako_chdir(const char* path) {
 	int ret = DWARFS_IO_ERROR;
 	if (path == NULL) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
@@ -166,8 +155,11 @@ extern "C"	int tebako_chdir(const char* path) {
 * https://pubs.opengroup.org/onlinepubs/9699919799/
 *
 */
-
-extern "C"	int tebako_mkdir(const char* path, mode_t mode) {
+#ifndef _WIN32
+int tebako_mkdir(const char* path, mode_t mode) {
+#else
+int tebako_mkdir(const char* path) {
+#endif
 	int ret = DWARFS_IO_ERROR;
 	if (path == NULL) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
@@ -177,7 +169,11 @@ extern "C"	int tebako_mkdir(const char* path, mode_t mode) {
 			TEBAKO_SET_LAST_ERROR(EROFS);
 		}
 		else {
+#ifndef _WIN32
 			ret = ::mkdir(path, mode);
+#else
+			ret = ::mkdir(path);
+#endif
 		}
 	}
 	return ret;

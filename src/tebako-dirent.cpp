@@ -28,8 +28,8 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
 #include <tebako-dirent.h>
