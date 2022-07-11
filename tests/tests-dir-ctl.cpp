@@ -144,7 +144,11 @@ namespace {
 	}
 
 	TEST_F(DirCtlTests, tebako_mkdir_absolute_path) {
+#ifndef _WIN32		
 		int ret = tebako_mkdir(TEBAKIZE_PATH("tebako-test-dir"), S_IRWXU);
+#else
+		int ret = tebako_mkdir(TEBAKIZE_PATH("tebako-test-dir"));
+#endif
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EROFS, errno);
 	}
@@ -152,13 +156,21 @@ namespace {
 	TEST_F(DirCtlTests, tebako_mkdir_relative_path) {
 		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
+#ifndef _WIN32		
 		ret = tebako_mkdir("tebako-test-dir", S_IRWXU);
+#else
+		ret = tebako_mkdir("tebako-test-dir");
+#endif
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EROFS, errno);
 	}
 
 	TEST_F(DirCtlTests, tebako_mkdir_absolute_path_pass_through) {
+#ifndef _WIN32		
 		int ret = tebako_mkdir("/tmp/tebako-test-dir", S_IRWXU);
+#else
+		int ret = tebako_mkdir("tebako-test-dir");
+#endif
 		EXPECT_EQ(0, ret);
 		ret = rmdir("/tmp/tebako-test-dir");
 		EXPECT_EQ(0, ret);
@@ -167,7 +179,11 @@ namespace {
 	TEST_F(DirCtlTests, tebako_mkdir_relative_path_pass_through) {
 		int ret = tebako_chdir("/tmp");
 		EXPECT_EQ(0, ret);
+#ifndef _WIN32		
 		ret = tebako_mkdir("tebako-test-dir", S_IRWXU);
+#else
+		ret = tebako_mkdir("tebako-test-dir");
+#endif
 		EXPECT_EQ(0, ret);
 		ret = rmdir("/tmp/tebako-test-dir");
 		EXPECT_EQ(0, ret);
@@ -179,7 +195,11 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 
 		errno = 0;
+#ifndef _WIN32		
 		EXPECT_EQ(-1, tebako_mkdir(NULL, S_IRWXU));
+#else
+		EXPECT_EQ(-1, tebako_mkdir(NULL));
+#endif
 		EXPECT_EQ(ENOENT, errno);
 #ifdef WITH_GETWD
 		errno = 0;

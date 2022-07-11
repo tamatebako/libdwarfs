@@ -29,7 +29,7 @@
 
 #include "tests.h"
 
-#if not (__MACH__ || __musl__)
+#if not (__MACH__ || __musl__ || _WIN32)
 #include <gnu/lib-names.h>
 #endif
 
@@ -106,6 +106,8 @@ namespace {
         handle = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY | RTLD_GLOBAL);
 #elif __musl__
  		handle = dlopen("/usr/lib/libc.so", RTLD_LAZY | RTLD_GLOBAL);
+#elif defined(_WIN32)
+		handle = dlopen("/usr/bin/msys-2.0.dll", RTLD_LAZY | RTLD_GLOBAL);
 #else
 		handle = dlopen(LIBM_SO, RTLD_LAZY | RTLD_GLOBAL);
 #endif

@@ -192,6 +192,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+#ifdef TEBAKO_HAS_FSTATAT
 	TEST_F(FileCtlTests, tebako_fstatat_relative_path) {
 		struct stat buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
@@ -239,6 +240,7 @@ namespace {
 		ret = tebako_fstatat(AT_FDCWD, "file-in-directory-2.txt", &buf, 0);
 		EXPECT_EQ(0, ret);
 	}
+#endif
 
 	TEST_F(FileCtlTests, tebako_access_relative_path_dot_dot) {
 		int ret = tebako_chdir(TEBAKIZE_PATH("//directory-3/level-1//"));

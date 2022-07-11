@@ -34,6 +34,20 @@
 
 #pragma once
 
+#ifndef TEBAKO_HAS_O_DIRECTORY
+#define O_DIRECTORY 0x0
+#endif
+
+#ifndef TEBAKO_HAS_O_NOFOLLOW
+#define O_NOFOLLOW 0x0
+#endif
+
+#ifndef TEBAKO_HAS_S_ISLNK
+#define	_S_IFLNK	0xA000
+#define	S_IFLNK		_S_IFLNK
+#define S_ISLNK(mode) (((mode) & (_S_IFLNK)) == (_S_IFLNK) ? 1 : 0)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif // !__cplusplus
@@ -66,12 +80,16 @@ extern "C" {
 
     int   tebako_access(const char* path, int amode);
     int   tebako_open(int nargs, const char* path, int flags, ...);
+#ifdef TEBAKO_HAS_OPENAT
     int   tebako_openat(int nargs, int fd, const char* path, int flags, ...);
+#endif
     ssize_t tebako_read(int vfd, void* buf, size_t nbyte);
 
 /* struct iovec is defined only if sys/uio.h has been included */
 #if defined(_SYS_UIO_H) || defined(_SYS_UIO_H_)
+#ifdef TEBAKO_HAS_READV
     ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
+#endif
 #endif
 
 /* Another option -- to be cleaned if 'defined(_UNISTD_H)' works
@@ -85,17 +103,27 @@ extern "C" {
 */
 
 #if defined(_UNISTD_H) || defined(_UNISTD_H_)
+#ifdef TEBAKO_HAS_PREAD
     ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
+#endif
     off_t tebako_lseek(int vfd, off_t offset, int whence);
 #endif
 
 /* struct stat is defined only if sys/stat.h has been included */
-#if defined(_SYS_STAT_H) || defined(_SYS_STAT_H_)
+#if defined(_SYS_STAT_H) || defined(_SYS_STAT_H_) || defined(_INC_STAT)
+#ifndef _WIN32
     int   tebako_mkdir(const char* path, mode_t mode);
+#else
+    int   tebako_mkdir(const char* path);
+#endif
     int   tebako_stat(const char* path, struct stat* buf);
     int   tebako_fstat(int vfd, struct stat* buf);
+#ifdef TEBAKO_HAS_LSTAT
     int   tebako_lstat(const char* path, struct stat* buf);
+#endif
+#ifdef TEBAKO_HAS_FSTATAT
     int   tebako_fstatat(int fd, const char* path, struct stat* buf, int flag);
+#endif
 #endif
 
     int   tebako_close(int vfd);
@@ -104,16 +132,22 @@ extern "C" {
 /* DIR and struct dirent is defined only if dirent.h has been included */
 #if defined(_DIRENT_H) || defined(_DIRENT_H_)
     DIR* tebako_opendir(const char* dirname);
+#ifdef TEBAKO_HAS_FDOPENDIR
     DIR* tebako_fdopendir(int fd);
+#endif
     struct dirent* tebako_readdir(DIR* dirp);
     long tebako_telldir(DIR* dirp);
     void tebako_seekdir(DIR* dirp, long loc);
     void tebako_rewinddir(DIR* dirp);
     int tebako_closedir(DIR* dirp);
+#ifdef TEBAKO_HAS_DIRFD
     int tebako_dirfd(DIR* dirp);
+#endif
+#ifdef TEBAKO_HAS_SCANDIR
     int tebako_scandir(const char* dir, struct dirent*** namelist,
         int (*sel)(const struct dirent*),
         int (*compar)(const struct dirent**, const struct dirent**));
+#endif
 #endif
 
     void* tebako_dlopen(const char* path, int flags);
@@ -121,8 +155,12 @@ extern "C" {
 
 /* struct attr is defined only if sys/attr.h has been included */
 #if defined(_SYS_ATTR_H_) || defined(_SYS_ATTR_H_)
+#ifdef TEBAKO_HAS_GETATTRLIST
     int tebako_getattrlist(const char* path, struct attrlist * attrList, void * attrBuf,  size_t attrBufSize, unsigned long options);
+#endif
+#ifdef TEBAKO_HAS_FGETATTRLIST
     int tebako_fgetattrlist(int fd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options);
+#endif
 #endif
 
     int within_tebako_memfs(const char* path);

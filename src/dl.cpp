@@ -28,8 +28,8 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
@@ -82,7 +82,7 @@ private:
                 path + TEBAKO_MOUNT_POINT_LENGTH + 2;
         fs::path _mapped = dl_tmpdir / adj;
 		fs::create_directories(_mapped.parent_path());
-	    mapped = _mapped;
+	    mapped = _mapped.string();
 	}
 
 public:

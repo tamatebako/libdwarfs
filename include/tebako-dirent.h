@@ -63,7 +63,9 @@ typedef struct _tebako_dirent {
 
 typedef union tebako_dirent {
     struct dirent e;
+#ifndef _WIN32
     struct _tebako_dirent _e;
+#endif
 } tebako_dirent;
 
 const size_t TEBAKO_DIR_CACHE_SIZE = 50;

@@ -155,6 +155,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+#ifdef TEBAKO_HAS_READV
 	TEST_F(FileIOTests, tebako_open_lseek_readv_close_absolute_path) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("directory-2/file-in-directory-2.txt"), O_RDONLY);
 		EXPECT_LT(0, fh);
@@ -197,6 +198,7 @@ namespace {
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);
 	}
+#endif
 
 	TEST_F(FileIOTests, tebako_open_read_u_close_relative_path) {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
@@ -216,6 +218,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+#ifdef TEBAKO_HAS_PREAD
 	TEST_F(FileIOTests, tebako_open_pread_u_close_relative_path) {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
@@ -247,7 +250,9 @@ namespace {
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EBADF, errno);
 	}
+#endif
 
+#ifdef TEBAKO_HAS_OPENAT
 	TEST_F(FileIOTests, tebako_openat_invalid_handle) {
 		int ret = tebako_openat(3, 33, "file.txt", O_RDONLY);
 		EXPECT_EQ(-1, ret);
@@ -296,6 +301,7 @@ namespace {
 		EXPECT_EQ(0, tebako_close(fh1));
 		EXPECT_EQ(0, tebako_close(fh2));
 	}
+#endif
 
 	TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path_pass_through) {
 		int fh1 = tebako_open(2, "/bin/sh", O_RDONLY);
@@ -310,6 +316,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 	}
 
+#ifdef TEBAKO_HAS_OPENAT
 	TEST_F(FileIOTests, tebako_open_openat_close_interop) {
 		int fh1 = ::open("/bin", O_RDONLY|O_DIRECTORY);
 		EXPECT_LT(0, fh1);
@@ -329,6 +336,7 @@ namespace {
 		EXPECT_EQ(0, close(fh1));
 		EXPECT_EQ(0, tebako_close(fh2));
 	}
+#endif
 
 	TEST_F(FileIOTests, tebako_open_close_relative_path_pass_through) {
 		int ret = tebako_chdir("/bin");

@@ -35,18 +35,6 @@
 
 #include <version.h>
 
-#ifndef __cplusplus
-#define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
-
-#define min(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
-#endif // !__cplusplus
-
 #ifdef _WIN32
 #define TEBAKO_SET_LAST_ERROR(e)  {                    \
             errno = e;                                 \
@@ -56,11 +44,11 @@
 			} else if (e == ENOENT) {                  \
 				SetLastError(ERROR_FILE_NOT_FOUND);    \
                 _doserrno = ERROR_FILE_NOT_FOUND;      \
-			} else if (e = EBADF) {                    \
+			} else if (e == EBADF) {                    \
 				SetLastError(ERROR_INVALID_HANDLE);    \
                 _doserrno = ERROR_INVALID_HANDLE;      \
 			}                                          \
-			else if (e = ENAMETOOLONG) {               \
+			else if (e == ENAMETOOLONG) {               \
 				SetLastError(ERROR_BUFFER_OVERFLOW);   \
 				_doserrno = ERROR_BUFFER_OVERFLOW;     \
 			}                                          \
@@ -70,7 +58,7 @@
 			}                                          \
 			else if (e == ERANGE) {                    \
 				SetLastError(ERROR_BUFFER_OVERFLOW);   \
-				_doserror = ERROR_BUFFER_OVERFLOW;     \
+				_doserrno = ERROR_BUFFER_OVERFLOW;     \
 			} else {                                   \
 				SetLastError(ERROR_INVALID_FUNCTION);  \
                 _doserrno = ERROR_INVALID_FUNCTION;    \
@@ -91,6 +79,7 @@
 #define TEBAKO_MOUNT_POINT_LENGTH  16
 
 typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];
+char* tebako_path_assign(tebako_path_t out, std::string in);
 
 bool tebako_set_cwd(const char* path);
 const char* tebako_get_cwd(tebako_path_t cwd);

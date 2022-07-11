@@ -31,7 +31,8 @@
 
 #include <cerrno>
 
-#include <sys/mman.h>
+#include <folly/portability/SysMman.h>
+#include <folly/portability/Unistd.h>
 #include <boost/system/error_code.hpp>
 
 #include <tebako-mfs.h>
@@ -80,6 +81,5 @@ size_t mfs::size() const { return size_; }
 mfs::mfs(const void* addr, size_t size):
       size_(size),
       addr_(addr),
-      page_size_(::sysconf(_SC_PAGESIZE)) {}
-
+      page_size_(sysconf(_SC_PAGESIZE)) {}
 }

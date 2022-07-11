@@ -28,7 +28,11 @@ cmake_minimum_required (VERSION 3.20)
 cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
 
+<<<<<<< HEAD
 project(libdwarfs-wr VERSION 0.2.1)
+=======
+project(libdwarfs-wr VERSION 0.3.0)
+>>>>>>> MSys build
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -147,13 +151,21 @@ else(OSTYPE_RES EQUAL 0)
   message(FATAL_ERROR "Failed to detect OSTYPE: ${OSTYPE_TXT}")
 endif(OSTYPE_RES EQUAL 0)
 
+set(USE_JEMALLOC ON)
 set(WITH_JEMALLOC_BUILD OFF)
+set(PREFER_SYSTEM_GTEST OFF)
+
 set(IS_MUSL OFF)
 set(IS_MSYS OFF)
 
 if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
   set(IS_MUSL ON)
 elseif("${OSTYPE_TXT}" MATCHES "^msys*")
+  include_directories(${CMAKE_SOURCE_DIR}/tools/include)
+  add_compile_definitions(FOLLY_ASSUME_NO_JEMALLOC)
+  set(USE_JEMALLOC OFF)
+  set(PREFER_SYSTEM_GTEST ON)
+  set(WITH_LINK_TESTS OFF)
   set(IS_MSYS ON)
 elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
   message(STATUS "jemalloc homebrew library is not good enough, building locally")
@@ -165,6 +177,7 @@ message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
 message(STATUS "Cross-compile options: ${CROSSFLAGS}")
 message(STATUS "Generic configure cross-compile options: ${HOST_OPTION}")
 message(STATUS "jemalloc configure cross-compile options: ${JEMALLOC_HOST_OPTION}")
+message(STATUS "use jemalloc: ${USE_JEMALLOC}")
 message(STATUS "CMake OSX architecture flag: ${CMAKE_OSX_ARCHITECTURES}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
@@ -184,7 +197,6 @@ set(GFLAGS_SHARED          OFF)
 set(CMAKE_CXX_STANDARD      17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS   OFF)
-set(DWARFS_CXX_FLAGS       "")
 
 # ...................................................................
 # External projects
@@ -233,9 +245,9 @@ endif()
 
 if(${WITH_JEMALLOC_BUILD})
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
-else(${WITH_JEMALLOC_BUILD})
+elif(${USE_JEMALLOC})
   find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
-endif(${WITH_JEMALLOC_BUILD})
+endif()
 
 message("Collecting packages:")
 message(STATUS "dwarfs     - " @${DWARFS_TAG}  " at " ${DWARFS_SOURCE_DIR})
@@ -318,7 +330,11 @@ set(__LIBT_METADATA "${DWARFS_BINARY_DIR}/libmetadata_thrift.a")
 set(__LIBT_LIGHT "${DWARFS_BINARY_DIR}/libthrift_light.a")
 set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
 set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
-set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
+if(IS_MSYS)
+  set(__LIBARCHIVE "${DEPS}/lib/libarchive_static.a")
+else(IS_MSYS)
+  set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
+endif(IS_MSYS)
 
 ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
@@ -337,11 +353,13 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
              -DTARGET_HOMEBREW=${TARGET_HOMEBREW}
              -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+             -DUSE_JEMALLOC=${USE_JEMALLOC}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
                    ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
+add_dependencies(${DWARFS_PRJ} ${LIBARCHIVE_PRJ})
 
 # ...................................................................
 # glog
@@ -484,8 +502,25 @@ configure_file(
    @ONLY
 )
 
+check_symbol_exists(O_DIRECTORY "fcntl.h" TEBAKO_HAS_O_DIRECTORY)
+check_symbol_exists(O_NOFOLLOW "fcntl.h" TEBAKO_HAS_O_NOFOLLOW)
+check_symbol_exists(S_ISLNK "sys/stat.h" TEBAKO_HAS_S_ISLNK)
+
 check_symbol_exists(getattrlist "unistd.h" TEBAKO_HAS_GETATTRLIST)
 check_symbol_exists(fgetattrlist "unistd.h" TEBAKO_HAS_FGETATTRLIST)
+
+check_symbol_exists(lstat "sys/stat.h" TEBAKO_HAS_LSTAT)
+check_symbol_exists(fstatat "sys/stat.h" TEBAKO_HAS_FSTATAT)
+
+check_symbol_exists(dirfd "dirent.h" TEBAKO_HAS_DIRFD)
+check_symbol_exists(fdopendir "dirent.h" TEBAKO_HAS_FDOPENDIR)
+check_symbol_exists(scandir "dirent.h" TEBAKO_HAS_SCANDIR)
+
+check_symbol_exists(openat "fcntl.h" TEBAKO_HAS_OPENAT)
+check_symbol_exists(readv "sys/uio.h" TEBAKO_HAS_READV)
+
+check_symbol_exists(pread "unistd.h" TEBAKO_HAS_PREAD)
+
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-config.h.in
   ${CMAKE_CURRENT_SOURCE_DIR}/include/tebako-config.h
@@ -527,7 +562,7 @@ add_library(dwarfs-wr STATIC
     "include/version.h"
   )
 
-add_dependencies(dwarfs-wr ${DWARFS_PRJ} ${LIBARCHIVE_PRJ})
+add_dependencies(dwarfs-wr ${DWARFS_PRJ})
 if(${WITH_GLOG_BUILD})
   add_dependencies(dwarfs-wr ${GLOG_PRJ})
 endif(${WITH_GLOG_BUILD})
@@ -547,23 +582,25 @@ endif(${WITH_JEMALLOC_BUILD})
 # Tests
 
 if(${WITH_TESTS})
-  message("Fetching googletest")
-  include(FetchContent)
+  if(NOT ${PREFER_SYSTEM_GTEST})
+    message("Fetching googletest")
+    include(FetchContent)
 
-  FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        release-1.11.0
-  )
+    FetchContent_Declare(
+      googletest
+      GIT_REPOSITORY https://github.com/google/googletest.git
+      GIT_TAG        release-1.11.0
+    )
 # maintain compiler/linker settings on Windows
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 # explicitely disable unneeded gmock build
-  set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 
-  FetchContent_MakeAvailable(googletest)
+    FetchContent_MakeAvailable(googletest)
+  endif(NOT ${PREFER_SYSTEM_GTEST})
+
   enable_testing()
   include(GoogleTest)
-
 # ...................................................................
 # Packaged filesystem
 # links for testing are created here to avoid interoperatibility problems Linux/Windows
@@ -574,10 +611,11 @@ if(${WITH_TESTS})
 
   add_custom_target(PACKAGED_FILESYSTEM_STEP_1 ALL
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/*empty.* ${DATA_TEST_DIR}/directory-1
+    COMMAND ${GNU_BASH} -c "cp ${CMAKE_CURRENT_BINARY_DIR}/*empty.* ${DATA_TEST_DIR}/directory-1"
   )
 
   add_dependencies(PACKAGED_FILESYSTEM_STEP_1 empty)
+  add_dependencies(dwarfs-wr PACKAGED_FILESYSTEM_STEP_1)
 
   if (${WITH_LINK_TESTS})
     add_custom_target(PACKAGED_FILESYSTEM_STEP_2 ALL
@@ -600,7 +638,7 @@ if(${WITH_TESTS})
     else(${USE_TEMP_FS})
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-        COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     endif(${USE_TEMP_FS})
@@ -616,7 +654,7 @@ if(${WITH_TESTS})
     else(${USE_TEMP_FS})
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-        COMMAND ${CMAKE_COMMAND} -E rm ${DATA_TEST_DIR}/directory-1/*empty.*
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     endif(${USE_TEMP_FS})
@@ -655,7 +693,7 @@ if(${WITH_TESTS})
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
   find_library(_LIBZ "libz.a" REQUIRED)
   find_library(_LIBSSL "libssl.a" REQUIRED)
-  
+
   if (NOT IS_MSYS)
     find_library(_LIBACL "libacl.a")
   endif()
@@ -754,7 +792,8 @@ if(${WITH_TESTS})
     add_dwarfs_library(_LIBFMT ${FMT_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBFMT)
   else(${WITH_FMT_BUILD})
-    list(APPEND _LIBRARIES ${_LIBFMT})
+#    list(APPEND _LIBRARIES ${_LIBFMT})
+    list(APPEND _LIBRARIES libfmt.dll.a)
   endif(${WITH_FMT_BUILD})
 
   if(${WITH_DC_BUILD})
@@ -784,10 +823,15 @@ if(${WITH_TESTS})
   if(${WITH_JEMALLOC_BUILD})
     add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBJEMALLOC)
-  else(${WITH_JEMALLOC_BUILD})
+  elif(${USE_JEMALLOC})
     target_link_libraries(wr-bin ${_LIBJEMALLOC})
     target_link_libraries(wr-tests ${_LIBJEMALLOC})
-  endif(${WITH_JEMALLOC_BUILD})
+  endif()
+
+  if(IS_MSYS)
+    target_link_libraries(wr-bin shlwapi wsock32 ws2_32)
+    target_link_libraries(wr-tests shlwapi wsock32 ws2_32)
+  endif(IS_MSYS)
 
 endif(${WITH_TESTS})
 
@@ -829,11 +873,6 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 
-# We do not attempt to install fuse driver since we may operate in the environment
-# where fuse is not vailable at all
-# Since v0.1.9 we are building mkdwarfs only and not dwarfsck and dwarfsextract
-#  ${DEPS_BIN_DIR}/dwarfsck
-#  ${DEPS_BIN_DIR}/dwarfsextract
 install(FILES
         ${DEPS_BIN_DIR}/mkdwarfs
         DESTINATION ${CMAKE_INSTALL_BINDIR}
