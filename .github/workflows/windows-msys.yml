@@ -51,9 +51,9 @@ on:
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
-  
+
 env:
-  CACHE_VER: 22
+  CACHE_VER: 24
 
 jobs:
   prepare:
@@ -93,7 +93,7 @@ jobs:
             CXX: g++
             ASAN: 'OFF'
             LOG_LEVEL: 'trace'
-#          - CC: clang 
+#          - CC: clang
 #            CXX: clang++
     env: ${{ matrix.env }}
 
@@ -158,4 +158,19 @@ jobs:
       - name: Build
         run: |
           cd build
-          ninja -j1
+          cmake --build .
+
+      - name: Run unit tests
+        run: |
+          cd build
+          ninja test
+
+      - name: Checkout shell test framework
+        uses: actions/checkout@v3
+        with:
+          repository: kward/shunit2
+          path: tests/shunit2
+          fetch-depth: 1
+
+      - name: Run additional tests
+        run:  tests/scripts/tests.sh

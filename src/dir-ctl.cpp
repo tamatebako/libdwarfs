@@ -33,9 +33,11 @@
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
+namespace fs = std::filesystem;
+
 char* tebako_getcwd(char* buf, size_t size) {
 		tebako_path_t _cwd;
-		const char* cwd = tebako_get_cwd(_cwd);
+		const char* cwd = tebako_get_cwd(_cwd, true);
 		size_t len = strlen(cwd);
 		if (len) {
 			if (!buf) {
@@ -150,12 +152,7 @@ int tebako_chdir(const char* path) {
 	return ret;
 }
 
-/*
-* mkdir()
-* https://pubs.opengroup.org/onlinepubs/9699919799/
-*
-*/
-#ifndef _WIN32
+#ifdef TEBAKO_HAS_POSIX_MKDIR
 int tebako_mkdir(const char* path, mode_t mode) {
 #else
 int tebako_mkdir(const char* path) {
@@ -165,11 +162,12 @@ int tebako_mkdir(const char* path) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
 	}
 	else {
-		if ((is_tebako_cwd() && path[0] != '/') || is_tebako_path(path)) {
+		auto p = fs::path(path);
+		if ((is_tebako_cwd() && p.is_relative()) || is_tebako_path(path)) {
 			TEBAKO_SET_LAST_ERROR(EROFS);
 		}
 		else {
-#ifndef _WIN32
+#ifdef TEBAKO_HAS_POSIX_MKDIR
 			ret = ::mkdir(path, mode);
 #else
 			ret = ::mkdir(path);

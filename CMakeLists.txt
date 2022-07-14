@@ -44,6 +44,7 @@ option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
 include(ExternalProject)
 include(GNUInstallDirs)
 include(CheckSymbolExists)
+include(CheckCSourceCompiles)
 
 # This is the default that will be overwritten for MacOS and MSys
 set(GNU_BASH "bash")
@@ -148,10 +149,16 @@ endif(OSTYPE_RES EQUAL 0)
 
 set(USE_JEMALLOC ON)
 set(WITH_JEMALLOC_BUILD OFF)
+set(WITH_FMT_BUILD OFF)
+set(WITH_GLOG_BUILD OFF)
+set(WITH_GFLAGS_BUILD OFF)
+set(WITH_DC_BUILD OFF)
+
 set(PREFER_SYSTEM_GTEST OFF)
 
 set(IS_MUSL OFF)
 set(IS_MSYS OFF)
+set(IS_DARWIN OFF)
 
 if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
   set(IS_MUSL ON)
@@ -164,6 +171,7 @@ elseif("${OSTYPE_TXT}" MATCHES "^msys*")
   set(IS_MSYS ON)
 elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
   message(STATUS "jemalloc homebrew library is not good enough, building locally")
+  set(IS_DARWIN ON)
   set(WITH_JEMALLOC_BUILD ON)
 endif()
 
@@ -207,41 +215,29 @@ find_library(_LIBGLOG "libglog.a")
 if(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
   message(STATUS "glog static library was not found, building locally")
   set(WITH_GLOG_BUILD ON)
-  def_ext_prj_g(GLOG "v0.6.0")
-  else()
-  set(WITH_GLOG_BUILD OFF)
 endif()
 
 find_library(_LIBGFLAGS "libgflags.a")
 if(${_LIBGFLAGS} STREQUAL "_LIBGFLAGS-NOTFOUND")
   message(STATUS "gflags static library was not found, building locally")
   set(WITH_GFLAGS_BUILD ON)
-  def_ext_prj_g(GFLAGS "v2.2.2")
-else()
-  set(WITH_GFLAGS_BUILD OFF)
 endif()
 
 find_library(_LIBFMT "libfmt.a")
 if(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
   message(STATUS "fmt static library was not found, building locally")
   set(WITH_FMT_BUILD ON)
-  def_ext_prj_g(FMT "8.1.1")
-else()
-  set(WITH_FMT_BUILD OFF)
 endif()
 
 find_library(_LIBDC "libdouble-conversion.a")
 if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
   message(STATUS "double-conversion static library was not found, building locally")
   set(WITH_DC_BUILD ON)
-  def_ext_prj_g(DC "v3.2.0")
-else()
-  set(WITH_DC_BUILD OFF)
 endif()
 
 if(${WITH_JEMALLOC_BUILD})
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
-elif(${USE_JEMALLOC})
+elseif(${USE_JEMALLOC})
   find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
 endif()
 
@@ -252,15 +248,19 @@ if(${WITH_TESTS})
   message(STATUS "incbin     - " @${INCBIN_TAG} " at " ${INCBIN_SOURCE_DIR})
 endif(${WITH_TESTS})
 if(${WITH_GLOG_BUILD})
+  def_ext_prj_g(GLOG "v0.6.0")
   message(STATUS "glog       - " @${GLOG_TAG} " at " ${GLOG_SOURCE_DIR})
 endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
+  def_ext_prj_g(GFLAGS "v2.2.2")
   message(STATUS "gflags     - " @${GFLAGS_TAG} " at " ${GFLAGS_SOURCE_DIR})
 endif(${WITH_GFLAGS_BUILD})
 if(${WITH_FMT_BUILD})
+  def_ext_prj_g(FMT "8.1.1")
   message(STATUS "fmt        - " @${FMT_TAG} " at " ${FMT_SOURCE_DIR})
 endif(${WITH_FMT_BUILD})
 if(${WITH_DC_BUILD})
+  def_ext_prj_g(DC "v3.2.0")
   message(STATUS "double-conversion - " @${DC_TAG} " at " ${DC_SOURCE_DIR})
 endif(${WITH_DC_BUILD})
 if(${WITH_JEMALLOC_BUILD})
@@ -452,6 +452,7 @@ if(${WITH_FMT_BUILD})
                -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
                -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
                -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+               -DFMT_TEST=OFF
     SOURCE_DIR ${FMT_SOURCE_DIR}
     BINARY_DIR ${FMT_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBFMT}
@@ -521,6 +522,8 @@ configure_file(
 
 check_symbol_exists(O_DIRECTORY "fcntl.h" TEBAKO_HAS_O_DIRECTORY)
 check_symbol_exists(O_NOFOLLOW "fcntl.h" TEBAKO_HAS_O_NOFOLLOW)
+check_symbol_exists(O_BINARY "fcntl.h" TEBAKO_HAS_O_BINARY)
+
 check_symbol_exists(S_ISLNK "sys/stat.h" TEBAKO_HAS_S_ISLNK)
 
 check_symbol_exists(getattrlist "unistd.h" TEBAKO_HAS_GETATTRLIST)
@@ -537,6 +540,25 @@ check_symbol_exists(openat "fcntl.h" TEBAKO_HAS_OPENAT)
 check_symbol_exists(readv "sys/uio.h" TEBAKO_HAS_READV)
 
 check_symbol_exists(pread "unistd.h" TEBAKO_HAS_PREAD)
+
+check_c_source_compiles(
+    "#include <sys/stat.h>
+     int main() {
+      return mkdir(\"tmp\", 0700);
+     }"
+    TEBAKO_HAS_POSIX_MKDIR)
+
+check_c_source_compiles(
+    "#include <sys/stat.h>
+     int main() {
+      return mkdir(\"tmp\");
+     }"
+    TEBAKO_HAS_WINDOWS_MKDIR)
+
+if(NOT TEBAKO_HAS_POSIX_MKDIR AND NOT TEBAKO_HAS_WINDOWS_MKDIR)
+  message(FATAL_ERROR "Configuration script did not find neither Posix nor Windows mkdir")
+endif(NOT TEBAKO_HAS_POSIX_MKDIR AND NOT TEBAKO_HAS_WINDOWS_MKDIR)
+
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-config.h.in
@@ -599,6 +621,13 @@ endif(${WITH_JEMALLOC_BUILD})
 # Tests
 
 if(${WITH_TESTS})
+
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-test-config.h.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-test-config.h
+    @ONLY
+  )
+
   if(NOT ${PREFER_SYSTEM_GTEST})
     message("Fetching googletest")
     include(FetchContent)
@@ -615,7 +644,7 @@ if(${WITH_TESTS})
 
     FetchContent_MakeAvailable(googletest)
   endif(NOT ${PREFER_SYSTEM_GTEST})
-  
+
   enable_testing()
   include(GoogleTest)
 # ...................................................................
@@ -723,7 +752,9 @@ if(${WITH_TESTS})
   find_library(_LIBUNWIND "libunwind.a")
   find_library(_LIBIBERTY "libiberty.a")
 
-  if (NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+  if (IS_MSYS)
+    add_link_options(-static-libstdc++ -static)
+  elseif (NOT IS_DARWIN)
     add_link_options(-static-libstdc++)
   endif()
 
@@ -808,8 +839,7 @@ if(${WITH_TESTS})
     add_dwarfs_library(_LIBFMT ${FMT_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBFMT)
   else(${WITH_FMT_BUILD})
-#    list(APPEND _LIBRARIES ${_LIBFMT})
-    list(APPEND _LIBRARIES libfmt.dll.a)
+    list(APPEND _LIBRARIES ${_LIBFMT})
   endif(${WITH_FMT_BUILD})
 
   if(${WITH_DC_BUILD})
@@ -839,7 +869,7 @@ if(${WITH_TESTS})
   if(${WITH_JEMALLOC_BUILD})
     add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBJEMALLOC)
-  elif(${USE_JEMALLOC})
+  elseif(${USE_JEMALLOC})
     target_link_libraries(wr-bin ${_LIBJEMALLOC})
     target_link_libraries(wr-tests ${_LIBJEMALLOC})
   endif()

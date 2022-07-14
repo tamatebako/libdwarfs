@@ -35,4 +35,8 @@
 */
 #define TEBAKO_MOINT_POINT "__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_LENGTH  16
-#define TEBAKIZE_PATH(P) "/" TEBAKO_MOINT_POINT "/" P
+#ifndef _WIN32
+#  define TEBAKIZE_PATH(P) "/" TEBAKO_MOINT_POINT "/" P
+#else
+#  define TEBAKIZE_PATH(P) "\\" TEBAKO_MOINT_POINT "\\" P
+#endif

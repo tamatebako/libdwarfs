@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2022, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -11,7 +11,7 @@
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other matrials provided with the distribution.
+ *    documentation and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -29,11 +29,26 @@
 
 #pragma once
 
-#include <gtest/gtest.h>
-#include "tebako-pch.h"
-#include "tebako-io.h"
+#define __MSYS_BIN__  "@MSYS_BIN@"
+#define __MSYS_USR__  "@MSYS_USR@"
+#define __MSYS_TMP__  "@MSYS_TMP@"
 
-#include "tebako-fs.h"
-#include "tests-defines.h"
-
-#include "tebako-test-config.h"
+#ifndef _WIN32
+#  define __S__   "/"
+#  define __BIN__ "/bin"
+#  define __USR__ "/usr"
+#  define __TMP__ "/tmp"
+#  define __AT_BIN__(A) "/bin/" A
+#  define __AT_TMP__(A) "/tmp/" A
+#  define __WITH_LIB_EXT__(A)  A ".so"
+#  define __WITH_EXE_EXT__(A)  A
+#else
+#  define __S__   "\\"
+#  define __BIN__ __MSYS_BIN__
+#  define __USR__ __MSYS_USR__
+#  define __TMP__ __MSYS_TMP__
+#  define __AT_BIN__(A) __BIN__ "\\" A
+#  define __AT_TMP__(A) __TMP__ "\\" A
+#  define __WITH_LIB_EXT__(A)  A ".dll"
+#  define __WITH_EXE_EXT__(A)  A ".exe"
+#endif

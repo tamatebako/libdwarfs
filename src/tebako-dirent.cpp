@@ -48,8 +48,7 @@ uintptr_t sync_tebako_dstable::opendir(int vfd, size_t& size) noexcept {
 			err = ENOMEM;
 		}
 		else {
-			err = ds->load_cache(0, true);
-			if (err == DWARFS_IO_CONTINUE) {
+			if (ds->load_cache(0, true) == DWARFS_IO_CONTINUE) {
 				ret = reinterpret_cast<uintptr_t>(ds.get());
 				(**wlock())[ret] = ds;
 				size = ds->dir_size;

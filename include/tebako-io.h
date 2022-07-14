@@ -111,7 +111,7 @@ extern "C" {
 
 /* struct stat is defined only if sys/stat.h has been included */
 #if defined(_SYS_STAT_H) || defined(_SYS_STAT_H_) || defined(_INC_STAT)
-#ifndef _WIN32
+#ifdef TEBAKO_HAS_POSIX_MKDIR
     int   tebako_mkdir(const char* path, mode_t mode);
 #else
     int   tebako_mkdir(const char* path);

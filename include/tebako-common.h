@@ -82,7 +82,7 @@ typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];
 char* tebako_path_assign(tebako_path_t out, std::string in);
 
 bool tebako_set_cwd(const char* path);
-const char* tebako_get_cwd(tebako_path_t cwd);
+const char* tebako_get_cwd(tebako_path_t cwd, bool win_separator = false);
 bool is_tebako_path(const char* path);
 bool is_tebako_cwd(void);
 const char* tebako_expand_path(tebako_path_t expanded_path, const char* path);

@@ -93,6 +93,7 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 	}
 
+#ifdef TEBAKO_HAS_O_DIRECTORY
 	TEST_F(FileIOTests, tebako_open_dir) {
 		int ret = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY|O_DIRECTORY);
 		EXPECT_LT(0, ret);
@@ -105,6 +106,7 @@ namespace {
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOTDIR, errno);
 	}
+#endif	
 
 	TEST_F(FileIOTests, tebako_close_bad_file) {
 		int ret = tebako_close(33);
@@ -112,6 +114,7 @@ namespace {
 		EXPECT_EQ(EBADF, errno);
 	}
 
+#ifdef TEBAKO_HAS_O_NOFOLLOW
 	TEST_F(FileIOTests, tebako_open_read_close_absolute_path_with_nofollow) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY|O_NOFOLLOW);
 		EXPECT_LT(0, fh);
@@ -126,6 +129,7 @@ namespace {
 		ret = tebako_close(fh);
 		EXPECT_EQ(0, ret);
 	}
+#endif
 
 	TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY);
@@ -304,7 +308,13 @@ namespace {
 #endif
 
 	TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path_pass_through) {
-		int fh1 = tebako_open(2, "/bin/sh", O_RDONLY);
+		const char * const sh_file = 
+#ifndef _WIN32
+										"/bin/sh";
+#else
+										__MSYS_BIN__ "/sh.exe";
+#endif																						
+		int fh1 = tebako_open(2, sh_file, O_RDONLY);
 		EXPECT_LT(0, fh1);
 		int ret = tebako_lseek(fh1, 5, SEEK_SET);
 		EXPECT_EQ(5, ret);
@@ -339,9 +349,21 @@ namespace {
 #endif
 
 	TEST_F(FileIOTests, tebako_open_close_relative_path_pass_through) {
-		int ret = tebako_chdir("/bin");
+		const char * const sh_folder = 
+#ifndef _WIN32
+										"/bin";
+#else
+										__MSYS_BIN__;
+#endif																						
+		const char * const sh_file = 
+#ifndef _WIN32
+										"sh";
+#else
+										"sh.exe";
+#endif																						
+		int ret = tebako_chdir(sh_folder);
 		EXPECT_EQ(0, ret);
-		ret = tebako_open(2, "sh", O_RDONLY);
+		ret = tebako_open(2, sh_file, O_RDONLY);
 		EXPECT_LT(0, ret);
 		ret = tebako_close(ret);
 		EXPECT_EQ(0, ret);
