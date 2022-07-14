@@ -39,8 +39,8 @@ char* tebako_path_assign(tebako_path_t out, std::string in) {
 		return out;
 }
 
-char* tebako_path_assign(tebako_path_t out, fs::path in) {
-		return tebako_path_assign(out, in.string());
+char* tebako_path_assign(tebako_path_t out, fs::path in, bool win_separator = false) {
+		return tebako_path_assign(out, win_separator ? in.string() : in.generic_string());
 }
 
 //  Current working direcory (within tebako memfs)
@@ -56,8 +56,8 @@ public:
 	}
 
 //	Gets current working directory
-	virtual const char* get_cwd(tebako_path_t cwd) {
-		return tebako_path_assign(cwd, p);
+	virtual const char* get_cwd(tebako_path_t cwd, bool win_separator = false) {
+		return tebako_path_assign(cwd, p, win_separator);
 	}
 
 //	Sets current working directory to lexically normal path
@@ -103,8 +103,8 @@ public:
         LOG_TRACE << __func__ << " [ destroying ] ";
 	}
 
-    virtual const char* get_cwd(tebako_path_t cwd) {
-	    tebako_path_s::get_cwd(cwd);
+    virtual const char* get_cwd(tebako_path_t cwd, bool win_separator = false) {
+	    tebako_path_s::get_cwd(cwd, win_separator);
 	    LOG_TRACE << __func__ << " returning [ " << cwd << " ]";
 		return cwd;
 	}
@@ -146,9 +146,9 @@ void tebako_drop_cwd(void) {
 }
 
 //	Gets current working directory
-const char* tebako_get_cwd(tebako_path_t cwd) {
+const char* tebako_get_cwd(tebako_path_t cwd, bool win_separator) {
     auto locked = tebako_cwd.rlock();
-    return (*locked) ? (*locked)->get_cwd(cwd) : "";
+    return (*locked) ? (*locked)->get_cwd(cwd, win_separator) : "";
 }
 
 //	Sets current working directory to lexically normal path
@@ -215,7 +215,7 @@ const char* to_tebako_path(tebako_path_t t_path, const char* path) {
 	    p = p.lexically_normal();
 	    auto locked = tebako_cwd.rlock();
 	    if ((*locked) && (*locked)->is_in() && p.is_relative()) {
-		    p_path = (*locked)->expand_path(t_path, p.string().c_str());
+		    p_path = (*locked)->expand_path(t_path, p.generic_string().c_str());
 	    }
 		else if (is_tebako_path(path)) {
 			p_path = tebako_path_assign(t_path, p);

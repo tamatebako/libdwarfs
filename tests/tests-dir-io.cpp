@@ -169,12 +169,23 @@ namespace {
 	}
 
 	TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_rewinddir_closedir_pass_through) {
+const char * const shell_name =
 #if __MACH__
-#define NM "zsh"
+ 								"zsh";
+#elif defined(_WIN32)
+ 								"bash.exe";
 #else
-#define NM "bash"
+								"bash";
 #endif
-		DIR* dirp = tebako_opendir("/bin");
+
+const char * const shell_folder =
+#ifndef _WIN32
+ 								"/bin";
+#else
+ 								__MSYS_BIN__;
+#endif
+
+		DIR* dirp = tebako_opendir(shell_folder);
 		EXPECT_TRUE(dirp != NULL);
 		if (dirp != NULL) {
 			long loc = -1;
@@ -183,7 +194,7 @@ namespace {
 			while (entry != NULL) {
 				long l = telldir(dirp);
 				entry = tebako_readdir(dirp);
-				if (entry != NULL && strcmp(entry->d_name, NM) == 0) {
+				if (entry != NULL && strcmp(entry->d_name, shell_name) == 0) {
 					loc = l;
 				}
 			}
@@ -193,7 +204,7 @@ namespace {
             if (loc !=-1) {
 			  tebako_seekdir(dirp, loc);
 			  entry = tebako_readdir(dirp);
-			  EXPECT_TRUE(strcmp(entry->d_name, NM)==0);
+			  EXPECT_TRUE(strcmp(entry->d_name, shell_name)==0);
 			}
 
 			EXPECT_EQ(0, tebako_closedir(dirp));

@@ -28,12 +28,27 @@
  */
 
 #include <unistd.h>
+#include <filesystem>
 #include "tests.h"
+
+namespace fs = std::filesystem;
 
 namespace {
 	class DirCtlTests : public testing::Test {
 	protected:
+		static std::string tmp_dir;
+		static std::string tmp_name;
+// #define -- for TEBAKIZE_PATH
+#define TMP_D_NAME "tebako-test-dir"
+
 		static void SetUpTestSuite() {
+
+			auto p_tmp_dir = fs::temp_directory_path();
+			auto p_tmp_name = p_tmp_dir / TMP_D_NAME;
+
+			tmp_dir = p_tmp_dir.generic_string();
+			tmp_name = p_tmp_name.generic_string();
+
 			load_fs(&gfsData[0],
 				gfsSize,
 				tests_log_level,
@@ -87,7 +102,7 @@ namespace {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
 		r2 = tebako_getcwd(NULL, PATH_MAX);
-		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-2/"));
+		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-2" __S__));
 		free(r2);
 	}
 
@@ -97,7 +112,7 @@ namespace {
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-1"));
 		EXPECT_EQ(0, ret);
 		r2 = tebako_getcwd(NULL, 0);
-		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-1/"));
+		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-1" __S__));
 		free(r2);
 	}
 
@@ -132,22 +147,22 @@ namespace {
 	}
 #endif
 	TEST_F(DirCtlTests, tebako_chdir_absolute_path_pass_through) {
-		int ret = tebako_chdir("/usr/bin");
+		int ret = tebako_chdir(__BIN__);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(DirCtlTests, tebako_chdir_relative_path_pass_through) {
-		int ret = tebako_chdir("/usr/");
+		int ret = tebako_chdir(__MSYS_USR__ __S__);
 		EXPECT_EQ(0, ret);
 		ret = tebako_chdir("bin");
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(DirCtlTests, tebako_mkdir_absolute_path) {
-#ifndef _WIN32		
-		int ret = tebako_mkdir(TEBAKIZE_PATH("tebako-test-dir"), S_IRWXU);
+#ifdef TEBAKO_HAS_POSIX_MKDIR
+		int ret = tebako_mkdir(TEBAKIZE_PATH(TMP_D_NAME), S_IRWXU);
 #else
-		int ret = tebako_mkdir(TEBAKIZE_PATH("tebako-test-dir"));
+		int ret = tebako_mkdir(TEBAKIZE_PATH(TMP_D_NAME));
 #endif
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EROFS, errno);
@@ -156,36 +171,36 @@ namespace {
 	TEST_F(DirCtlTests, tebako_mkdir_relative_path) {
 		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
-#ifndef _WIN32		
-		ret = tebako_mkdir("tebako-test-dir", S_IRWXU);
+#ifdef TEBAKO_HAS_POSIX_MKDIR
+		ret = tebako_mkdir(TMP_D_NAME, S_IRWXU);
 #else
-		ret = tebako_mkdir("tebako-test-dir");
+		ret = tebako_mkdir(TMP_D_NAME);
 #endif
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(EROFS, errno);
 	}
 
 	TEST_F(DirCtlTests, tebako_mkdir_absolute_path_pass_through) {
-#ifndef _WIN32		
-		int ret = tebako_mkdir("/tmp/tebako-test-dir", S_IRWXU);
+#ifdef TEBAKO_HAS_POSIX_MKDIR
+		int ret = tebako_mkdir(tmp_name.c_str(), S_IRWXU);
 #else
-		int ret = tebako_mkdir("tebako-test-dir");
+		int ret = tebako_mkdir(tmp_name.c_str());
 #endif
 		EXPECT_EQ(0, ret);
-		ret = rmdir("/tmp/tebako-test-dir");
+		ret = rmdir(tmp_name.c_str());
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(DirCtlTests, tebako_mkdir_relative_path_pass_through) {
-		int ret = tebako_chdir("/tmp");
+		int ret = tebako_chdir(tmp_dir.c_str());
 		EXPECT_EQ(0, ret);
-#ifndef _WIN32		
-		ret = tebako_mkdir("tebako-test-dir", S_IRWXU);
+#ifdef TEBAKO_HAS_POSIX_MKDIR
+		ret = tebako_mkdir(TMP_D_NAME, S_IRWXU);
 #else
-		ret = tebako_mkdir("tebako-test-dir");
+		ret = tebako_mkdir(TMP_D_NAME);
 #endif
 		EXPECT_EQ(0, ret);
-		ret = rmdir("/tmp/tebako-test-dir");
+		ret = rmdir(tmp_name.c_str());
 		EXPECT_EQ(0, ret);
 	}
 
@@ -195,7 +210,7 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 
 		errno = 0;
-#ifndef _WIN32		
+#ifdef TEBAKO_HAS_POSIX_MKDIR
 		EXPECT_EQ(-1, tebako_mkdir(NULL, S_IRWXU));
 #else
 		EXPECT_EQ(-1, tebako_mkdir(NULL));
@@ -213,7 +228,7 @@ namespace {
 		EXPECT_EQ(0, ret);
 
 		char* r2 = tebako_getcwd(NULL, 0);
-		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-3/level-1/level-2/"));
+		EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-3" __S__ "level-1" __S__ "level-2" __S__));
 		if (r2) {
 			free(r2);
 		}
@@ -230,4 +245,7 @@ namespace {
 			free(r2);
 		}
 	}
+
+	std::string DirCtlTests::tmp_name;
+	std::string DirCtlTests::tmp_dir;
 }

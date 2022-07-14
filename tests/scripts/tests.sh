@@ -83,6 +83,22 @@ test_linkage() {
       elif [[ "$OSTYPE" == "cygwin" ]]; then
          echo "... cygwin ... skipping"
       elif [[ "$OSTYPE" == "msys" ]]; then
+#        ntdll.dll => /c/Windows/SYSTEM32/ntdll.dll (0x7ffb32890000)
+#        KERNEL32.DLL => /c/Windows/System32/KERNEL32.DLL (0x7ffb322b0000)
+#        KERNELBASE.dll => /c/Windows/System32/KERNELBASE.dll (0x7ffb303d0000)
+#        ADVAPI32.dll => /c/Windows/System32/ADVAPI32.dll (0x7ffb32130000)
+#        msvcrt.dll => /c/Windows/System32/msvcrt.dll (0x7ffb32020000)
+#        sechost.dll => /c/Windows/System32/sechost.dll (0x7ffb31200000)
+#        RPCRT4.dll => /c/Windows/System32/RPCRT4.dll (0x7ffb31660000)
+#        SHLWAPI.dll => /c/Windows/System32/SHLWAPI.dll (0x7ffb30b60000)
+#        USER32.dll => /c/Windows/System32/USER32.dll (0x7ffb314c0000)
+#        win32u.dll => /c/Windows/System32/win32u.dll (0x7ffb30030000)
+#        GDI32.dll => /c/Windows/System32/GDI32.dll (0x7ffb326e0000)
+#        gdi32full.dll => /c/Windows/System32/gdi32full.dll (0x7ffb30100000)
+#        msvcp_win.dll => /c/Windows/System32/msvcp_win.dll (0x7ffb30060000)
+#        ucrtbase.dll => /c/Windows/System32/ucrtbase.dll (0x7ffb302d0000)
+#        WS2_32.dll => /c/Windows/System32/WS2_32.dll (0x7ffb312a0000)
+#        WSOCK32.dll => /c/Windows/SYSTEM32/WSOCK32.dll (0x7ffb1c490000)
          echo "... msys ... skipping"
       elif [[ "$OSTYPE" == "win32" ]]; then
          echo "... win32 ... skipping"

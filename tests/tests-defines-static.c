@@ -34,6 +34,7 @@
 #include <tebako-io.h>
 #include "tebako-fs.h"
 #include "tests-defines.h"
+#include "tebako-test-config.h"
 
 #ifndef true
 #define true 1
@@ -250,11 +251,11 @@ static int readv_c_test(int fh) {
 
 static int open_3_args_c_test(void) {
 	int rOK = true;
-	int ret = unlink("/tmp/some-tebako-test-file.txt");
+	int ret = unlink(__AT_TMP__("some-tebako-test-file.txt"));
 	printf("A call to 'unlink' returned %i (-1 supposed but 0 is also possible)\n", ret);
 	// ret is not checked intensionally !!!
 
-	ret = open("/tmp/some-tebako-test-file.txt", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	ret = open(__AT_TMP__("some-tebako-test-file.txt"), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	printf("A call to 'open' with 3 arguments returned %i (non negative file handle expected)\n", ret);
 	rOK &= (ret >= 0);
 
@@ -262,7 +263,7 @@ static int open_3_args_c_test(void) {
 	printf("A call to 'close' returned %i (0 expected)\n", ret);
 	rOK &= (ret == 0);
 
-	ret = unlink("/tmp/some-tebako-test-file.txt");
+	ret = unlink(__AT_TMP__("some-tebako-test-file.txt"));
 	printf("A call to 'unlink' returned %i (0 expected)\n", ret);
 	rOK &= (ret == 0);
 
@@ -348,7 +349,7 @@ static int scandir_c_test(void) {
 
 static int dlopen_c_test(void) {
 	int rOK = true;
-	void* handle = dlopen(TEBAKIZE_PATH("directory-1/libempty.so"), RTLD_LAZY | RTLD_GLOBAL);
+	void* handle = dlopen(TEBAKIZE_PATH(__WITH_LIB_EXT__("directory-1/libempty")), RTLD_LAZY | RTLD_GLOBAL);
 	rOK &= (handle != NULL);
 	printf("A call to 'dlopen' returned %p (not NULL expected)\n", handle);
 	if (handle != NULL) {

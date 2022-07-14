@@ -31,6 +31,8 @@
 
 #cmakedefine TEBAKO_HAS_O_DIRECTORY 1
 #cmakedefine TEBAKO_HAS_O_NOFOLLOW 1
+#cmakedefine TEBAKO_HAS_O_BINARY 1
+
 #cmakedefine TEBAKO_HAS_S_ISLNK 1
 
 #cmakedefine TEBAKO_HAS_LSTAT 1
@@ -47,3 +49,6 @@
 
 #cmakedefine TEBAKO_HAS_GETATTRLIST 1
 #cmakedefine TEBAKO_HAS_FGETATTRLIST 1
+
+#cmakedefine TEBAKO_HAS_POSIX_MKDIR 1
+#cmakedefine TEBAKO_HAS_WINDOWS_MKDIR 1

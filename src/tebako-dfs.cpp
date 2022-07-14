@@ -281,8 +281,8 @@ int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept {
                 if (p_lnk.is_relative())    p_new.replace_filename(lnk);
                 else                        p_new = lnk;
                 p_new = p_new.lexically_normal();
-                if (is_tebako_path(p_new.string().c_str()))  ret = tebako_stat(p_new.string().c_str(), buf);
-                else                                         ret = DWARFS_S_LINK_OUTSIDE;
+                if (is_tebako_path(p_new.generic_string().c_str()))  ret = tebako_stat(p_new.generic_string().c_str(), buf);
+                else                                                 ret = DWARFS_S_LINK_OUTSIDE;
            }
         }
     }
@@ -344,7 +344,7 @@ int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* bu
                     if (ret == DWARFS_IO_CONTINUE) {
                         stdfs::path p_path(lnk);
                         if (p_path.is_relative()) ret =  internal_getattr_relative(inode, p_path, buf);
-                        else                      ret =  tebako_stat(p_path.string().c_str(), buf);
+                        else                      ret =  tebako_stat(p_path.generic_string().c_str(), buf);
                     }
                 }
         }
