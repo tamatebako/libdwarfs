@@ -919,7 +919,14 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 
-install(FILES
-        ${DEPS_BIN_DIR}/mkdwarfs
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+if(IS_MSYS)
+  install(FILES
+          ${DEPS_BIN_DIR}/mkdwarfs.exe
+          DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+else(IS_MSYS)
+  install(FILES
+          ${DEPS_BIN_DIR}/mkdwarfs
+          DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+endif(IS_MSYS)

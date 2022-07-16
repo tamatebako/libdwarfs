@@ -27,6 +27,7 @@ name: MacOS-arm64
 
 on:
   push:
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -34,7 +35,6 @@ on:
       - '.github/workflows/*.yml'
       - '!.github/workflows/macos-arm64.yml'
   pull_request:
-    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -46,7 +46,7 @@ on:
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
-  
+
 env:
   CC: clang
   CXX: clang++

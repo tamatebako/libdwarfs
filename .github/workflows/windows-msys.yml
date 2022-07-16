@@ -33,6 +33,7 @@ name: Windows-MSys
 
 on:
   push:
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -123,7 +124,6 @@ jobs:
             libevent:p
             double-conversion:p
             glog:p
-            fmt:p
             dlfcn:p
             gtest:p
 
