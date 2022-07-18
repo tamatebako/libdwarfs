@@ -2,6 +2,7 @@ name: lint
 
 on:
   push:
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -12,7 +13,6 @@ on:
       - .github/workflows/alpine.yml
       - 'cmake/def_darwin_env.cmake'
   pull_request:
-    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'

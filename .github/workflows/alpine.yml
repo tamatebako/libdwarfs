@@ -27,44 +27,57 @@ name: Alpine
 
 on:
   push:
-    paths-ignore:
-      - 'docs/**'
-      - '**.adoc'
-      - '**.md'
-      - '.github/workflows/ubuntu.yml'
-      - '.github/workflows/macos.yml'
-      - '.github/workflows/macos-arm64.yml'
-      - 'cmake/def_darwin_env.cmake'
-      - '.github/workflows/lint.yml'
-  pull_request:
     branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/ubuntu.yml'
-      - '.github/workflows/macos.yml'
-      - '.github/workflows/macos-arm64.yml'
-      - 'cmake/def_darwin_env.cmake'
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/alpine.yml'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/alpine.yml'
   workflow_dispatch:
 
+concurrency:
+  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
+
 env:
-# The folder for dwarfs and other dependenies
-  DEPS: deps
-  CACHE_VER: "14"
-# GitHub dependencies'
-  INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "tebako-v0.2.0"
-  LIBARCHIVE_VER: "3.5.2"
-# Misc
-  DEBIAN_FRONTEND: "noninteractive"
-  TZ: "Etc/UTC"
-  MAKEFLAGS: -j4
+  CACHE_VER: 20
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      head_tag: ${{ steps.check.outputs.head_tag }}
+      foreign_pr: ${{ steps.check.outputs.foreign_pr }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+
+      - name: Retrieve tags
+        run: git fetch --depth=1 origin +refs/tags/*:refs/tags/* || true
+      - name: Set output variables
+        id: check
+        run: |
+          fpr="no"
+          tag=""
+          if [[ "${{ github.ref }}" == refs/heads/* ]]; then
+            tag="$(git tag --points-at HEAD)"
+          elif [[ "${{ github.ref }}" == refs/pull/* ]] && [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.event.pull_request.base.repo.full_name }}" ]; then
+            fpr="yes"
+          fi
+          echo "::set-output name=foreign_pr::${fpr}"
+          echo "::set-output name=head_tag::${tag}"
+
   build:
     name: alpine-latest [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    needs: prepare
     runs-on: ubuntu-latest
     container:
       image: alpine:latest
@@ -114,6 +127,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+
+      - name: Setup environment
+        run: cat common.env ubuntu.env >> $GITHUB_ENV
 
       - name: Patch system includes
         if: ${{ matrix.env.CC == 'clang' }}

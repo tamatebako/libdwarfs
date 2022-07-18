@@ -40,7 +40,12 @@ check_shared_libs() {
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
-         if [[ "${actual[i]}" == *"$exp"* ]]; then
+         if [[ "$OSTYPE" == "msys" ]]; then
+            actual_i=${actual[i],,}
+         else
+            actual_i=${actual[i]}
+         fi
+         if [[ "$actual_i" == *"$exp"* ]]; then
            unset 'actual[i]'
          fi
       done
@@ -83,7 +88,12 @@ test_linkage() {
       elif [[ "$OSTYPE" == "cygwin" ]]; then
          echo "... cygwin ... skipping"
       elif [[ "$OSTYPE" == "msys" ]]; then
-         echo "... msys ... skipping"
+         expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
+                   "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
+                   "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll")
+         readarray -t actual < <(ldd "$DIR_ROOT/build/wr-bin")
+         assertEquals "readarray -t actual < <(ldd $DIR_ROOT/build/wr-bin) failed" 0 "${PIPESTATUS[0]}"
+         check_shared_libs
       elif [[ "$OSTYPE" == "win32" ]]; then
          echo "... win32 ... skipping"
       elif [[ "$OSTYPE" == "freebsd"* ]]; then
@@ -110,7 +120,14 @@ test_C_bindings_and_temp_dir() {
    ls /tmp > "$DIR_TESTS"/temp/before
    assertEquals "ls /tmp > $DIR_TESTS/temp/before failed" 0 "${PIPESTATUS[0]}"
 
-   "$DIR_ROOT"/wr-bin
+   if [[ "$OSTYPE" == "msys" ]]; then
+      WR_BIN="$DIR_ROOT"/build/wr-bin.exe
+   else
+      WR_BIN="$DIR_ROOT"/wr-bin
+   fi
+
+   "$WR_BIN"
+
    assertEquals "$DIR_ROOT/wr-bin failed" 0 "${PIPESTATUS[0]}"
 
    ls /tmp > "$DIR_TESTS"/temp/after
@@ -137,7 +154,17 @@ test_install_script() {
    DIR_INS_L="$DIR_INSTALL"/lib
    DIR_INS_I="$DIR_INSTALL"/include/tebako
 
-   cmake --install  "$DIR_ROOT" --prefix "$DIR_INSTALL"
+   if [[ "$OSTYPE" == "msys" ]]; then
+      DIR_SRC="$DIR_ROOT"/build
+      NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
+      NM_LIBARCHIVE="$DIR_INS_L/libarchive_static.a"
+   else
+      DIR_SRC="$DIR_ROOT"
+      NM_MKDWARFS="$DIR_INS_B/mkdwarfs"
+      NM_LIBARCHIVE="$DIR_INS_L/libarchive.a"
+   fi
+
+   cmake --install  "$DIR_SRC" --prefix "$DIR_INSTALL"
    assertEquals "cmake --install failed" 0 "${PIPESTATUS[0]}"
 
 # We do not test fuse driver because we may operate in the environment
@@ -149,7 +176,7 @@ test_install_script() {
 #   assertTrue ""$DIR_INS_B"/dwarfsck was not installed" "[ -f "$DIR_INS_B"/dwarfsck ]"
 #   assertTrue ""$DIR_INS_B"/dwarfsextract was not installed" "[ -f "$DIR_INS_B"/dwarfsextract ]"
 
-   assertTrue "$DIR_INS_B/mkdwarfs was not installed" "[ -f $DIR_INS_B/mkdwarfs ]"
+   assertTrue "$NM_MKDWARFS was not installed" "[ -f $NM_MKDWARFS ]"
    assertTrue "$DIR_INS_L/libdwarfs-wr.a was not installed" "[ -f $DIR_INS_L/libdwarfs-wr.a ]"
    assertTrue "$DIR_INS_L/libdwarfs.a was not installed" "[ -f $DIR_INS_L/libdwarfs.a ]"
    assertTrue "$DIR_INS_L/libfsst.a was not installed" "[ -f $DIR_INS_L/libfsst.a ]"
@@ -158,7 +185,8 @@ test_install_script() {
    assertTrue "$DIR_INS_L/libthrift_light.a was not installed" "[ -f $DIR_INS_L/libthrift_light.a ]"
    assertTrue "$DIR_INS_L/libxxhash.a was not installed" "[ -f $DIR_INS_L/libxxhash.a ]"
    assertTrue "$DIR_INS_L/libzstd.a was not installed" "[ -f $DIR_INS_L/libzstd.a ]"
-   assertTrue "$DIR_INS_L/libarchive.a was not installed" "[ -f $DIR_INS_L/libarchive.a ]"
+   assertTrue "$NM_LIBARCHIVE was not installed" "[ -f $NM_LIBARCHIVE ]"
+   assertTrue "$DIR_INS_I/tebako-config.h was not installed" "[ -f $DIR_INS_I/tebako-config.h ]"
    assertTrue "$DIR_INS_I/tebako-defines.h was not installed" "[ -f $DIR_INS_I/tebako-defines.h ]"
    assertTrue "$DIR_INS_I/tebako-io.h was not installed" "[ -f $DIR_INS_I/tebako-io.h ]"
 }

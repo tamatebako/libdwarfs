@@ -28,26 +28,12 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
 #include <tebako-dirent.h>
-
-/*
-* tebako_opendir
-* tebako_fdopendir
-* tebako_closedir
-* tebako_readdir
-* tebako_telldir
-* tebako_seekdir
-* tebako_rewinddir
-* tebako_dirfd
-* tebako_scandir
-*
-*  https://pubs.opengroup.org/onlinepubs/9699919799/
-*/
 
 typedef std::set<uintptr_t> tebako_kfdtable;
 
@@ -76,7 +62,7 @@ public:
 
 sync_tebako_kfdtable sync_tebako_kfdtable::kfdtable;
 
-extern "C" DIR* tebako_opendir(const char* dirname) {
+DIR* tebako_opendir(const char* dirname) {
 	DIR* ret = NULL;
 	if (dirname == NULL) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
@@ -115,7 +101,8 @@ extern "C" DIR* tebako_opendir(const char* dirname) {
 	return ret;
 }
 
-extern "C" DIR* tebako_fdopendir(int vfd) {
+#ifdef TEBAKO_HAS_FDOPENDIR
+DIR* tebako_fdopendir(int vfd) {
 	DIR* ret = reinterpret_cast<DIR*>(sync_tebako_dstable::dstable.opendir(vfd));
 	if (ret == NULL) {
 		ret = ::fdopendir(vfd);
@@ -125,8 +112,9 @@ extern "C" DIR* tebako_fdopendir(int vfd) {
 	}
 	return ret;
 }
+#endif
 
-extern "C" int tebako_closedir(DIR * dirp) {
+int tebako_closedir(DIR * dirp) {
 	int ret = DWARFS_IO_ERROR;
 	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
 	ret = sync_tebako_dstable::dstable.closedir(uip);
@@ -143,7 +131,7 @@ extern "C" int tebako_closedir(DIR * dirp) {
 	return ret;
 }
 
-extern "C" struct dirent* tebako_readdir(DIR* dirp) {
+struct dirent* tebako_readdir(DIR* dirp) {
 	struct dirent* entry = NULL;
 	int ret = DWARFS_IO_ERROR;
 	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
@@ -160,7 +148,7 @@ extern "C" struct dirent* tebako_readdir(DIR* dirp) {
 	return entry;
 }
 
-extern "C" long tebako_telldir(DIR* dirp) {
+long tebako_telldir(DIR* dirp) {
 	long ret = DWARFS_IO_ERROR;
 	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
 	ret = sync_tebako_dstable::dstable.telldir(uip);
@@ -176,7 +164,7 @@ extern "C" long tebako_telldir(DIR* dirp) {
 	return ret;
 }
 
-extern "C" void tebako_seekdir(DIR* dirp, long loc) {
+void tebako_seekdir(DIR* dirp, long loc) {
 	int ret = DWARFS_IO_ERROR;
 	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
 	ret = sync_tebako_dstable::dstable.seekdir(uip, loc);
@@ -190,11 +178,12 @@ extern "C" void tebako_seekdir(DIR* dirp, long loc) {
 	}
 }
 
-extern "C" void tebako_rewinddir(DIR* dirp) {
+void tebako_rewinddir(DIR* dirp) {
 	tebako_seekdir(dirp, 0);
 }
 
-extern "C" int tebako_dirfd(DIR * dirp) {
+#ifdef TEBAKO_HAS_DIRFD
+int tebako_dirfd(DIR * dirp) {
 	int ret = DWARFS_IO_ERROR;
 	uintptr_t uip = reinterpret_cast<uintptr_t>(dirp);
 	ret = sync_tebako_dstable::dstable.dirfd(uip);
@@ -209,7 +198,9 @@ extern "C" int tebako_dirfd(DIR * dirp) {
 	}
 	return ret;
 }
+#endif
 
+#ifdef TEBAKO_HAS_SCANDIR
 typedef int(*qsort_compar)(const void*, const void*);
 
 static struct dirent* internal_readdir(DIR* dirp) {
@@ -218,7 +209,7 @@ static struct dirent* internal_readdir(DIR* dirp) {
 	return entry;
 }
 
-extern "C" int tebako_scandir(const char* dirname, struct dirent*** namelist,
+int tebako_scandir(const char* dirname, struct dirent*** namelist,
     int (*sel)(const struct dirent*),
 	int (*compar)(const struct dirent**, const struct dirent**)) {
 
@@ -292,3 +283,4 @@ extern "C" int tebako_scandir(const char* dirname, struct dirent*** namelist,
 	}
 	return ret;
 }
+#endif

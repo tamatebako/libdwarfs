@@ -28,8 +28,9 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
+#include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
 #include <tebako-dfs.h>
@@ -56,9 +57,9 @@ int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk)  no
 					}
 					else if (S_ISLNK(fd->st.st_mode) && (flags & O_NOFOLLOW)) {
 						//    [O_NOFOLLOW] If the trailing component (i.e., basename) of pathname is
-						//                 a symbolic link, then the open fails, with the error ELOOP.								
+						//                 a symbolic link, then the open fails, with the error ELOOP.
 						TEBAKO_SET_LAST_ERROR(ELOOP);
-					} 
+					}
 					else {
 						fd->handle = new int;
 						if (fd->handle == NULL) {
@@ -66,7 +67,7 @@ int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk)  no
 						}
 						else {
 							// get a dummy fd from the system
-							ret = dup(0);
+							ret = ::dup(0);
 							if (ret == DWARFS_IO_ERROR) {
 								// [EMFILE]  All file descriptors available to the process are currently open.
 								TEBAKO_SET_LAST_ERROR(EMFILE);
@@ -93,7 +94,7 @@ int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk)  no
 		}
 		catch (bad_alloc&) {
 			if (ret > 0) {
-				close(ret);
+				::close(ret);
 				ret = DWARFS_IO_ERROR;
 			}
 			TEBAKO_SET_LAST_ERROR(ENOMEM);
@@ -104,7 +105,7 @@ int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk)  no
 
 int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept {
 	struct stat stfd;
-	int ret = fstat(vfd, &stfd);
+	int ret = this->fstat(vfd, &stfd);        // !! this, and not ::
 	if (ret == DWARFS_IO_CONTINUE) {
 		ret = DWARFS_IO_ERROR;
 		if (!S_ISDIR(stfd.st_mode)) {
@@ -130,12 +131,12 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept {
 							if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
 								// [ENOTDIR] ... or O_DIRECTORY was specified and the path argument resolves to a non - directory file.
 								TEBAKO_SET_LAST_ERROR(ENOTDIR);
-							} 
+							}
 							else if (S_ISLNK(fd->st.st_mode) && (flags & O_NOFOLLOW)) {
 								//    [O_NOFOLLOW] If the trailing component (i.e., basename) of pathname is
-								//                 a symbolic link, then the open fails, with the error ELOOP.								
+								//                 a symbolic link, then the open fails, with the error ELOOP.
 								TEBAKO_SET_LAST_ERROR(ELOOP);
-							} 
+							}
 							else {
 								fd->handle = new int;
 								if (fd->handle == NULL) {
@@ -143,7 +144,7 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept {
 								}
 								else {
 									// get a dummy fd from the system
-									ret = dup(0);
+									ret = ::dup(0);
 									if (ret == DWARFS_IO_ERROR) {
 										// [EMFILE]  All file descriptors available to the process are currently open.
 										TEBAKO_SET_LAST_ERROR(EMFILE);
@@ -164,7 +165,7 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept {
 					}
 					catch (bad_alloc&) {
 						if (ret > 0) {
-							close(ret);
+							::close(ret);
 							ret = DWARFS_IO_ERROR;
 						}
 						TEBAKO_SET_LAST_ERROR(ENOMEM);

@@ -67,6 +67,7 @@ namespace {
 		EXPECT_EQ(ENOTDIR, errno);
 	}
 
+#ifdef TEBAKO_HAS_FDOPENDIR
 	TEST_F(DirIOTests, tebako_fdopendir_not_dir) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDONLY);
 		EXPECT_LT(0, fh);
@@ -81,7 +82,9 @@ namespace {
 		EXPECT_EQ(NULL, dirp);
 		EXPECT_EQ(EBADF, errno);
 	}
+#endif
 
+#ifdef TEBAKO_HAS_DIRFD
 	TEST_F(DirIOTests, tebako_fdopendir_dirfd_closedir) {
 		int fh = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY);
 		EXPECT_LT(0, fh);
@@ -89,8 +92,8 @@ namespace {
 		EXPECT_TRUE(dirp != NULL);
 		EXPECT_EQ(fh, tebako_dirfd(dirp));
 		EXPECT_EQ(0, tebako_closedir(dirp));
-
 	}
+#endif
 
 	TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_rewinddir_closedir) {
 		DIR* dirp = tebako_opendir(TEBAKIZE_PATH("directory-with-90-files"));
@@ -111,7 +114,9 @@ namespace {
 			if (entry != NULL) {
 				fname = "file-"; fname += std::to_string(pos + start_fnum - 2 /* for '.' and '..' */); fname += ".txt";
 				EXPECT_TRUE(fname == entry->d_name);
+#ifndef _WIN32								
 				EXPECT_TRUE(entry->d_type == DT_REG);
+#endif
 				EXPECT_EQ(++pos, tebako_telldir(dirp));
 			}
 
@@ -153,7 +158,9 @@ namespace {
 			if (entry != NULL) {
 				fname = ".";
 				EXPECT_TRUE(fname == entry->d_name);
+#ifndef _WIN32				
 				EXPECT_TRUE(entry->d_type == DT_DIR);
+#endif
 				EXPECT_EQ(1, tebako_telldir(dirp));
 			}
 
@@ -162,12 +169,23 @@ namespace {
 	}
 
 	TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_rewinddir_closedir_pass_through) {
+const char * const shell_name =
 #if __MACH__
-#define NM "zsh"
+ 								"zsh";
+#elif defined(_WIN32)
+ 								"bash.exe";
 #else
-#define NM "bash"
+								"bash";
 #endif
-		DIR* dirp = tebako_opendir("/bin");
+
+const char * const shell_folder =
+#ifndef _WIN32
+ 								"/bin";
+#else
+ 								__MSYS_BIN__;
+#endif
+
+		DIR* dirp = tebako_opendir(shell_folder);
 		EXPECT_TRUE(dirp != NULL);
 		if (dirp != NULL) {
 			long loc = -1;
@@ -176,7 +194,7 @@ namespace {
 			while (entry != NULL) {
 				long l = telldir(dirp);
 				entry = tebako_readdir(dirp);
-				if (entry != NULL && strcmp(entry->d_name, NM) == 0) {
+				if (entry != NULL && strcmp(entry->d_name, shell_name) == 0) {
 					loc = l;
 				}
 			}
@@ -186,13 +204,14 @@ namespace {
             if (loc !=-1) {
 			  tebako_seekdir(dirp, loc);
 			  entry = tebako_readdir(dirp);
-			  EXPECT_TRUE(strcmp(entry->d_name, NM)==0);
+			  EXPECT_TRUE(strcmp(entry->d_name, shell_name)==0);
 			}
 
 			EXPECT_EQ(0, tebako_closedir(dirp));
 		}
 	}
 
+#ifdef TEBAKO_HAS_SCANDIR
 	TEST_F(DirIOTests, tebako_scandir) {
 		const off_t start_fnum = 10;  /* The first filename is 'file-10.txt' */
 		const size_t size_dir = 90;
@@ -259,7 +278,7 @@ namespace {
 			free(namelist);
 		}
 	}
-
+#endif
 
 	TEST_F(DirIOTests, tebako_dir_io_null_ptr) {
 		errno = 0;
@@ -273,10 +292,11 @@ namespace {
 		tebako_seekdir(NULL, 1);   // Just nothing. No error, no SEGFAULT
 		tebako_rewinddir(NULL);    // The same
 
+#ifdef TEBAKKO_HAS_DIRFD
 		errno = 0;
 		EXPECT_EQ(-1, tebako_dirfd(NULL));
 		EXPECT_EQ(EBADF, errno);
-
+#endif
 		errno = 0;
 		EXPECT_EQ(-1, tebako_closedir(NULL));
 		EXPECT_EQ(EBADF, errno);
@@ -285,6 +305,7 @@ namespace {
 		EXPECT_EQ(NULL, tebako_readdir(NULL));
 		EXPECT_EQ(EBADF, errno);
 
+#ifdef TEBAKO_HAS_SCANDIR
 		struct dirent** namelist;
 
 		errno = 0;
@@ -294,6 +315,7 @@ namespace {
 		errno = 0;
 		EXPECT_EQ(-1, tebako_scandir(TEBAKIZE_PATH("directory-3"), NULL, zero_filter, alphasort));
 		EXPECT_EQ(EFAULT, errno);
+#endif
 	}
 
 	TEST_F(DirIOTests, tebako_opendir_readdir_closedir_dot_dot) {
@@ -307,14 +329,18 @@ namespace {
 			if (entry != NULL) {
 				fname = ".";
 				EXPECT_TRUE(fname == entry->d_name);
+#ifndef _WIN32				
 				EXPECT_TRUE(entry->d_type == DT_DIR);
+#endif				
 			}
 			entry = tebako_readdir(dirp);
 			EXPECT_TRUE(entry != NULL);
 			if (entry != NULL) {
 				fname = "..";
 				EXPECT_TRUE(fname == entry->d_name);
+#ifndef _WIN32				
 				EXPECT_TRUE(entry->d_type == DT_DIR);
+#endif				
 			}
 			fname = "test-file-at-level-2.txt";
 			fname_alt = "level-3";
@@ -322,13 +348,17 @@ namespace {
 			EXPECT_TRUE(entry != NULL);
 			if (entry != NULL) {
 				EXPECT_TRUE((fname == entry->d_name) || (fname_alt == entry->d_name));
+#ifndef _WIN32				
 				EXPECT_TRUE(entry->d_type == (entry->d_name == fname_alt ? DT_DIR : DT_REG));
+#endif				
 			}
 			entry = tebako_readdir(dirp);
 			EXPECT_TRUE(entry != NULL);
 			if (entry != NULL) {
 				EXPECT_TRUE((fname == entry->d_name) || (fname_alt == entry->d_name));
+#ifndef _WIN32				
 				EXPECT_TRUE(entry->d_type == (entry->d_name == fname_alt ? DT_DIR : DT_REG));
+#endif				
 			}
 			EXPECT_EQ(0, tebako_closedir(dirp));
 		}

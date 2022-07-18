@@ -28,8 +28,8 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
@@ -45,7 +45,7 @@
 *  https://pubs.opengroup.org/onlinepubs/9699919799/
 */
 
-extern "C" int tebako_open(int nargs, const char* path, int flags, ...)
+int tebako_open(int nargs, const char* path, int flags, ...)
 {
 	int ret = -1;
 	if (path == NULL) {
@@ -80,7 +80,8 @@ extern "C" int tebako_open(int nargs, const char* path, int flags, ...)
 	return ret;
 }
 
-extern "C" int tebako_openat(int nargs, int vfd, const char* path, int flags, ...) {
+#ifdef TEBAKO_HAS_OPENAT
+int tebako_openat(int nargs, int vfd, const char* path, int flags, ...) {
 	int ret = -1;
 	va_list args;
 	mode_t mode;
@@ -123,38 +124,44 @@ extern "C" int tebako_openat(int nargs, int vfd, const char* path, int flags, ..
 	}
 	return ret;
 }
+#endif
 
-extern "C" off_t tebako_lseek(int vfd, off_t offset, int whence) {
+off_t tebako_lseek(int vfd, off_t offset, int whence) {
 	off_t ret = sync_tebako_fdtable::fdtable.lseek(vfd, offset, whence);
 	return (ret == DWARFS_INVALID_FD) ? ::lseek(vfd, offset, whence) : ret;
 }
 
-extern "C" ssize_t tebako_read(int vfd, void* buf, size_t nbyte) {
+ssize_t tebako_read(int vfd, void* buf, size_t nbyte) {
 	ssize_t ret = sync_tebako_fdtable::fdtable.read(vfd, buf, nbyte);
 	return (ret == DWARFS_INVALID_FD) ? ::read(vfd, buf, nbyte) : ret;
 }
 
-extern "C" ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt) {
+#ifdef TEBAKO_HAS_READV
+ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt) {
 	ssize_t ret = sync_tebako_fdtable::fdtable.readv(vfd, iov, iovcnt);
 	return (ret == DWARFS_INVALID_FD) ? ::readv(vfd, iov, iovcnt) : ret;
 }
+#endif
 
-extern "C" ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset) {
+#ifdef TEBAKO_HAS_PREAD
+ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset) {
 	ssize_t ret = sync_tebako_fdtable::fdtable.pread(vfd, buf, nbyte, offset);
 	return (ret == DWARFS_INVALID_FD) ? ::pread(vfd, buf, nbyte, offset) : ret;
 }
+#endif
 
-extern "C" int tebako_close(int vfd) {
+int tebako_close(int vfd) {
 	int ret = sync_tebako_fdtable::fdtable.close(vfd);
 	return (ret == DWARFS_INVALID_FD) ? ::close(vfd) : ret;
 }
 
-extern "C" int tebako_fstat(int vfd, struct stat* buf) {
+int tebako_fstat(int vfd, struct stat* buf) {
 	int ret = sync_tebako_fdtable::fdtable.fstat(vfd, buf);
 	return (ret == DWARFS_INVALID_FD) ? ::fstat(vfd, buf) : ret;
 }
 
-extern "C" int tebako_fstatat(int vfd, const char* path, struct stat* buf, int flag) {
+#ifdef TEBAKO_HAS_FSTATAT
+int tebako_fstatat(int vfd, const char* path, struct stat* buf, int flag) {
 	int ret = -1;
 	try {
 		std::filesystem::path std_path(path);
@@ -174,9 +181,10 @@ extern "C" int tebako_fstatat(int vfd, const char* path, struct stat* buf, int f
 	}
 	return ret;
 }
+#endif
 
 #ifdef TEBAKO_HAS_FGETATTRLIST
-extern "C" int tebako_fgetattrlist (int vfd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options) {
+int tebako_fgetattrlist (int vfd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options) {
 	struct stat stfd;
 	int ret = sync_tebako_fdtable::fdtable.fstat(vfd, &stfd);
 	if (ret == DWARFS_INVALID_FD) {

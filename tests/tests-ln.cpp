@@ -48,7 +48,7 @@ namespace {
 				NULL	/* decompress_ratio*/,
 				NULL    /* image_offset */
 			);
-
+#ifdef WITH_LINK_TESTS
 			std::string tdp_template = (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
 			size_t l = tdp_template.length();
 			char* dir_name = new char[l+1];
@@ -66,13 +66,16 @@ namespace {
 			}
 
 			cross_test = (std::getenv("TEBAKO_CROSS_TEST") != NULL);
+#endif
 		}
 
 		static void TearDownTestSuite() {
+#ifdef WITH_LINK_TESTS
 			if (path_initialized) {
 				fs::remove_all(tmp_path);
 			}
 			path_initialized = false;
+#endif			
 			drop_fs();
 		}
 
