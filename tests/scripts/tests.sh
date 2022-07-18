@@ -186,6 +186,7 @@ test_install_script() {
    assertTrue "$DIR_INS_L/libxxhash.a was not installed" "[ -f $DIR_INS_L/libxxhash.a ]"
    assertTrue "$DIR_INS_L/libzstd.a was not installed" "[ -f $DIR_INS_L/libzstd.a ]"
    assertTrue "$NM_LIBARCHIVE was not installed" "[ -f $NM_LIBARCHIVE ]"
+   assertTrue "$DIR_INS_I/tebako-config.h was not installed" "[ -f $DIR_INS_I/tebako-config.h ]"
    assertTrue "$DIR_INS_I/tebako-defines.h was not installed" "[ -f $DIR_INS_I/tebako-defines.h ]"
    assertTrue "$DIR_INS_I/tebako-io.h was not installed" "[ -f $DIR_INS_I/tebako-io.h ]"
 }

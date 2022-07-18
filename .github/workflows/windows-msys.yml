@@ -146,7 +146,7 @@ jobs:
       - name: Process cache
         uses: actions/cache@v2
         with:
-          path: ${{github.workspace}}/${{env.DEPS}}
+          path: ${{env.DEPS}}
           key:  windows-msys-${{ matrix.env.sys }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
       - name: Configure

@@ -914,6 +914,7 @@ if(${WITH_JEMALLOC_BUILD})
 endif(${WITH_JEMALLOC_BUILD})
 
 install(FILES
+        "include/tebako-config.h"
         "include/tebako-defines.h"
         "include/tebako-io.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
