@@ -125,27 +125,6 @@ namespace {
 		EXPECT_EQ(EINVAL, errno);
 		EXPECT_EQ(NULL, r2);
 	}
-#ifdef WITH_GETWD
-	TEST_F(DirCtlTests, tebako_chdir_relative_path_getwd) {
-		char p[PATH_MAX];
-		char* r;
-		int ret = tebako_chdir(TEBAKIZE_PATH(""));
-		EXPECT_EQ(0, ret);
-		ret = tebako_chdir("directory-2");
-		EXPECT_EQ(0, ret);
-		r = tebako_getwd(p);
-		EXPECT_STREQ(r, TEBAKIZE_PATH("directory-2/"));
-	}
-
-	TEST_F(DirCtlTests, tebako_chdir_relative_path_no_directory_getwd) {
-		char p1[PATH_MAX], p2[PATH_MAX];
-		int ret = tebako_chdir(TEBAKIZE_PATH("directory-1"));
-		EXPECT_EQ(0, ret);
-		ret = tebako_chdir("no-directory");
-		EXPECT_EQ(ENOENT, errno);
-		EXPECT_EQ(-1, ret);
-	}
-#endif
 	TEST_F(DirCtlTests, tebako_chdir_absolute_path_pass_through) {
 		int ret = tebako_chdir(__BIN__);
 		EXPECT_EQ(0, ret);
@@ -216,11 +195,6 @@ namespace {
 		EXPECT_EQ(-1, tebako_mkdir(NULL));
 #endif
 		EXPECT_EQ(ENOENT, errno);
-#ifdef WITH_GETWD
-		errno = 0;
-		EXPECT_EQ(NULL, tebako_getwd(NULL));
-		EXPECT_EQ(ENOENT, errno);
-#endif
 	}
 
 	TEST_F(DirCtlTests, tebako_dir_ctl_dot_dot) {

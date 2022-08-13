@@ -82,37 +82,6 @@ char* tebako_getcwd(char* buf, size_t size) {
    		  return ::getcwd(buf, size);
 	}
 
-/*
-*   getwd()
-*	LEGACY, DEPRECATED
-*	https://pubs.opengroup.org/onlinepubs/009695299/functions/getwd.html
-*/
-#ifdef WITH_GETWD
-char* tebako_getwd(char* buf) {
-	char * ret = NULL;
-	if (buf == NULL) {
-		TEBAKO_SET_LAST_ERROR(ENOENT);
-	}
-	else {
-		if (is_tebako_cwd()) {
-			tebako_get_cwd(buf);
-			ret = buf;
-		}
-		else {
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-			ret = ::getwd(buf);
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-		}
-	}
-	return ret;
-}
-#endif
-
 int tebako_chdir(const char* path) {
 	int ret = DWARFS_IO_ERROR;
 	if (path == NULL) {
