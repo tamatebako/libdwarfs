@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2022, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -11,7 +11,7 @@
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other matrials provided with the distribution.
+ *    documentation and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -29,35 +29,35 @@
 
 #pragma once
 
-/*
-* defines below are copied from tebako_common.h
-* They are copied because !!! the client code should not include tebaco_common.h !!!
-*/
-#define TEBAKO_MOINT_POINT "__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_LENGTH  16
-#ifndef _WIN32
-#define TEBAKIZE_PATH(P) "/" TEBAKO_MOINT_POINT "/" P
-#else
-#define TEBAKIZE_PATH(P) "\\" TEBAKO_MOINT_POINT "\\" P
-#endif
-
 #ifdef RB_W32
-#define open	        rb_w32_uopen
-#define lseek(_f, _o, _w)	rb_w32_lseek(_f, _o, _w)
-#define close(h)		rb_w32_close(h)
-#define read(f, b, s)	rb_w32_read(f, b, s)
+#ifdef __cplusplus
+extern "C" {
+#endif 	// __cplusplus
+	char* 			rb_w32_ugetcwd(char *, int);
+	int 			rb_w32_uchdir(const char *);
+	int 			rb_w32_umkdir(const char *, int);
+	int 			rb_w32_access(const char *, int);
 
-#define chdir(p)        rb_w32_uchdir((p))
-#define mkdir(p, m)     rb_w32_umkdir((p), (m))
-#define access(p, m)	rb_w32_uaccess((p), (m))
-#define fstat(fd,st)	rb_w32_fstati128(fd,st)
-#define stat(path, st)	rb_w32_stati128(path,st)
-#define lstat(path,st)	rb_w32_lstati128(path,st)
-#define getcwd(p, s)    rb_w32_ugetcwd((p), (s))
-#define opendir(s)      rb_w32_opendir((s))
-#define readdir(d)      rb_w32_readdir((d), 0)
-#define telldir(d)      rb_w32_telldir((d))
-#define seekdir(d, l)   rb_w32_seekdir((d), (l))
-#define rewinddir(d)    rb_w32_rewinddir((d))
-#define closedir(d)     rb_w32_closedir((d))
+	int  			rb_w32_uopen(const char *, int, ...);
+	int  			rb_w32_close(int);
+	ssize_t 		rb_w32_read(int, void *, size_t);
+	off_t  			rb_w32_lseek(int, off_t, int);
+
+	int 			rb_w32_stati128(const char *, struct stati128 *);
+	int 			rb_w32_lstati128(const char *, struct stati128 *);
+	int 			rb_w32_fstati128(int, struct stati128 *);
+
+#if defined(RUBY_WIN32_DIR_H) || defined(RB_W32_DIR_DEFINED)
+    DIR*           	rb_w32_uopendir(const char*);
+	struct direct* 	rb_w32_readdir(DIR *, void *);
+	long           	rb_w32_telldir(DIR *);
+	void           	rb_w32_seekdir(DIR *, long);
+	void           	rb_w32_rewinddir(DIR *);
+	void           	rb_w32_closedir(DIR *);
 #endif
+
+#ifdef __cplusplus
+}
+#endif 	// __cplusplus
+
+#endif // RB_W32

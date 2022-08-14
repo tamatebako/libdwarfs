@@ -30,9 +30,11 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
+#include <tebako-io-rb-w32.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
+#include <tebako-io-rb-w32.h>
 
 #ifndef TEBAKO_HAS_O_BINARY
 #define O_BINARY 0x0
@@ -123,7 +125,7 @@ public:
 					fh_in = -1;
 				}
 				else {
-					struct stat st;
+					struct STAT_TYPE st;
 					if (tebako_fstat(fh_in, &st) == -1) {
 						*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
 					}

@@ -60,42 +60,62 @@
 # undef dirfd
 #endif
 
-#define getcwd(...)	tebako_getcwd(__VA_ARGS__)
+#ifdef RB_W32
+#   define rb_w32_umkdir(...)       tebako_mkdir(__VA_ARGS__)
+#   define rb_w32_ugetcwd(...)      tebako_getcwd(__VA_ARGS__)
+#   define rb_w32_uchdir(...)       tebako_chdir(__VA_ARGS__)
 
-#ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-#define getwd(...)	tebako_getwd(__VA_ARGS__)
-#ifdef __GNUC__
-# pragma GCC diagnostic pop
+#   define rb_w32_access(...)	    tebako_access(__VA_ARGS__)
+#   define rb_w32_uaccess(...)	    tebako_access(__VA_ARGS__)
+#   define rb_w32_stati128(...)     tebako_stat(__VA_ARGS__)
+#   define rb_w32_ustati128(...)    tebako_stat(__VA_ARGS__)
+#   define rb_w32_fstati128(...)    tebako_fstat(__VA_ARGS__)
+#   define rb_w32_lstati128(...)    tebako_lstat(__VA_ARGS__)
+#   define rb_w32_ulstati128(...)   tebako_lstat(__VA_ARGS__)
+
+#   define rb_w32_open(...)         tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#   define rb_w32_uopen(...)        tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#   define rb_w32_read(...)         tebako_read(__VA_ARGS__)
+#   define rb_w32_lseek(...)        tebako_lseek(__VA_ARGS__)
+#   define rb_w32_close(...)        tebako_close(__VA_ARGS__)
+
+#   define rb_w32_opendir(...)      tebako_opendir(__VA_ARGS__)
+#   define rb_w32_uopendir(...)     tebako_opendir(__VA_ARGS__)
+
+#   define rb_w32_readdir(d, e)     tebako_readdir((d), (void*)(e))
+#   define rb_w32_telldir(...)      tebako_telldir(__VA_ARGS__)
+#   define rb_w32_seekdir(...)      tebako_seekdir(__VA_ARGS__)
+#   define rb_w32_rewinddir(...)    tebako_seekdir(__VA_ARGS__, 0)
+#   define rb_w32_closedir(...)     tebako_closedir(__VA_ARGS__)
+#else
+#   define mkdir(...)           tebako_mkdir(__VA_ARGS__)
+#   define getcwd(...)	        tebako_getcwd(__VA_ARGS__)
+#   define chdir(...)           tebako_chdir(__VA_ARGS__)
+#   define access(...)          tebako_access(__VA_ARGS__)
+#   define stat(...)            tebako_stat(__VA_ARGS__)
+#   define fstat(...)           tebako_fstat(__VA_ARGS__)
+#   define lstat(...)           tebako_lstat(__VA_ARGS__)
+#   define open(...)            tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#   define read(...)            tebako_read(__VA_ARGS__)
+#   define lseek(...)           tebako_lseek(__VA_ARGS__)
+#   define close(...)           tebako_close(__VA_ARGS__)
+#   define opendir(...)         tebako_opendir(__VA_ARGS__)
+#   define fdopendir(...)       tebako_fdopendir(__VA_ARGS__)
+#   define closedir(...)        tebako_closedir(__VA_ARGS__)
+#   define readdir(...)         tebako_readdir(__VA_ARGS__)
+#   define telldir(...)         tebako_telldir(__VA_ARGS__)
+#   define seekdir(...)         tebako_seekdir(__VA_ARGS__)
+#   define rewinddir(...)       tebako_seekdir(__VA_ARGS__, 0)
 #endif
 
-#define chdir(...)         tebako_chdir(__VA_ARGS__)
-#define stat(...)          tebako_stat(__VA_ARGS__)
-#define fstat(...)         tebako_fstat(__VA_ARGS__)
-#define lstat(...)         tebako_lstat(__VA_ARGS__)
-#define fstatat(...)       tebako_fstatat(__VA_ARGS__)
-#define open(...)          tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
-#define openat(...)        tebako_openat(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
-#define close(...)         tebako_close(__VA_ARGS__)
-#define read(...)          tebako_read(__VA_ARGS__)
-#define lseek(...)         tebako_lseek(__VA_ARGS__)
-#define readlink(...)      tebako_readlink(__VA_ARGS__)
-#define opendir(...)       tebako_opendir(__VA_ARGS__)
-#define fdopendir(...)     tebako_fdopendir(__VA_ARGS__)
-#define closedir(...)      tebako_closedir(__VA_ARGS__)
-#define readdir(...)       tebako_readdir(__VA_ARGS__)
-#define telldir(...)       tebako_telldir(__VA_ARGS__)
-#define seekdir(...)       tebako_seekdir(__VA_ARGS__)
-#define rewinddir(...)     tebako_rewinddir(__VA_ARGS__)
-#define dirfd(...)         tebako_dirfd(__VA_ARGS__)
-#define scandir(...)       tebako_scandir(__VA_ARGS__)
-#define pread(...)         tebako_pread(__VA_ARGS__)
-#define readv(...)         tebako_readv(__VA_ARGS__)
-#define dlopen(...)        tebako_dlopen(__VA_ARGS__)
-#define dlerror            tebako_dlerror
-#define access(...)        tebako_access(__VA_ARGS__)
-#define mkdir(...)         tebako_mkdir(__VA_ARGS__)
-#define getattrlist(...)   tebako_getattrlist(__VA_ARGS__)
-#define fgetattrlist(...)  tebako_fgetattrlist(__VA_ARGS__)
+#define dirfd(...)           tebako_dirfd(__VA_ARGS__)
+#define scandir(...)         tebako_scandir(__VA_ARGS__)
+#define getattrlist(...)     tebako_getattrlist(__VA_ARGS__)
+#define fgetattrlist(...)    tebako_fgetattrlist(__VA_ARGS__)
+#define fstatat(...)         tebako_fstatat(__VA_ARGS__)
+#define openat(...)          tebako_openat(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define readlink(...)        tebako_readlink(__VA_ARGS__)
+#define pread(...)           tebako_pread(__VA_ARGS__)
+#define readv(...)           tebako_readv(__VA_ARGS__)
+#define dlopen(...)          tebako_dlopen(__VA_ARGS__)
+#define dlerror              tebako_dlerror

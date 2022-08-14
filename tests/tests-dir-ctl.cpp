@@ -43,6 +43,10 @@ namespace {
 
 		static void SetUpTestSuite() {
 
+#ifdef RB_W32
+			do_rb_w32_init();
+#endif
+
 			auto p_tmp_dir = fs::temp_directory_path();
 			auto p_tmp_name = p_tmp_dir / TMP_D_NAME;
 
@@ -138,7 +142,7 @@ namespace {
 	}
 
 	TEST_F(DirCtlTests, tebako_mkdir_absolute_path) {
-#ifdef TEBAKO_HAS_POSIX_MKDIR
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
 		int ret = tebako_mkdir(TEBAKIZE_PATH(TMP_D_NAME), S_IRWXU);
 #else
 		int ret = tebako_mkdir(TEBAKIZE_PATH(TMP_D_NAME));
@@ -150,7 +154,7 @@ namespace {
 	TEST_F(DirCtlTests, tebako_mkdir_relative_path) {
 		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
-#ifdef TEBAKO_HAS_POSIX_MKDIR
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
 		ret = tebako_mkdir(TMP_D_NAME, S_IRWXU);
 #else
 		ret = tebako_mkdir(TMP_D_NAME);
@@ -160,7 +164,7 @@ namespace {
 	}
 
 	TEST_F(DirCtlTests, tebako_mkdir_absolute_path_pass_through) {
-#ifdef TEBAKO_HAS_POSIX_MKDIR
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
 		int ret = tebako_mkdir(tmp_name.c_str(), S_IRWXU);
 #else
 		int ret = tebako_mkdir(tmp_name.c_str());
@@ -173,7 +177,7 @@ namespace {
 	TEST_F(DirCtlTests, tebako_mkdir_relative_path_pass_through) {
 		int ret = tebako_chdir(tmp_dir.c_str());
 		EXPECT_EQ(0, ret);
-#ifdef TEBAKO_HAS_POSIX_MKDIR
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
 		ret = tebako_mkdir(TMP_D_NAME, S_IRWXU);
 #else
 		ret = tebako_mkdir(TMP_D_NAME);
@@ -189,7 +193,7 @@ namespace {
 		EXPECT_EQ(ENOENT, errno);
 
 		errno = 0;
-#ifdef TEBAKO_HAS_POSIX_MKDIR
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
 		EXPECT_EQ(-1, tebako_mkdir(NULL, S_IRWXU));
 #else
 		EXPECT_EQ(-1, tebako_mkdir(NULL));

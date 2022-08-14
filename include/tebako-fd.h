@@ -29,7 +29,11 @@
 
 #pragma once
 
-union tebako_dirent;
+#ifdef RB_W32
+	struct tebako_dirent;
+#else
+	union tebako_dirent;
+#endif
 
 struct tebako_fd {
 	struct stat st;
@@ -67,8 +71,3 @@ public:
 
 	static sync_tebako_fdtable fdtable;
 };
-
-
-
-
-
