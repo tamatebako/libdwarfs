@@ -37,7 +37,11 @@ const int DWARFS_INVALID_FD = -2;
 // DWARFS_S_LINK_OUTSIDE indicates a soft link from memfs towards an entity outside memfs
 const int DWARFS_S_LINK_OUTSIDE = -3;
 
-union tebako_dirent;
+#ifdef RB_W32
+    struct tebako_dirent;
+#else
+    union tebako_dirent;
+#endif
 
 int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept;
 int dwarfs_lstat(const char* path, struct stat* buf) noexcept;

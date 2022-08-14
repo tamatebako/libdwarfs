@@ -127,7 +127,7 @@ long sync_tebako_dstable::dirfd(uintptr_t dirp) noexcept {
 	return ret;
 }
 
-int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcept {
+int sync_tebako_dstable::readdir(uintptr_t  dirp, tebako_dirent*& entry) noexcept {
 	int ret = DWARFS_INVALID_FD;
 	entry = NULL;
 	auto p_dstable = *rlock();
@@ -147,7 +147,7 @@ int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcep
 					try {
 						ret = p_ds->second->load_cache(p_ds->second->dir_position, false);
 						if (ret == DWARFS_IO_CONTINUE) {
-							entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start].e;
+							entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start];
 						}
 						else {
 							TEBAKO_SET_LAST_ERROR(ret);
@@ -159,7 +159,7 @@ int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcep
 					}
 				}
 				else {
-					entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start].e;
+					entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start];
 					ret = DWARFS_IO_CONTINUE;
 				}
 			}

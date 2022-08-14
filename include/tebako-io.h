@@ -44,9 +44,18 @@
 
 #ifndef TEBAKO_HAS_S_ISLNK
 #define	_S_IFLNK	0xA000
+#ifndef RB_W32
 #define	S_IFLNK		_S_IFLNK
+#endif
 #define S_ISLNK(mode) (((mode) & (_S_IFLNK)) == (_S_IFLNK) ? 1 : 0)
 #endif
+
+#ifdef RB_W32
+#define STAT_TYPE			stati128
+#else
+#define STAT_TYPE			stat
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,15 +117,16 @@ extern "C" {
 
 /* struct stat is defined only if sys/stat.h has been included */
 #if defined(_SYS_STAT_H) || defined(_SYS_STAT_H_) || defined(_INC_STAT)
-#ifdef TEBAKO_HAS_POSIX_MKDIR
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
     int   tebako_mkdir(const char* path, mode_t mode);
 #else
     int   tebako_mkdir(const char* path);
 #endif
-    int   tebako_stat(const char* path, struct stat* buf);
-    int   tebako_fstat(int vfd, struct stat* buf);
-#ifdef TEBAKO_HAS_LSTAT
-    int   tebako_lstat(const char* path, struct stat* buf);
+
+    int   tebako_stat(const char* path, struct STAT_TYPE* buf);
+    int   tebako_fstat(int vfd, struct STAT_TYPE* buf);
+#if defined(TEBAKO_HAS_LSTAT) || defined (RB_W32)
+    int   tebako_lstat(const char* path, struct STAT_TYPE* buf);
 #endif
 #ifdef TEBAKO_HAS_FSTATAT
     int   tebako_fstatat(int fd, const char* path, struct stat* buf, int flag);
@@ -127,16 +137,21 @@ extern "C" {
     ssize_t tebako_readlink(const char* path, char* buf, size_t bufsiz);
 
 /* DIR and struct dirent is defined only if dirent.h has been included */
-#if defined(_DIRENT_H) || defined(_DIRENT_H_)
+#if defined(_DIRENT_H) || defined(_DIRENT_H_) || defined(RUBY_WIN32_DIR_H) || defined(RB_W32_DIR_DEFINED)
     DIR* tebako_opendir(const char* dirname);
 #ifdef TEBAKO_HAS_FDOPENDIR
     DIR* tebako_fdopendir(int fd);
 #endif
+
+#ifdef RB_W32
+    struct direct* tebako_readdir(DIR* dirp, void* enc);
+#else
     struct dirent* tebako_readdir(DIR* dirp);
+#endif  // RB_W32
+
     long tebako_telldir(DIR* dirp);
     void tebako_seekdir(DIR* dirp, long loc);
-    void tebako_rewinddir(DIR* dirp);
-    int tebako_closedir(DIR* dirp);
+    int  tebako_closedir(DIR* dirp);
 #ifdef TEBAKO_HAS_DIRFD
     int tebako_dirfd(DIR* dirp);
 #endif

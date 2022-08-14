@@ -33,11 +33,13 @@
 *  Unit tests for 'tebako_open', 'tebako_close', 'tebako_read'
 * 'tebako_lseek' and underlying file descriptor implementation
 */
-
 namespace {
 	class FileIOTests : public testing::Test {
 	protected:
 		static void SetUpTestSuite() {
+#ifdef RB_W32
+			do_rb_w32_init();
+#endif
 			load_fs(&gfsData[0],
 				gfsSize,
 				tests_log_level,
@@ -106,7 +108,7 @@ namespace {
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOTDIR, errno);
 	}
-#endif	
+#endif
 
 	TEST_F(FileIOTests, tebako_close_bad_file) {
 		int ret = tebako_close(33);
@@ -308,12 +310,12 @@ namespace {
 #endif
 
 	TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path_pass_through) {
-		const char * const sh_file = 
+		const char * const sh_file =
 #ifndef _WIN32
 										"/bin/sh";
 #else
 										__MSYS_BIN__ "/sh.exe";
-#endif																						
+#endif
 		int fh1 = tebako_open(2, sh_file, O_RDONLY);
 		EXPECT_LT(0, fh1);
 		int ret = tebako_lseek(fh1, 5, SEEK_SET);
@@ -321,7 +323,6 @@ namespace {
 		char readbuf[64];
 		ret = tebako_read(fh1, readbuf, sizeof(readbuf) / sizeof(readbuf[0]));
 		EXPECT_EQ(sizeof(readbuf) / sizeof(readbuf[0]), ret);
-
 		ret = tebako_close(fh1);
 		EXPECT_EQ(0, ret);
 	}
@@ -349,18 +350,18 @@ namespace {
 #endif
 
 	TEST_F(FileIOTests, tebako_open_close_relative_path_pass_through) {
-		const char * const sh_folder = 
+		const char * const sh_folder =
 #ifndef _WIN32
 										"/bin";
 #else
 										__MSYS_BIN__;
-#endif																						
-		const char * const sh_file = 
+#endif
+		const char * const sh_file =
 #ifndef _WIN32
 										"sh";
 #else
 										"sh.exe";
-#endif																						
+#endif
 		int ret = tebako_chdir(sh_folder);
 		EXPECT_EQ(0, ret);
 		ret = tebako_open(2, sh_file, O_RDONLY);

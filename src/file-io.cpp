@@ -30,20 +30,11 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
+#include <tebako-io-rb-w32.h>
+#include <tebako-io-rb-w32-inner.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
-
-/*
-*  tebako_open
-*  tebako_close
-*  tebako_lseek
-*  tebako_read
-*  tebako_readv
-*  tebako_fstat
-*
-*  https://pubs.opengroup.org/onlinepubs/9699919799/
-*/
 
 int tebako_open(int nargs, const char* path, int flags, ...)
 {
@@ -62,7 +53,7 @@ int tebako_open(int nargs, const char* path, int flags, ...)
 		}
 		if (!p_path || ret == DWARFS_S_LINK_OUTSIDE) {
 			if (nargs == 2) {
-				ret = open(r_path.c_str(), flags);
+				ret = TO_RB_W32_U(open)(r_path.c_str(), flags);
 			}
 			else {
 				va_list args;
@@ -73,7 +64,7 @@ int tebako_open(int nargs, const char* path, int flags, ...)
 // this va_arg has undefined behavior because arguments will be promoted to 'int'
 				mode = (mode_t)va_arg(args, int);
 				va_end(args);
-				ret = ::open(r_path.c_str(), flags, mode);
+				ret = TO_RB_W32_U(open)(r_path.c_str(), flags, mode);
 			}
 		}
 	}
@@ -128,12 +119,12 @@ int tebako_openat(int nargs, int vfd, const char* path, int flags, ...) {
 
 off_t tebako_lseek(int vfd, off_t offset, int whence) {
 	off_t ret = sync_tebako_fdtable::fdtable.lseek(vfd, offset, whence);
-	return (ret == DWARFS_INVALID_FD) ? ::lseek(vfd, offset, whence) : ret;
+	return (ret == DWARFS_INVALID_FD) ? TO_RB_W32(lseek)(vfd, offset, whence) : ret;
 }
 
 ssize_t tebako_read(int vfd, void* buf, size_t nbyte) {
 	ssize_t ret = sync_tebako_fdtable::fdtable.read(vfd, buf, nbyte);
-	return (ret == DWARFS_INVALID_FD) ? ::read(vfd, buf, nbyte) : ret;
+	return (ret == DWARFS_INVALID_FD) ? TO_RB_W32(read)(vfd, buf, nbyte) : ret;
 }
 
 #ifdef TEBAKO_HAS_READV
@@ -152,12 +143,18 @@ ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset) {
 
 int tebako_close(int vfd) {
 	int ret = sync_tebako_fdtable::fdtable.close(vfd);
-	return (ret == DWARFS_INVALID_FD) ? ::close(vfd) : ret;
+	return (ret == DWARFS_INVALID_FD) ? TO_RB_W32(close)(vfd) : ret;
 }
 
-int tebako_fstat(int vfd, struct stat* buf) {
+int tebako_fstat(int vfd, struct STAT_TYPE* buf) {
+#if defined(RB_W32)
+	struct stat _buf;
+	int ret = sync_tebako_fdtable::fdtable.fstat(vfd, &_buf);
+	buf << _buf;
+#else
 	int ret = sync_tebako_fdtable::fdtable.fstat(vfd, buf);
-	return (ret == DWARFS_INVALID_FD) ? ::fstat(vfd, buf) : ret;
+#endif
+	return (ret == DWARFS_INVALID_FD) ? TO_RB_W32_I128(fstat)(vfd, buf) : ret;
 }
 
 #ifdef TEBAKO_HAS_FSTATAT

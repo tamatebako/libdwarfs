@@ -87,3 +87,15 @@ bool is_tebako_path(const char* path);
 bool is_tebako_cwd(void);
 const char* tebako_expand_path(tebako_path_t expanded_path, const char* path);
 const char* to_tebako_path(tebako_path_t t_path, const char* path);
+
+#ifdef RB_W32
+#define TO_RB_W32(A)		:: rb_w32_##A
+#define TO_RB_W32_U(A)		:: rb_w32_u##A
+#define TO_RB_W32_I128(A)	:: rb_w32_##A##i128
+#define TO_RB_W32_U_I128(A)	:: rb_w32_u##A##i128
+#else
+#define TO_RB_W32(A)		:: A
+#define TO_RB_W32_U(A)		:: A
+#define TO_RB_W32_I128(A)	:: A
+#define TO_RB_W32_U_I128(A) :: A
+#endif

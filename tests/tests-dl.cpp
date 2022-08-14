@@ -38,6 +38,9 @@ namespace {
 	class DlTests : public testing::Test {
 	protected:
 		static void SetUpTestSuite() {
+#ifdef RB_W32
+			do_rb_w32_init();
+#endif
 			load_fs(&gfsData[0],
 				gfsSize,
 				tests_log_level,

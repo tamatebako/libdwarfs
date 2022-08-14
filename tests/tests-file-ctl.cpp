@@ -33,6 +33,9 @@ namespace {
 	class FileCtlTests : public testing::Test {
 	protected:
 		static void SetUpTestSuite() {
+#ifdef RB_W32
+			do_rb_w32_init();
+#endif
 			load_fs(&gfsData[0],
 				gfsSize,
 				tests_log_level,
@@ -96,27 +99,27 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_stat_absolute_path) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_stat(TEBAKIZE_PATH("file.txt"), &st);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(FileCtlTests, tebako_stat_absolute_path_no_file) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_stat(TEBAKIZE_PATH("no_file.txt"), &st);
 		EXPECT_EQ(ENOENT, errno);
 		EXPECT_EQ(-1, ret);
 	}
 
 	TEST_F(FileCtlTests, tebako_stat_null) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_stat(NULL, &st);
 		EXPECT_EQ(ENOENT, errno);
 		EXPECT_EQ(-1, ret);
 	}
 
 	TEST_F(FileCtlTests, tebako_stat_relative_path) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
 		ret = tebako_stat("directory-1/file-in-directory-1.txt", &st);
@@ -125,7 +128,7 @@ namespace {
 
 #ifdef _WIN32
 	TEST_F(FileCtlTests, tebako_stat_relative_path_win) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
 		ret = tebako_stat("directory-1\\file-in-directory-1.txt", &st);
@@ -134,7 +137,7 @@ namespace {
 #endif
 
 	TEST_F(FileCtlTests, tebako_stat_relative_path_no_file) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
 		ret = tebako_stat("no_file.txt", &st);
@@ -143,13 +146,13 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_stat_absolute_path_pass_through) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_stat(bash_file, &st);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(FileCtlTests, tebako_stat_relative_path_pass_through) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_chdir(__BIN__);
 		EXPECT_EQ(0, ret);
 		ret = tebako_stat(__WITH_EXE_EXT__("sh"), &st);
@@ -160,7 +163,7 @@ namespace {
 		int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY);
 		EXPECT_LT(0, fh);
 
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_fstat(fh, &st);
 		EXPECT_EQ(0, ret);
 
@@ -169,7 +172,7 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_open_fstat_close_relative_path) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
 		int fh = tebako_open(2, "directory-1/file-in-directory-1.txt", O_RDONLY);
@@ -184,7 +187,7 @@ namespace {
 		int fh = tebako_open(2, bash_file, O_RDONLY);
 		EXPECT_LT(0, fh);
 
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_fstat(fh, &st);
 		EXPECT_EQ(0, ret);
 
@@ -193,7 +196,7 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_open_fstat_close_relative_path_pass_through) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_chdir(__BIN__ "/..");
 		EXPECT_EQ(0, ret);
 		int fh = tebako_open(2, __WITH_EXE_EXT__("bin/bash"), O_RDONLY);
@@ -206,7 +209,7 @@ namespace {
 
 #ifdef TEBAKO_HAS_FSTATAT
 	TEST_F(FileCtlTests, tebako_fstatat_relative_path) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
 		EXPECT_LT(0, fd);
 		int ret = tebako_fstatat(fd, "file-in-directory-1.txt", &buf, 0);
@@ -216,7 +219,7 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_fstatat_absolute_path) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
 		EXPECT_LT(0, fd);
 		int ret = tebako_fstatat(fd, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), &buf, 0);
@@ -226,7 +229,7 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_fstatat_relative_path_pass_through) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int fd = tebako_open(2, "/bin", O_RDONLY | O_DIRECTORY);
 		EXPECT_LT(0, fd);
 		int ret = tebako_fstatat(fd, "bash", &buf, 0);
@@ -236,7 +239,7 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_fstatat_absolute_path_pass_through) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
 		EXPECT_LT(0, fd);
 		int ret = tebako_fstatat(fd, bash_file, &buf, 0);
@@ -246,7 +249,7 @@ namespace {
 	}
 
 	TEST_F(FileCtlTests, tebako_fstatat_at_fdcwd) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
 		ret = tebako_fstatat(AT_FDCWD, "file-in-directory-2.txt", &buf, 0);

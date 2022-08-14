@@ -32,6 +32,8 @@
 #include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-io-rb-w32.h>
+#include <tebako-io-rb-w32-inner.h>
 
 namespace fs = std::filesystem;
 
@@ -79,7 +81,7 @@ char* tebako_getcwd(char* buf, size_t size) {
 			return buf;
 		}
 		else
-   		  return ::getcwd(buf, size);
+   		  return TO_RB_W32_U(getcwd)(buf, size);
 	}
 
 int tebako_chdir(const char* path) {
@@ -92,7 +94,7 @@ int tebako_chdir(const char* path) {
 		const char* p_path = to_tebako_path(t_path, path);
 
 		if (p_path) {
-			struct stat st;
+			struct STAT_TYPE st;
 			ret = tebako_stat(p_path, &st);
 			if (ret == 0) {
 				if (S_ISDIR(st.st_mode)) {
@@ -108,7 +110,7 @@ int tebako_chdir(const char* path) {
 			}
 		}
 		else {
-			ret = ::chdir(path);
+	   		ret=TO_RB_W32_U(chdir)(path);
 			if (ret == 0) {
 				ret = tebako_set_cwd(NULL) ? 0 : -1;
 				if (ret != 0) {
@@ -121,7 +123,7 @@ int tebako_chdir(const char* path) {
 	return ret;
 }
 
-#ifdef TEBAKO_HAS_POSIX_MKDIR
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
 int tebako_mkdir(const char* path, mode_t mode) {
 #else
 int tebako_mkdir(const char* path) {
@@ -136,8 +138,8 @@ int tebako_mkdir(const char* path) {
 			TEBAKO_SET_LAST_ERROR(EROFS);
 		}
 		else {
-#ifdef TEBAKO_HAS_POSIX_MKDIR
-			ret = ::mkdir(path, mode);
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+			ret = TO_RB_W32_U(mkdir)(path, mode);
 #else
 			ret = ::mkdir(path);
 #endif

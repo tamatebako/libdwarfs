@@ -30,6 +30,8 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
+#include <tebako-io-rb-w32.h>
+#include <tebako-io-rb-w32-inner.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 
@@ -44,17 +46,19 @@ int tebako_access(const char* path, int amode) {
 		const char* p_path = to_tebako_path(t_path, path);
 		if (p_path) {
 			ret = dwarfs_access(p_path, amode, getuid(), getgid(), lnk);
-			if (ret == DWARFS_S_LINK_OUTSIDE) ret = ::access(lnk.c_str(), amode);
+			if (ret == DWARFS_S_LINK_OUTSIDE) {
+				ret = TO_RB_W32(access)(lnk.c_str(), amode);
+			}
 		}
 		else {
-			ret = ::access(path, amode);
+			ret = TO_RB_W32(access)(path, amode);
 		}
 	}
 	return ret;
 }
 
-#ifdef TEBAKO_HAS_LSTAT
-int tebako_lstat(const char* path, struct stat* buf) {
+#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32)
+int tebako_lstat(const char* path, struct STAT_TYPE* buf) {
 	int ret = -1;
 	if (path == NULL) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
@@ -62,7 +66,18 @@ int tebako_lstat(const char* path, struct stat* buf) {
 	else {
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, path);
-		ret = p_path ? dwarfs_lstat(p_path, buf) : ::lstat(path, buf);
+		if (p_path) {
+#ifdef RB_W32
+			struct stat _buf;
+			ret = dwarfs_lstat(p_path, &_buf);
+			buf << _buf;
+#else
+			ret = dwarfs_lstat(p_path, buf);
+#endif
+		}
+		else {
+			ret = TO_RB_W32_I128(lstat)(path, buf);
+		}
 	}
 	return ret;
 }
@@ -91,7 +106,7 @@ ssize_t tebako_readlink(const char* path, char* buf, size_t bufsize) {
 	return ret;
 }
 
-int tebako_stat(const char* path, struct stat* buf) {
+int tebako_stat(const char* path, struct STAT_TYPE* buf) {
 	int ret = -1;
 	if (path == NULL) {
 		TEBAKO_SET_LAST_ERROR(ENOENT);
@@ -101,11 +116,17 @@ int tebako_stat(const char* path, struct stat* buf) {
 		tebako_path_t t_path;
 		const char* p_path = to_tebako_path(t_path, path);
 		if (p_path) {
+#ifdef RB_W32
+			struct stat _buf;
+			ret = dwarfs_stat(p_path, &_buf, lnk);
+			buf << _buf;
+#else
 			ret = dwarfs_stat(p_path, buf, lnk);
-			if (ret == DWARFS_S_LINK_OUTSIDE) ret = ::stat(lnk.c_str(), buf);
+#endif
+			if (ret == DWARFS_S_LINK_OUTSIDE) ret = TO_RB_W32_I128(stat)(lnk.c_str(), buf);
 		}
 		else {
-			ret = ::stat(path, buf);
+			ret = TO_RB_W32_I128(stat)(path, buf);
 		}
 	}
 	return ret;

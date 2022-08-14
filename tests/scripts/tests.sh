@@ -88,9 +88,16 @@ test_linkage() {
       elif [[ "$OSTYPE" == "cygwin" ]]; then
          echo "... cygwin ... skipping"
       elif [[ "$OSTYPE" == "msys" ]]; then
-         expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
-                   "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
-                   "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll")
+         if [[ "$RB_W32" == "ON" ]]; then
+            expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
+                      "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
+                      "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll"
+                      "imagehlp.dll" "shell32.dll" "iphlpapi.dll")
+         else
+            expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
+                      "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
+                      "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll")
+         fi
          readarray -t actual < <(ldd "$DIR_ROOT/build/wr-bin")
          assertEquals "readarray -t actual < <(ldd $DIR_ROOT/build/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
@@ -189,6 +196,7 @@ test_install_script() {
    assertTrue "$DIR_INS_I/tebako-config.h was not installed" "[ -f $DIR_INS_I/tebako-config.h ]"
    assertTrue "$DIR_INS_I/tebako-defines.h was not installed" "[ -f $DIR_INS_I/tebako-defines.h ]"
    assertTrue "$DIR_INS_I/tebako-io.h was not installed" "[ -f $DIR_INS_I/tebako-io.h ]"
+   assertTrue "$DIR_INS_I/tebako-io-rb-w32.h was not installed" "[ -f $DIR_INS_I/tebako-io-rb-w32.h ]"
 }
 
 # ......................................................................
@@ -200,6 +208,7 @@ DIR_ROOT="$( cd "$DIR1" && pwd )"
 DIR_TESTS="$( cd "$DIR0/.." && pwd)"
 
 ASAN="${ASAN:=OFF}"
+RB_W32="${RB_W32:=OFF}"
 
 echo "Running libdwarfs additional tests"
 # shellcheck source=/dev/null

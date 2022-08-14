@@ -147,12 +147,14 @@ else(OSTYPE_RES EQUAL 0)
   message(FATAL_ERROR "Failed to detect OSTYPE: ${OSTYPE_TXT}")
 endif(OSTYPE_RES EQUAL 0)
 
+# Reasonable defaults
 set(USE_JEMALLOC ON)
 set(WITH_JEMALLOC_BUILD OFF)
 set(WITH_FMT_BUILD OFF)
 set(WITH_GLOG_BUILD OFF)
 set(WITH_GFLAGS_BUILD OFF)
 set(WITH_DC_BUILD OFF)
+set(WITH_RUBY_BUILD OFF)
 
 set(PREFER_SYSTEM_GTEST OFF)
 
@@ -175,8 +177,13 @@ elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
   set(WITH_JEMALLOC_BUILD ON)
 endif()
 
+if(NOT ${IS_MSYS})
+  set(RB_W32 OFF)
+endif(NOT ${IS_MSYS})
+
 message("Configuraion summary:")
 message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
+message(STATUS "Building for Ruby Win32: ${RB_W32}")
 message(STATUS "Cross-compile options: ${CROSSFLAGS}")
 message(STATUS "Generic configure cross-compile options: ${HOST_OPTION}")
 message(STATUS "jemalloc configure cross-compile options: ${JEMALLOC_HOST_OPTION}")
@@ -204,11 +211,17 @@ set(CMAKE_CXX_EXTENSIONS   OFF)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.3.1pre")
+def_ext_prj_g(DWARFS "tebako-v0.3.2pre")
 def_ext_prj_t(LIBARCHIVE "3.5.2" "f0b19ff39c3c9a5898a219497ababbadab99d8178acc980155c7e1271089b5a0")
 
 if(${WITH_TESTS})
   def_ext_prj_g(INCBIN "348e36b")
+  if(${RB_W32})
+    message(STATUS "Building Ruby to support unit tests")
+    set(WITH_RUBY_BUILD ON)
+    def_ext_prj_t(RUBY "2.7.5" "2755b900a21235b443bb16dadd9032f784d4a88f143d852bc5d154f22b8781f1")
+    string(SUBSTRING ${RUBY_VER} 0 3 RUBY_VER_BASE)
+  endif(${RB_W32})
 endif(${WITH_TESTS})
 
 find_library(_LIBGLOG "libglog.a")
@@ -242,30 +255,33 @@ elseif(${USE_JEMALLOC})
 endif()
 
 message("Collecting packages:")
-message(STATUS "dwarfs     - " @${DWARFS_TAG}  " at " ${DWARFS_SOURCE_DIR})
-message(STATUS "libarchive - " v${LIBARCHIVE_VER} " at " ${LIBARCHIVE_SOURCE_DIR})
+message(STATUS "dwarfs     -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
+message(STATUS "libarchive -  v${LIBARCHIVE_VER}  at  ${LIBARCHIVE_SOURCE_DIR}")
 if(${WITH_TESTS})
-  message(STATUS "incbin     - " @${INCBIN_TAG} " at " ${INCBIN_SOURCE_DIR})
+  message(STATUS "incbin     -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
 endif(${WITH_TESTS})
 if(${WITH_GLOG_BUILD})
   def_ext_prj_g(GLOG "v0.6.0")
-  message(STATUS "glog       - " @${GLOG_TAG} " at " ${GLOG_SOURCE_DIR})
+  message(STATUS "glog       -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
 endif(${WITH_GLOG_BUILD})
 if(${WITH_GFLAGS_BUILD})
   def_ext_prj_g(GFLAGS "v2.2.2")
-  message(STATUS "gflags     - " @${GFLAGS_TAG} " at " ${GFLAGS_SOURCE_DIR})
+  message(STATUS "gflags     -  @${GFLAGS_TAG}  at  ${GFLAGS_SOURCE_DIR}")
 endif(${WITH_GFLAGS_BUILD})
 if(${WITH_FMT_BUILD})
   def_ext_prj_g(FMT "8.1.1")
-  message(STATUS "fmt        - " @${FMT_TAG} " at " ${FMT_SOURCE_DIR})
+  message(STATUS "fmt        -  @${FMT_TAG}  at  ${FMT_SOURCE_DIR}")
 endif(${WITH_FMT_BUILD})
 if(${WITH_DC_BUILD})
   def_ext_prj_g(DC "v3.2.0")
-  message(STATUS "double-conversion - " @${DC_TAG} " at " ${DC_SOURCE_DIR})
+  message(STATUS "double-conversion -  @${DC_TAG}  at  ${DC_SOURCE_DIR}")
 endif(${WITH_DC_BUILD})
 if(${WITH_JEMALLOC_BUILD})
-  message(STATUS "jemalloc   - " v${JEMALLOC_VER} " at " ${JEMALLOC_SOURCE_DIR})
+  message(STATUS "jemalloc   -  v${JEMALLOC_VER}  at  ${JEMALLOC_SOURCE_DIR}")
 endif(${WITH_JEMALLOC_BUILD})
+if(${WITH_RUBY_BUILD})
+  message(STATUS "Ruby       -  v${RUBY_VER}  at  ${RUBY_SOURCE_DIR}")
+endif(${WITH_RUBY_BUILD})
 
 
 # ...................................................................
@@ -297,7 +313,7 @@ if(${WITH_TESTS})
 
   if (${WITH_LINK_TESTS})
     set(WLT "with link tests")
-    add_compile_definitions("WITH_LINK_TESTS")
+    add_compile_definitions(WITH_LINK_TESTS)
   else(${WITH_LINK_TESTS})
     set(WLT "without link tests")
   endif(${WITH_LINK_TESTS})
@@ -512,6 +528,33 @@ if(${WITH_JEMALLOC_BUILD})
 endif(${WITH_JEMALLOC_BUILD})
 
 # ...................................................................
+# Ruby
+
+if(${WITH_RUBY_BUILD})
+  set(__LIBRUBY "${RUBY_BINARY_DIR}/libx64-msvcrt-ruby270-static.a")
+
+ExternalProject_Add(${RUBY_PRJ}
+    PREFIX ${DEPS}
+    URL https://cache.ruby-lang.org/pub/ruby/${RUBY_VER_BASE}/ruby-${RUBY_VER}.tar.gz
+    URL_HASH SHA256=${RUBY_HASH}
+    DOWNLOAD_NO_PROGRESS true
+    SOURCE_DIR ${RUBY_SOURCE_DIR}
+    BINARY_DIR ${RUBY_BINARY_DIR}
+    CONFIGURE_COMMAND ${GNU_BASH} -c "${RUBY_SOURCE_DIR}/configure                            \
+                                                        --enable-bundled-libyaml              \
+                                                        --without-gmp                         \
+                                                        --disable-dtrace                      \
+                                                        --enable-debug-env                    \
+                                                        --disable-install-doc                 \
+                                                        --with-static-linked-ext              \
+                                                        --with-out-ext=syslog,pty,dbm,gdbm    \
+                                                        --srcdir=${RUBY_SOURCE_DIR}           \
+                                                        --prefix=${DEPS}"
+    BUILD_BYPRODUCTS ${__LIBRUBY}
+  )
+endif(${WITH_RUBY_BUILD})
+
+# ...................................................................
 # Library
 
 configure_file(
@@ -580,26 +623,38 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 add_library(dwarfs-wr STATIC
     "src/file-ctl.cpp"
     "src/dir-ctl.cpp"
-    "src/file-io.cpp"
     "src/dir-io.cpp"
+    "src/file-io.cpp"
     "src/dl.cpp"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
     "src/tebako-fd.cpp"
     "src/tebako-dirent.cpp"
-    "include/tebako-pch.h"
-    "include/tebako-pch-pp.h"
     "include/tebako-common.h"
+    "include/tebako-config.h"
+    "include/tebako-defines.h"
+    "include/tebako-dirent.h"
+    "include/tebako-fd.h"
     "include/tebako-io.h"
     "include/tebako-io-inner.h"
-    "include/tebako-fd.h"
-    "include/tebako-dirent.h"
+    "include/tebako-kdf.h"
     "include/tebako-mfs.h"
-    "include/tebako-defines.h"
-    "include/tebako-config.h"
+    "include/tebako-pch.h"
+    "include/tebako-pch-pp.h"
     "include/version.h"
   )
+
+if(${RB_W32})
+#    "src/dir-io-rb-w32.cpp"
+  target_sources(dwarfs-wr PUBLIC
+    "include/tebako-io-rb-w32.h"
+    "include/tebako-io-rb-w32-inner.h"
+  )
+  add_compile_definitions(RB_W32)
+#else(${RB_W32})
+#  target_sources(dwarfs-wr PUBLIC "src/dir-io.cpp")
+endif(${RB_W32})
 
 add_dependencies(dwarfs-wr ${DWARFS_PRJ})
 if(${WITH_GLOG_BUILD})
@@ -782,13 +837,20 @@ if(${WITH_TESTS})
     "tests/tests-file-ctl.cpp"
     "tests/tests-file-io.cpp"
     "tests/tests-dir-ctl.cpp"
-    "tests/tests-dir-io.cpp"
     "tests/tests-ln.cpp"
     "tests/tests-dl.cpp"
     "tests/tebako-fs.cpp"
     "tests/tebako-fs.h"
     "tests/tests.h"
   )
+
+if(${RB_W32})
+  target_sources(wr-bin PUBLIC "tests/tests-init-rb-w32.c" "tests/tests-init-rb-w32.h")
+  target_sources(wr-tests PUBLIC "tests/tests-dir-io-rb-w32.cpp")
+  target_sources(wr-tests PUBLIC "tests/tests-init-rb-w32.c" "tests/tests-init-rb-w32.h")
+else(${RB_W32})
+  target_sources(wr-tests PUBLIC "tests/tests-dir-io.cpp")
+endif(${RB_W32})
 
 # ...................................................................
 #  IMPORTANT !!!
@@ -851,33 +913,45 @@ if(${WITH_TESTS})
 
   list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
-  if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+  if(IS_DARWIN)
     list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBLZMA})
-  elseif(WITH_ASAN)
-    list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
-                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}
-    )
-  else()
-    list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
-                           ${_LIBZ}      ${_LIBJEMALLOC} ${_LIBUNWIND}   ${_LIBLZMA}    pthread dl
-    )
-  endif()
+  else(IS_DARWIN)
+    if(WITH_ASAN)
+      list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
+                             ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
+      )
+    else(WITH_ASAN)
+      list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
+                             ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
+      )
+      if(NOT ${RB_W32})
+        list(APPEND _LIBRARIES pthread)
+      endif(NOT ${RB_W32})
+    endif(WITH_ASAN)
+    list(APPEND _LIBRARIES dl)
+  endif(IS_DARWIN)
 
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
 
   if(${WITH_JEMALLOC_BUILD})
     add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
-    target_link_libraries(wr-tests _LIBJEMALLOC)
+    target_link_libraries(wr-tests ${_LIBJEMALLOC})
   elseif(${USE_JEMALLOC})
     target_link_libraries(wr-bin ${_LIBJEMALLOC})
     target_link_libraries(wr-tests ${_LIBJEMALLOC})
   endif()
 
-  if(IS_MSYS)
+  if(${WITH_RUBY_BUILD})
+    add_dwarfs_library(_LIBRUBY ${RUBY_PRJ} wr-bin)
+    target_link_libraries(wr-bin imagehlp iphlpapi)
+    target_link_libraries(wr-tests ${__LIBRUBY} imagehlp iphlpapi)
+  endif(${WITH_RUBY_BUILD})
+
+  if(${IS_MSYS})
     target_link_libraries(wr-bin shlwapi wsock32 ws2_32)
     target_link_libraries(wr-tests shlwapi wsock32 ws2_32)
-  endif(IS_MSYS)
+  endif(${IS_MSYS})
 
 endif(${WITH_TESTS})
 
@@ -917,6 +991,7 @@ install(FILES
         "include/tebako-config.h"
         "include/tebako-defines.h"
         "include/tebako-io.h"
+        "include/tebako-io-rb-w32.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 

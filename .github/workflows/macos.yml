@@ -51,52 +51,21 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CC: clang
-  CXX: clang++
-  CACHE_VER: 20
+  CACHE_VER: 21
+  CFLAGS: -mmacos-version-min=10.15 --target=x86_64-apple-macos10.15
+  CPPFLAGS: -mmacos-version-min=10.15 --target=x86_64-apple-macos10.15
+  LDFLAGS:  --target=x86_64-apple-macos10.15
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      head_tag: ${{ steps.check.outputs.head_tag }}
-      foreign_pr: ${{ steps.check.outputs.foreign_pr }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.3.4
-
-      - name: Retrieve tags
-        run: git fetch --depth=1 origin +refs/tags/*:refs/tags/* || true
-      - name: Set output variables
-        id: check
-        run: |
-          fpr="no"
-          tag=""
-          if [[ "${{ github.ref }}" == refs/heads/* ]]; then
-            tag="$(git tag --points-at HEAD)"
-          elif [[ "${{ github.ref }}" == refs/pull/* ]] && [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.event.pull_request.base.repo.full_name }}" ]; then
-            fpr="yes"
-          fi
-          echo "::set-output name=foreign_pr::${fpr}"
-          echo "::set-output name=head_tag::${tag}"
-
   build:
     name: ${{ matrix.os }}
-    needs: prepare
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-10.15 , macos-11.0 ]
+        os: [ macos-11.0 ]
     steps:
-      - name: Select XCode 12.1.1 & SDK 10.15 for macos-10.15
-        if: ${{ matrix.os == 'macos-10.15' }}
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '12.1.1'
-
-      - name: Select XCode 12.4 & SDK 11.1 for macos-11.0
-        if: ${{ matrix.os == 'macos-11.0' }}
+      - name: Select XCode 12.4 & SDK 11.1
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '12.4'
@@ -107,7 +76,7 @@ jobs:
           submodules: true
 
       - name: Setup environment
-        run: cat common.env >> $GITHUB_ENV
+        run: cat common.env macos.env >> $GITHUB_ENV
 
       - name: Create deps folder
         run: |
@@ -155,37 +124,37 @@ jobs:
       - name: Run additional tests
         run:  ${{ env.BREW_HOME }}/bin/bash ${{ github.workspace }}/tests/scripts/tests.sh
 
-      - name: Upload tests
-        if: ${{ matrix.os == 'macos-10.15' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: tests-${{ env.CC }}
-          retention-days: 1
-          path: |
-            ${{github.workspace}}/wr-bin
-            ${{github.workspace}}/wr-tests
+# The code below runs tests on another veriosn of MacOS
+# 10.15 GHA handlers are decomissioned but we may need it later
+#      - name: Upload tests
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: tests
+#          retention-days: 1
+#          path: |
+#            ${{github.workspace}}/wr-bin
+#            ${{github.workspace}}/wr-tests
 
-  cross-test-macos-10-to-macos-11:
-    needs: build
-    name: Run MacOS-10.15 binaries on MacOS-11.0
-    runs-on: macos-11.0
-    env:
-      TEBAKO_CROSS_TEST: ON
-    strategy:
-      fail-fast: false
-    steps:
-      - name: Download tests
-        uses: actions/download-artifact@v2
-        with:
-          name: tests-${{ env.CC }}
+#  test-on-macos-10-15:
+#    needs: build
+#    name: run tests on MacOS-10.15
+#    runs-on: macos-10.15
+#    env:
+#      TEBAKO_CROSS_TEST: ON
+#    strategy:
+#      fail-fast: false
+#    steps:
+#      - name: Download tests
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: tests
 
-      - name: Provision execute permissions
-        run: |
-          chmod +x wr-bin
-          chmod +x wr-tests
+#      - name: Provision execute permissions
+#        run: |
+#          chmod +x wr-bin
+#          chmod +x wr-tests
+#      - name: Run statically linked application
+#        run: ./wr-bin
 
-      - name: Run statically linked application
-        run: ./wr-bin
-
-      - name: Run unit tests
-        run: ./wr-tests
+#      - name: Run unit tests
+#        run: ./wr-tests
