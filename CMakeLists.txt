@@ -630,14 +630,11 @@ add_library(dwarfs-wr STATIC
   )
 
 if(${RB_W32})
-#    "src/dir-io-rb-w32.cpp"
   target_sources(dwarfs-wr PUBLIC
     "include/tebako-io-rb-w32.h"
     "include/tebako-io-rb-w32-inner.h"
   )
   add_compile_definitions(RB_W32)
-#else(${RB_W32})
-#  target_sources(dwarfs-wr PUBLIC "src/dir-io.cpp")
 endif(${RB_W32})
 
 add_dependencies(dwarfs-wr ${DWARFS_PRJ})
