@@ -112,7 +112,17 @@ extern "C" {
 #ifdef TEBAKO_HAS_PREAD
     ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
 #endif
+
     off_t tebako_lseek(int vfd, off_t offset, int whence);
+
+ #ifdef TEBAKO_HAS_GETATTRLIST
+    int tebako_getattrlist(const char* path, struct attrlist * attrList, void * attrBuf,  size_t attrBufSize, unsigned long options);
+#endif
+
+#ifdef TEBAKO_HAS_FGETATTRLIST
+    int tebako_fgetattrlist(int fd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options);
+#endif
+   
 #endif
 
 /* struct stat is defined only if sys/stat.h has been included */
@@ -164,16 +174,6 @@ extern "C" {
 
     void* tebako_dlopen(const char* path, int flags);
     char* tebako_dlerror(void);
-
-/* struct attr is defined only if sys/attr.h has been included */
-#if defined(_SYS_ATTR_H_) || defined(_SYS_ATTR_H_)
-#ifdef TEBAKO_HAS_GETATTRLIST
-    int tebako_getattrlist(const char* path, struct attrlist * attrList, void * attrBuf,  size_t attrBufSize, unsigned long options);
-#endif
-#ifdef TEBAKO_HAS_FGETATTRLIST
-    int tebako_fgetattrlist(int fd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options);
-#endif
-#endif
 
     int within_tebako_memfs(const char* path);
 #ifdef __cplusplus
