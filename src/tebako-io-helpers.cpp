@@ -185,6 +185,23 @@ bool is_tebako_path(const char* path) {
             ));
 }
 
+#ifdef _WIN32
+extern "C" int is_tebako_path_w(const WCHAR* path) {
+    return path != NULL &&
+            ((wcsncmp((path), L"/" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0)
+            || wcsncmp(path, L"\\" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
+            || wcsncmp(path + 1, L":/" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
+            || wcsncmp(path + 1, L":\\" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
+            || wcsncmp(path, L"//?/" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
+            || wcsncmp(path, L"\\\\?\\" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
+            || ((wcsncmp(path, L"\\\\?\\", 4) == 0 || wcsncmp(path, L"//?/", 4) == 0) &&
+                (wcsncmp(path + 5, L":/" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0 ||
+                 wcsncmp(path + 5, L":\\" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
+                ))
+			) ? -1 : 0;
+}
+#endif
+
 //	Checks if the current cwd path is withing tebako memfs
 bool is_tebako_cwd(void) {
     auto locked = tebako_cwd.rlock();
