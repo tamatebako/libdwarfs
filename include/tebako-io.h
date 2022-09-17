@@ -122,7 +122,7 @@ extern "C" {
 #ifdef TEBAKO_HAS_FGETATTRLIST
     int tebako_fgetattrlist(int fd, struct attrlist * attrList, void * attrBuf, size_t attrBufSize, unsigned long options);
 #endif
-   
+
 #endif
 
 /* struct stat is defined only if sys/stat.h has been included */
@@ -176,6 +176,11 @@ extern "C" {
     char* tebako_dlerror(void);
 
     int within_tebako_memfs(const char* path);
+
+#ifdef _WIN32
+    int is_tebako_path_w(const WCHAR* path);
+#endif
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

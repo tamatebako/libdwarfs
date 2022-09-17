@@ -76,6 +76,7 @@
 
 /* This shall match tebako TEBAKO_MOUNT_POINT definition at CMakeLists.txt */
 #define TEBAKO_MOUNT_POINT "__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_W L"__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_LENGTH  16
 
 typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];

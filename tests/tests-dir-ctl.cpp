@@ -224,6 +224,16 @@ namespace {
 		}
 	}
 
+#ifdef _WIN32
+	TEST_F(DirCtlTests, is_tebako_path_w) {
+		int ret = is_tebako_path_w(L"/__tebako_memfs__/some/path");
+		EXPECT_EQ(-1, ret);
+
+		ret = is_tebako_path_w(L"/just/some/path");
+		EXPECT_EQ(0, ret);
+	}
+#endif
+
 	std::string DirCtlTests::tmp_name;
 	std::string DirCtlTests::tmp_dir;
 }
