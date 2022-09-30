@@ -213,7 +213,11 @@ namespace {
 
 	TEST_F(DirCtlTests, tebako_dir_ctl_root) {
 		//  "/__tebako_memfs__" and not conventional "/__tebako_memfs__/"
+#ifdef _WIN32
+		int ret = tebako_chdir("A:\\__tebako_memfs__");
+#else
 		int ret = tebako_chdir("/__tebako_memfs__");
+#endif
 		EXPECT_EQ(0, ret);
 
 		char* r2 = tebako_getcwd(NULL, 0);
@@ -225,11 +229,18 @@ namespace {
 
 #ifdef _WIN32
 	TEST_F(DirCtlTests, is_tebako_path_w) {
-		int ret = is_tebako_path_w(L"/__tebako_memfs__/some/path");
+		int ret = is_tebako_path_w(L"A:/__tebako_memfs__/some/path");
+		EXPECT_EQ(-1, ret);
+
+		ret = is_tebako_path_w(L"A:\\__tebako_memfs__\\some\\path");
 		EXPECT_EQ(-1, ret);
 
 		ret = is_tebako_path_w(L"/just/some/path");
 		EXPECT_EQ(0, ret);
+
+		ret = is_tebako_path_w(L"C:\\just\\some\\path");
+		EXPECT_EQ(0, ret);
+
 	}
 #endif
 

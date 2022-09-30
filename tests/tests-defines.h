@@ -34,9 +34,9 @@
 * They are copied because !!! the client code should not include tebaco_common.h !!!
 */
 #ifdef _WIN32
-#define TEBAKO_MOUNT_POINT "\\\\.\\__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_W L"\\\\.\\__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_LENGTH  20
+#define TEBAKO_MOUNT_POINT "A:\\__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_W L"A:\\__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_LENGTH  19
 #define TEBAKIZE_PATH(P) TEBAKO_MOUNT_POINT "\\" P
 #else
 #define TEBAKO_MOUNT_POINT "/__tebako_memfs__"

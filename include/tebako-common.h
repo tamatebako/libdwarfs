@@ -75,9 +75,11 @@
 #endif
 
 #ifdef _WIN32
-#define TEBAKO_MOUNT_POINT "\\\\?\\__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_W L"\\\\?\\__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_LENGTH  20
+#define TEBAKO_MOUNT_POINT "A:\\__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_S "A:/__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_W L"A:\\__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_WS L"A:/__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_LENGTH  19
 #else
 #define TEBAKO_MOUNT_POINT "/__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_W L"/__tebako_memfs__"
