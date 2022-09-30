@@ -166,23 +166,18 @@ bool tebako_set_cwd(const char* path) {
 }
 
 //  Checks if a path is withing tebako memfs
-bool is_tebako_path(const char* path) {
-	bool ret = false;
-	if (path) {
-		fs::path p(path);
-		ret = strncmp(p.make_preferred().string().c_str(), TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0;
-	}
-	return ret;
-}
-
 #ifdef _WIN32
+bool is_tebako_path(const char* path) {
+	return (strncmp(path, TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0) ||
+		   (strncmp(path, TEBAKO_MOUNT_POINT_S, TEBAKO_MOUNT_POINT_LENGTH) == 0);
+}
 extern "C" int is_tebako_path_w(const WCHAR* path) {
-	int ret = 0;
-	if (path) {
-		fs::path p(path);
-		ret = wcsncmp(p.make_preferred().wstring().c_str(), TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH) == 0 ? -1 : 0;
-	}
-	return ret;
+	return (wcsncmp(path, TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH) == 0 ||
+		   wcsncmp(path, TEBAKO_MOUNT_POINT_WS, TEBAKO_MOUNT_POINT_LENGTH) == 0	  )? -1 : 0;
+}
+#else
+bool is_tebako_path(const char* path) {
+	return (strncmp(path, TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0);
 }
 #endif
 
