@@ -31,8 +31,6 @@
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
 
-namespace fs = std::filesystem;
-
 char* tebako_path_assign(tebako_path_t out, std::string in) {
 		strncpy(out, in.c_str(), TEBAKO_PATH_LENGTH);
 		out[TEBAKO_PATH_LENGTH] = '\0';
@@ -169,36 +167,22 @@ bool tebako_set_cwd(const char* path) {
 
 //  Checks if a path is withing tebako memfs
 bool is_tebako_path(const char* path) {
-    return (path != NULL &&
-            (strncmp((path), "/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
-#ifdef _WIN32
-            || strncmp(path, "\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
-            || strncmp(path + 1, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-            || strncmp(path + 1, ":\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-            || strncmp(path, "//?/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
-            || strncmp(path, "\\\\?\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
-            || ((strncmp(path, "\\\\?\\", 4) == 0 || strncmp(path, "//?/", 4) == 0) &&
-                (strncmp(path + 5, ":/" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0 ||
-                 strncmp(path + 5, ":\\" TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-                ))
-#endif
-            ));
+	bool ret = false;
+	if (path) {
+		fs::path p(path);
+		ret = strncmp(p.make_preferred().c_str(), TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0;
+	}
+	return ret;
 }
 
 #ifdef _WIN32
 extern "C" int is_tebako_path_w(const WCHAR* path) {
-    return path != NULL &&
-            ((wcsncmp((path), L"/" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0)
-            || wcsncmp(path, L"\\" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 1) == 0
-            || wcsncmp(path + 1, L":/" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-            || wcsncmp(path + 1, L":\\" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-            || wcsncmp(path, L"//?/" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
-            || wcsncmp(path, L"\\\\?\\" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 3) == 0
-            || ((wcsncmp(path, L"\\\\?\\", 4) == 0 || wcsncmp(path, L"//?/", 4) == 0) &&
-                (wcsncmp(path + 5, L":/" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0 ||
-                 wcsncmp(path + 5, L":\\" TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH + 2) == 0
-                ))
-			) ? -1 : 0;
+	int ret = 0;
+	if (path) {
+		fs::path p(path);
+		ret = wcsncmp(p.make_preferred().c_str(), TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0 ? -1 : 0;
+	}
+	return ret;
 }
 #endif
 

@@ -29,9 +29,8 @@
 
 #include <unistd.h>
 #include <filesystem>
-#include "tests.h"
-
 namespace fs = std::filesystem;
+#include "tests.h"
 
 namespace {
 	class DirCtlTests : public testing::Test {

@@ -35,8 +35,6 @@
 #include <tebako-io-rb-w32.h>
 #include <tebako-io-rb-w32-inner.h>
 
-namespace fs = std::filesystem;
-
 char* tebako_getcwd(char* buf, size_t size) {
 		tebako_path_t _cwd;
 		const char* cwd = tebako_get_cwd(_cwd, true);

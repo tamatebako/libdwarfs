@@ -29,7 +29,6 @@
 
 #include "tests.h"
 #include <filesystem>
-
 namespace fs = std::filesystem;
 
 namespace {

@@ -33,12 +33,16 @@
 * defines below are copied from tebako_common.h
 * They are copied because !!! the client code should not include tebaco_common.h !!!
 */
-#define TEBAKO_MOINT_POINT "__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_LENGTH  16
-#ifndef _WIN32
-#define TEBAKIZE_PATH(P) "/" TEBAKO_MOINT_POINT "/" P
+#ifdef _WIN32
+#define TEBAKO_MOUNT_POINT "\\\\.\\__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_W L"\\\\.\\__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_LENGTH  20
+#define TEBAKIZE_PATH(P) TEBAKO_MOUNT_POINT "\\" P
 #else
-#define TEBAKIZE_PATH(P) "\\" TEBAKO_MOINT_POINT "\\" P
+#define TEBAKO_MOUNT_POINT "/__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_W L"/__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_LENGTH  17
+#define TEBAKIZE_PATH(P) TEBAKO_MOUNT_POINT "/" P
 #endif
 
 #ifdef RB_W32

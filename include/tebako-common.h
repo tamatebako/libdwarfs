@@ -75,9 +75,15 @@
 #endif
 
 /* This shall match tebako TEBAKO_MOUNT_POINT definition at CMakeLists.txt */
-#define TEBAKO_MOUNT_POINT "__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_W L"__tebako_memfs__"
-#define TEBAKO_MOUNT_POINT_LENGTH  16
+#ifdef _WIN32
+#define TEBAKO_MOUNT_POINT "\\\\?\\__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_W L"\\\\?\\__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_LENGTH  20
+#else
+#define TEBAKO_MOUNT_POINT "/__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_W L"/__tebako_memfs__"
+#define TEBAKO_MOUNT_POINT_LENGTH  17
+#endif
 
 typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];
 char* tebako_path_assign(tebako_path_t out, std::string in);
