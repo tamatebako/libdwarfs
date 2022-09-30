@@ -186,9 +186,9 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, const char* path, Args&&.
         try {
 // Normally we remove '/__tebako_memfs__/'
 // However, there is also a case when it is memfs root and path isn just '/__tebako_memfs__'
-            const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH + 1] == '\0' ?
-                path + TEBAKO_MOUNT_POINT_LENGTH + 1 :
-                path + TEBAKO_MOUNT_POINT_LENGTH + 2;
+            const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ?
+                path + TEBAKO_MOUNT_POINT_LENGTH :
+                path + TEBAKO_MOUNT_POINT_LENGTH + 1;
             auto inode = p->fs.find(adj);
             if (p->opts.debuglevel >= logger::DEBUG) {
               LOG_PROXY(debug_logger_policy, p->lgr);

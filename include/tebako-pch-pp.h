@@ -45,6 +45,7 @@
 #include <cstring>
 #include <random>
 #include <filesystem>
+namespace fs = std::filesystem;
 
 #include <folly/Conv.h>
 #include <folly/Synchronized.h>
