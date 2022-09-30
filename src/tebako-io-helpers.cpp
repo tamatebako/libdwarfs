@@ -170,7 +170,7 @@ bool is_tebako_path(const char* path) {
 	bool ret = false;
 	if (path) {
 		fs::path p(path);
-		ret = strncmp(p.make_preferred().c_str(), TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0;
+		ret = strncmp(p.make_preferred().string().c_str(), TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0;
 	}
 	return ret;
 }
@@ -180,7 +180,7 @@ extern "C" int is_tebako_path_w(const WCHAR* path) {
 	int ret = 0;
 	if (path) {
 		fs::path p(path);
-		ret = wcsncmp(p.make_preferred().c_str(), TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0 ? -1 : 0;
+		ret = wcsncmp(p.make_preferred().wstring().c_str(), TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH) == 0 ? -1 : 0;
 	}
 	return ret;
 }
