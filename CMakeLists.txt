@@ -353,6 +353,7 @@ ExternalProject_Add(${LIBARCHIVE_PRJ}
   BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBARCHIVE}
 )
+add_dependencies(${DWARFS_PRJ} ${LIBARCHIVE_PRJ})
 
 # ...................................................................
 # glog
