@@ -30,6 +30,7 @@ name: MacOS
 
 on:
   push:
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -39,7 +40,6 @@ on:
       - '.github/workflows/macos-arm64.yml'
       - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -109,7 +109,7 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
 
       - name: Process cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/${{ env.DEPS }}
           key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
@@ -142,7 +142,7 @@ jobs:
 
       - name: Upload tests
         if: ${{ matrix.os == 'macos-10.15' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: tests-${{ env.CC }}
           retention-days: 1
@@ -160,7 +160,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Download tests
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: tests-${{ env.CC }}
 

@@ -27,6 +27,7 @@ name: Alpine
 
 on:
   push:
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -37,7 +38,6 @@ on:
       - 'cmake/def_darwin_env.cmake'
       - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -103,7 +103,7 @@ jobs:
             lz4-dev openssl-dev zlib-dev gflags-dev                \
             libunwind-dev libdwarf-dev elfutils-dev                \
             libevent-static openssl-libs-static lz4-static xz-dev  \
-            zlib-static libunwind-static acl-static tar
+            zlib-static libunwind-static acl-static tar xz-static
 
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
@@ -128,7 +128,7 @@ jobs:
           echo ${{ env.LIBARCHIVE_VER }} >> key.txt
 
       - name: Process cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{env.DEPS}}
           key:  alpine-latest-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
@@ -152,7 +152,7 @@ jobs:
         run: make test
 
       - name: Checkout shell test framework
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: kward/shunit2
           path: tests/shunit2

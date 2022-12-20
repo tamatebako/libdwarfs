@@ -27,6 +27,7 @@ name: Ubuntu
 
 on:
   push:
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -37,7 +38,6 @@ on:
       - 'cmake/def_darwin_env.cmake'
       - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -99,7 +99,7 @@ jobs:
           echo ${{ env.LIBARCHIVE_VER }} >> key.txt
 
       - name: Process cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
           key:  ${{ matrix.os }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload tests
         if: ${{ matrix.os == 'ubuntu-18.04' && env.ASAN == 'OFF' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: tests-${{ matrix.env.CC }}
           retention-days: 1
@@ -207,7 +207,7 @@ jobs:
         env: [ gcc, clang ]
     steps:
       - name: Download tests
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: tests-${{ matrix.env }}
 
