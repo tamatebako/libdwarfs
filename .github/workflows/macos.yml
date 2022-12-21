@@ -30,6 +30,7 @@ name: MacOS
 
 on:
   push:
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -39,7 +40,6 @@ on:
       - '.github/workflows/macos-arm64.yml'
       - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -60,13 +60,16 @@ env:
   CACHE_VER: "10"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "tebako-v0.2.0"
-  LIBARCHIVE_VER: "3.5.2"
+  DWARFS_TAG: "tebako-v0.2.1"
   GLOG_TAG: "v0.5.0"
   GFLAGS_TAG: "v2.2.2"
 # Tarball dependencies
   JEMALLOC_VER: "5.2.1"
   JEMALLOC_HASH: "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6"
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -100,7 +103,6 @@ jobs:
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
           echo ${{ env.GLOG_TAG }} >> key.txt
           echo ${{ env.GFLAGS_TAG }} >> key.txt
           echo ${{ env.JEMALLOC_VER }} >> key.txt
@@ -109,7 +111,7 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
 
       - name: Process cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/${{ env.DEPS }}
           key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
@@ -119,7 +121,7 @@ jobs:
 # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
           brew install \
-          bison flex gnu-sed bash libarchive double-conversion boost jemalloc fmt glog
+          bison flex gnu-sed bash double-conversion boost jemalloc fmt glog
 
       - name: Configure
         run: cmake -B ${{ github.workspace }} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON
@@ -142,7 +144,7 @@ jobs:
 
       - name: Upload tests
         if: ${{ matrix.os == 'macos-10.15' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: tests-${{ env.CC }}
           retention-days: 1
@@ -160,7 +162,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Download tests
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: tests-${{ env.CC }}
 

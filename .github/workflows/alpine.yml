@@ -27,6 +27,7 @@ name: Alpine
 
 on:
   push:
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -37,7 +38,6 @@ on:
       - 'cmake/def_darwin_env.cmake'
       - '.github/workflows/lint.yml'
   pull_request:
-    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -52,22 +52,29 @@ on:
 env:
 # The folder for dwarfs and other dependenies
   DEPS: deps
-  CACHE_VER: "14"
+  CACHE_VER: "15"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "tebako-v0.2.0"
-  LIBARCHIVE_VER: "3.5.2"
+  DWARFS_TAG: "tebako-v0.2.1"
 # Misc
   DEBIAN_FRONTEND: "noninteractive"
   TZ: "Etc/UTC"
   MAKEFLAGS: -j4
+#
+  ALPINE_VER: 3.16
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
 
 jobs:
   build:
-    name: alpine-latest [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    name: alpine-3.16 [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+# 3.17 requires xz-static apk that installs a lz4 library that asks for 'lto plugin' with clang
+# (???)
     runs-on: ubuntu-latest
     container:
-      image: alpine:latest
+      image: alpine:3.16
     strategy:
       fail-fast: false
       matrix:
@@ -82,6 +89,7 @@ jobs:
             LOG_LEVEL: 'warn'
 # ASAN libraries are not there for clang 12, but it looks like it will be ready with clng 13
 # (as a part of compiler-rt package)
+# https://wiki.musl-libc.org/open-issues.html#Sanitizer-compatibility (???)
 #          - CC: clang
 #            CXX: clang++
 #            ASAN: 'ON'
@@ -99,7 +107,7 @@ jobs:
         run: |
           apk --no-cache --upgrade add build-base cmake git bash   \
             autoconf boost-static boost-dev flex-dev bison         \
-            binutils-dev libarchive-dev libevent-dev acl-dev       \
+            binutils-dev libevent-dev acl-dev                      \
             lz4-dev openssl-dev zlib-dev gflags-dev                \
             libunwind-dev libdwarf-dev elfutils-dev                \
             libevent-static openssl-libs-static lz4-static xz-dev  \
@@ -125,13 +133,12 @@ jobs:
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
 
       - name: Process cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{env.DEPS}}
-          key:  alpine-latest-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
       - name: Build libjemalloc
         run: |
@@ -149,10 +156,10 @@ jobs:
         run: cmake --build .
 
       - name: Run unit tests
-        run: make test
+        run: ctest --output-on-failure
 
       - name: Checkout shell test framework
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: kward/shunit2
           path: tests/shunit2
