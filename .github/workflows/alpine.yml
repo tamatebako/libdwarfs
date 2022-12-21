@@ -70,6 +70,8 @@ concurrency:
 jobs:
   build:
     name: alpine-3.16 [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+# 3.17 requires xz-static apk that installs a lz4 library that asks for 'lto plugin' with clang
+# (???)
     runs-on: ubuntu-latest
     container:
       image: alpine:3.16
@@ -87,10 +89,11 @@ jobs:
             LOG_LEVEL: 'warn'
 # ASAN libraries are not there for clang 12, but it looks like it will be ready with clng 13
 # (as a part of compiler-rt package)
-          - CC: clang
-            CXX: clang++
-            ASAN: 'ON'
-            LOG_LEVEL: 'warn'
+# https://wiki.musl-libc.org/open-issues.html#Sanitizer-compatibility (???)
+#          - CC: clang
+#            CXX: clang++
+#            ASAN: 'ON'
+#            LOG_LEVEL: 'warn'
 # 'compiler-rt' apk is required to support ASAN
     env: ${{ matrix.env }}
     steps:
@@ -113,7 +116,7 @@ jobs:
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
         run: |
-          apk --no-cache --upgrade add clang compiler-rt
+          apk --no-cache --upgrade add clang
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -147,13 +150,13 @@ jobs:
           make install
 
       - name: Configure
-        run: cmake . -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake . -Bbuild -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build .
+        run: cmake --build build
 
       - name: Run unit tests
-        run: make test
+        run: ctest --output-on-failure --test-dir build
 
       - name: Checkout shell test framework
         uses: actions/checkout@v3
