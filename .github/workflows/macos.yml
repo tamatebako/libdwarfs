@@ -99,7 +99,6 @@ jobs:
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
           echo ${{ env.GLOG_TAG }} >> key.txt
           echo ${{ env.GFLAGS_TAG }} >> key.txt
           echo ${{ env.JEMALLOC_VER }} >> key.txt

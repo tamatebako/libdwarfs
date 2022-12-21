@@ -52,7 +52,7 @@ on:
 env:
 # The folder for dwarfs and other dependenies
   DEPS: deps
-  CACHE_VER: "14"
+  CACHE_VER: "15"
 # GitHub dependencies'
   INCBIN_TAG: "348e36b"
   DWARFS_TAG: "tebako-v0.2.1"
@@ -63,10 +63,10 @@ env:
 
 jobs:
   build:
-    name: alpine-latest [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    name: alpine-3.16 [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
     runs-on: ubuntu-latest
     container:
-      image: alpine:latest
+      image: alpine:3.16
     strategy:
       fail-fast: false
       matrix:
@@ -124,13 +124,12 @@ jobs:
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
 
       - name: Process cache
         uses: actions/cache@v3
         with:
           path: ${{env.DEPS}}
-          key:  alpine-latest-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          key:  alpine-3.16-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
       - name: Build libjemalloc
         run: |

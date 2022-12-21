@@ -95,7 +95,6 @@ jobs:
           echo "Keys" > key.txt
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.LIBARCHIVE_VER }} >> key.txt
 
       - name: Process cache
         uses: actions/cache@v3
