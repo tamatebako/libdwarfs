@@ -69,7 +69,7 @@ concurrency:
 
 jobs:
   build:
-    name: alpine-${{ env.ALPINE_VER }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    name: alpine-3.16 [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
     runs-on: ubuntu-latest
     container:
       image: alpine:3.16
