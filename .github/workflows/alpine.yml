@@ -87,10 +87,10 @@ jobs:
             LOG_LEVEL: 'warn'
 # ASAN libraries are not there for clang 12, but it looks like it will be ready with clng 13
 # (as a part of compiler-rt package)
-#          - CC: clang
-#            CXX: clang++
-#            ASAN: 'ON'
-#            LOG_LEVEL: 'warn'
+          - CC: clang
+            CXX: clang++
+            ASAN: 'ON'
+            LOG_LEVEL: 'warn'
 # 'compiler-rt' apk is required to support ASAN
     env: ${{ matrix.env }}
     steps:
@@ -104,7 +104,7 @@ jobs:
         run: |
           apk --no-cache --upgrade add build-base cmake git bash   \
             autoconf boost-static boost-dev flex-dev bison         \
-            binutils-dev libarchive-dev libevent-dev acl-dev       \
+            binutils-dev libevent-dev acl-dev                      \
             lz4-dev openssl-dev zlib-dev gflags-dev                \
             libunwind-dev libdwarf-dev elfutils-dev                \
             libevent-static openssl-libs-static lz4-static xz-dev  \
@@ -113,7 +113,7 @@ jobs:
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
         run: |
-          apk --no-cache --upgrade add clang
+          apk --no-cache --upgrade add clang compiler-rt
 
       - name: Checkout
         uses: actions/checkout@v3
