@@ -43,12 +43,12 @@ on:
       - '!.github/workflows/ubuntu.yml'
   workflow_dispatch:
 
+env:
+  CACHE_VER: 20
+
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
-
-env:
-  CACHE_VER: 20
 
 jobs:
   build:

@@ -43,10 +43,6 @@ on:
       - '!.github/workflows/macos-arm64.yml'
   workflow_dispatch:
 
-concurrency:
-  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
-  cancel-in-progress: true
-
 env:
   TARGET: arm64
   DWARFS_BUILD: dwarfs-x86_64

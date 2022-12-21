@@ -46,10 +46,6 @@ on:
       - '!.github/workflows/macos.yml'
   workflow_dispatch:
 
-concurrency:
-  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
-  cancel-in-progress: true
-
 env:
   CACHE_VER: 21
   CFLAGS: -mmacos-version-min=10.15 --target=x86_64-apple-macos10.15

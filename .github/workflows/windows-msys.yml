@@ -49,12 +49,12 @@ on:
       - '!.github/workflows/windows-msys.yml'
   workflow_dispatch:
 
+env:
+  CACHE_VER: 24
+
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
-
-env:
-  CACHE_VER: 24
 
 jobs:
   build:

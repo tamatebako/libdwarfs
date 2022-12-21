@@ -43,10 +43,6 @@ on:
       - '!.github/workflows/alpine.yml'
   workflow_dispatch:
 
-concurrency:
-  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
-  cancel-in-progress: true
-
 env:
   ALPINE_VER: 3.16
   CACHE_VER: 20
