@@ -67,6 +67,10 @@ env:
   JEMALLOC_VER: "5.2.1"
   JEMALLOC_HASH: "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6"
 
+concurrency:
+  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.os }}

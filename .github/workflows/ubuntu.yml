@@ -61,6 +61,10 @@ env:
   TZ: "Etc/UTC"
   MAKEFLAGS: -j4
 
+concurrency:
+  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
