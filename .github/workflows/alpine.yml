@@ -150,13 +150,13 @@ jobs:
           make install
 
       - name: Configure
-        run: cmake . -Bbuild -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake . -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build .
 
       - name: Run unit tests
-        run: ctest --output-on-failure --test-dir build
+        run: ctest --output-on-failure
 
       - name: Checkout shell test framework
         uses: actions/checkout@v3
