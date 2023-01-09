@@ -42,6 +42,7 @@ dwarfs-arm64
 dwarfs-x86_64
 
 # Generated files
+tests/tebako-test-config.h
 tests/tebako-fs.cpp
 tests/shunit2
 include/version.h
@@ -54,5 +55,3 @@ tests/tebako-test-config.h
 .vscode
 
 #
-
-

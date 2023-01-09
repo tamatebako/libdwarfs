@@ -140,6 +140,7 @@ execute_process(
   RESULT_VARIABLE OSTYPE_RES
   OUTPUT_VARIABLE OSTYPE_TXT
   OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_STRIP_TRAILING_WHITESPACE
 )
 if(OSTYPE_RES EQUAL 0)
   message(STATUS "OSTYPE: '${OSTYPE_TXT}'")
@@ -211,8 +212,7 @@ set(CMAKE_CXX_EXTENSIONS   OFF)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.3.2pre")
-def_ext_prj_t(LIBARCHIVE "3.5.2" "f0b19ff39c3c9a5898a219497ababbadab99d8178acc980155c7e1271089b5a0")
+def_ext_prj_g(DWARFS "tebako-v0.3.3pre")
 
 if(${WITH_TESTS})
   def_ext_prj_g(INCBIN "348e36b")
@@ -255,8 +255,8 @@ elseif(${USE_JEMALLOC})
 endif()
 
 message("Collecting packages:")
+message(STATUS "dwarfs     - " @${DWARFS_TAG}  " at " ${DWARFS_SOURCE_DIR})
 message(STATUS "dwarfs     -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
-message(STATUS "libarchive -  v${LIBARCHIVE_VER}  at  ${LIBARCHIVE_SOURCE_DIR}")
 if(${WITH_TESTS})
   message(STATUS "incbin     -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
 endif(${WITH_TESTS})
@@ -362,6 +362,7 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DTEBAKO_BUILD_SCOPE=${TEBAKO_BUILD_SCOPE}
              -DTEBAKO_BUILD_TARGET=${TEBAKO_BUILD_TARGET}
              -DDEPS=${DEPS}
+             -DCMAKE_PREFIX_PATH=${DEPS}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
              -DTARGET_HOMEBREW=${TARGET_HOMEBREW}
              -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
@@ -369,28 +370,7 @@ ExternalProject_Add(${DWARFS_PRJ}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
-                   ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD}
-)
-
-ExternalProject_Add(${LIBARCHIVE_PRJ}
-  PREFIX "${DEPS}"
-  URL http://www.libarchive.org/downloads/libarchive-${LIBARCHIVE_VER}.tar.xz
-  URL_HASH SHA256=${LIBARCHIVE_HASH}
-  DOWNLOAD_NO_PROGRESS true
-  UPDATE_COMMAND ""
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
-             -DCMAKE_BUILD_TYPE=Release
-             -DENABLE_ICONV:BOOL=OFF
-             -DENABLE_LIBXML2:BOOL=OFF
-             -DENABLE_TEST:BOOL=OFF
-             -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-             -DCMAKE_C_FLAGS=${CROSSFLAGS}
-             -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
-             -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
-             -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
-  SOURCE_DIR ${LIBARCHIVE_SOURCE_DIR}
-  BINARY_DIR ${LIBARCHIVE_BINARY_DIR}
-  BUILD_BYPRODUCTS ${__LIBARCHIVE}
+                   ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
 add_dependencies(${DWARFS_PRJ} ${LIBARCHIVE_PRJ})
 
@@ -875,7 +855,8 @@ endif(${RB_W32})
 
 # ...................................................................
 #  libarchive
-  add_dwarfs_library(_LIBARCHIVE ${LIBARCHIVE_PRJ} wr-bin)
+
+  add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
 
   target_link_libraries(wr-tests _LIBDWARFS _LIBFSST   _LIBFOLLY _LIBT_METADATA
                                  _LIBT_LIGHT _LIBXXHASH _LIBZSTD  _LIBARCHIVE)
