@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tebako
 #
@@ -219,7 +219,14 @@ if(${WITH_TESTS})
   if(${RB_W32})
     message(STATUS "Building Ruby to support unit tests")
     set(WITH_RUBY_BUILD ON)
-    def_ext_prj_t(RUBY "2.7.5" "2755b900a21235b443bb16dadd9032f784d4a88f143d852bc5d154f22b8781f1")
+# Ruby 2.7.7 has build script modification that causes an error (on MSys):
+# configure: error: cannot find required auxiliary files: install-sh config.guess config.sub
+# change log mentions a need to use autoreconf -i instead of autoconf
+# (https://github.com/ruby/ruby/commit/4c7ae840818f995ef776ef99c3ee275d14bd3869)
+# but it does not fix the issue
+# (It helps to copy missing config.guess and config.sub from autotools manually)
+#    def_ext_prj_t(RUBY "2.7.7" "e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90")
+    def_ext_prj_t(RUBY "2.7.6" "e7203b0cc09442ed2c08936d483f8ac140ec1c72e37bb5c401646b7866cb5d10")
     string(SUBSTRING ${RUBY_VER} 0 3 RUBY_VER_BASE)
   endif(${RB_W32})
 endif(${WITH_TESTS})
@@ -236,11 +243,16 @@ if(${_LIBGFLAGS} STREQUAL "_LIBGFLAGS-NOTFOUND")
   set(WITH_GFLAGS_BUILD ON)
 endif()
 
-find_library(_LIBFMT "libfmt.a")
-if(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
-  message(STATUS "fmt static library was not found, building locally")
+if(${IS_MSYS})
+  message(STATUS "Building fmt library locally to ensure consistency of MSys linkage")
   set(WITH_FMT_BUILD ON)
-endif()
+else(${IS_MSYS})
+  find_library(_LIBFMT "libfmt.a")
+  if(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
+    message(STATUS "fmt static library was not found, building locally")
+    set(WITH_FMT_BUILD ON)
+  endif(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
+endif(${IS_MSYS})
 
 find_library(_LIBDC "libdouble-conversion.a")
 if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
@@ -255,7 +267,6 @@ elseif(${USE_JEMALLOC})
 endif()
 
 message("Collecting packages:")
-message(STATUS "dwarfs     - " @${DWARFS_TAG}  " at " ${DWARFS_SOURCE_DIR})
 message(STATUS "dwarfs     -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
 if(${WITH_TESTS})
   message(STATUS "incbin     -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
@@ -372,7 +383,6 @@ ExternalProject_Add(${DWARFS_PRJ}
   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
                    ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
-add_dependencies(${DWARFS_PRJ} ${LIBARCHIVE_PRJ})
 
 # ...................................................................
 # glog
@@ -386,6 +396,7 @@ if(${WITH_GLOG_BUILD})
     UPDATE_COMMAND ""
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DBUILD_SHARED_LIBS:BOOL=OFF
+               -DBUILD_TESTING=OFF
                -DWITH_GTEST=OFF
                -DCMAKE_CXX_STANDARD=17
                -DCMAKE_CXX_STANDARD_REQUIRED=ON
@@ -520,7 +531,7 @@ ExternalProject_Add(${RUBY_PRJ}
     DOWNLOAD_NO_PROGRESS true
     SOURCE_DIR ${RUBY_SOURCE_DIR}
     BINARY_DIR ${RUBY_BINARY_DIR}
-    CONFIGURE_COMMAND ${GNU_BASH} -c "${RUBY_SOURCE_DIR}/configure                            \
+    CONFIGURE_COMMAND   ${GNU_BASH} -c "${RUBY_SOURCE_DIR}/configure                          \
                                                         --enable-bundled-libyaml              \
                                                         --without-gmp                         \
                                                         --disable-dtrace                      \

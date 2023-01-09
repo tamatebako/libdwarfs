@@ -1,4 +1,4 @@
-# Copyright (c) 2022, [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2022-2023, [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tamatebako
 #
@@ -54,7 +54,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 25
+  CACHE_VER: 28
 
 jobs:
   build:
@@ -110,6 +110,9 @@ jobs:
             dlfcn:p
             gtest:p
 
+# fmt is built locally
+# Otherwise folly library will be built in a manner that is not compatible with a static library that we build
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -128,7 +131,7 @@ jobs:
           echo ${{ matrix.env.RB_W32 }} >> keys.txt
 
       - name: Process cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{env.DEPS}}
           key:  windows-msys-${{ matrix.env.sys }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
