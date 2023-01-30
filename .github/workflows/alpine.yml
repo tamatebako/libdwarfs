@@ -63,21 +63,9 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - CC: gcc
-            CXX: g++
-            ASAN: 'OFF'
-            LOG_LEVEL: 'trace'
-          - CC: clang
-            CXX: clang++
-            ASAN: 'OFF'
-            LOG_LEVEL: 'warn'
-# ASAN libraries are not there for clang 12, but it looks like it will be ready with clang 13
-# (as a part of compiler-rt package)
-# https://wiki.musl-libc.org/open-issues.html#Sanitizer-compatibility (???)
-#          - CC: clang
-#            CXX: clang++
-#            ASAN: 'ON'
-#            LOG_LEVEL: 'warn'
+          - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  LOG_LEVEL: 'warn'   }
+          - { CC: clang,  CXX: clang++, ASAN: 'OFF',  LOG_LEVEL: 'warn'   }
+          - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'trace'  }
 # 'compiler-rt' apk is required to support ASAN
     env: ${{ matrix.env }}
     steps:
@@ -101,6 +89,11 @@ jobs:
         if: ${{ matrix.env.CC == 'clang' }}
         run: |
           apk --no-cache --upgrade add clang
+
+      - name: Install ASAN libraries
+        if: ${{ matrix.env.ASAN == 'ON' }}
+        run: |
+          apk --no-cache --upgrade add compiler-rt
 
       - name: Checkout
         uses: actions/checkout@v3
