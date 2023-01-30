@@ -25,8 +25,13 @@
 
 cmake_minimum_required (VERSION 3.20)
 
-cmake_policy(SET CMP0048 NEW)
 # For project( ... VERSION ... )
+cmake_policy(SET CMP0048 NEW)
+
+# DOWNLOAD_EXTRACT_TIMESTAMP option default = true
+if(${CMAKE_VERSION} VERSION_GREATER "3.23.10")
+  cmake_policy(SET CMP0135 NEW)
+endif()
 
 project(libdwarfs-wr VERSION 0.3.0)
 
@@ -227,7 +232,12 @@ if(${WITH_TESTS})
 # (It helps to copy missing config.guess and config.sub from autotools manually)
 #    def_ext_prj_t(RUBY "2.7.7" "e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90")
     def_ext_prj_t(RUBY "2.7.6" "e7203b0cc09442ed2c08936d483f8ac140ec1c72e37bb5c401646b7866cb5d10")
+#    def_ext_prj_t(RUBY "2.7.5" "2755b900a21235b443bb16dadd9032f784d4a88f143d852bc5d154f22b8781f1")
     string(SUBSTRING ${RUBY_VER} 0 3 RUBY_VER_BASE)
+
+    message(STATUS "Building OpenSSL since Ruby 2.x requires 1.1.x but MSys may have 3.x preinstalled")
+    set(WITH_OPENSSL_BUILD ON)
+    def_ext_prj_g(OPENSSL "OpenSSL_1_1_1s")
   endif(${RB_W32})
 endif(${WITH_TESTS})
 
@@ -293,6 +303,9 @@ endif(${WITH_JEMALLOC_BUILD})
 if(${WITH_RUBY_BUILD})
   message(STATUS "Ruby       -  v${RUBY_VER}  at  ${RUBY_SOURCE_DIR}")
 endif(${WITH_RUBY_BUILD})
+if(WITH_OPENSSL_BUILD)
+  message(STATUS "OpenSSL    -  @${OPENSSL_TAG}  at  ${OPENSSL_SOURCE_DIR}")
+endif(WITH_OPENSSL_BUILD)
 
 
 # ...................................................................
@@ -519,19 +532,46 @@ if(${WITH_JEMALLOC_BUILD})
 endif(${WITH_JEMALLOC_BUILD})
 
 # ...................................................................
+# OpenSSL
+if(WITH_OPENSSL_BUILD)
+  set(__LIBSSL "${DEPS}/lib/libssl.a")
+  set(__LIBCRYPTO "${DEPS}/lib/libcrypto.a")
+
+  ExternalProject_Add(${OPENSSL_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/openssl/openssl.git"
+    GIT_TAG ${OPENSSL_TAG}
+    UPDATE_COMMAND ""
+    SOURCE_DIR ${OPENSSL_SOURCE_DIR}
+    BINARY_DIR ${OPENSSL_BINARY_DIR}
+    CONFIGURE_COMMAND   ${GNU_BASH} -c "${OPENSSL_SOURCE_DIR}/config          \
+                                                        --openssldir=${DEPS}  \
+                                                        --prefix=${DEPS}"
+    BUILD_BYPRODUCTS ${__LIBSSL} ${__LIBCRYPTO}
+  )
+  add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
+endif(WITH_OPENSSL_BUILD)
+
+# ...................................................................
 # Ruby
+# Notes:
+# -- we build ruby for certain MSys tests only, so MSys configuration
+#    is hardcoded (GNUmakefile and probably more)
+# -- there are some strange issues with autoconf. It looks like aclocal.m4
+#    is written after configure and it causes reconf when make is called
+#    In order to fix it I do 'touch' for configure though it does not look good
 
 if(${WITH_RUBY_BUILD})
   set(__LIBRUBY "${RUBY_BINARY_DIR}/libx64-msvcrt-ruby270-static.a")
 
-ExternalProject_Add(${RUBY_PRJ}
+  ExternalProject_Add(${RUBY_PRJ}
     PREFIX ${DEPS}
     URL https://cache.ruby-lang.org/pub/ruby/${RUBY_VER_BASE}/ruby-${RUBY_VER}.tar.gz
     URL_HASH SHA256=${RUBY_HASH}
     DOWNLOAD_NO_PROGRESS true
     SOURCE_DIR ${RUBY_SOURCE_DIR}
     BINARY_DIR ${RUBY_BINARY_DIR}
-    CONFIGURE_COMMAND   ${GNU_BASH} -c "${RUBY_SOURCE_DIR}/configure                          \
+    CONFIGURE_COMMAND ${GNU_BASH} -c "${RUBY_SOURCE_DIR}/configure                            \
                                                         --enable-bundled-libyaml              \
                                                         --without-gmp                         \
                                                         --disable-dtrace                      \
@@ -540,9 +580,15 @@ ExternalProject_Add(${RUBY_PRJ}
                                                         --with-static-linked-ext              \
                                                         --with-out-ext=syslog,pty,dbm,gdbm    \
                                                         --srcdir=${RUBY_SOURCE_DIR}           \
-                                                        --prefix=${DEPS}"
+                                                        --prefix=${DEPS}                      \
+                                                        --with-openssl-dir=${DEPS}"
+    BUILD_COMMAND    ${GNU_BASH} -c "touch ${RUBY_SOURCE_DIR}/configure"
+    INSTALL_COMMAND  ${GNU_BASH} -c "make -f GNUmakefile install"
     BUILD_BYPRODUCTS ${__LIBRUBY}
   )
+  if(WITH_OPENSSL_BUILD)
+    add_dependencies(${RUBY_PRJ} ${OPENSSL_PRJ})
+  endif(WITH_OPENSSL_BUILD)
 endif(${WITH_RUBY_BUILD})
 
 # ...................................................................
@@ -777,11 +823,14 @@ if(${WITH_TESTS})
   find_package(Boost 1.65 REQUIRED COMPONENTS date_time filesystem program_options system)
 
   find_library(_LIBEVENT "libevent.a" REQUIRED)
-  find_library(_LIBCRYPTO "libcrypto.a" REQUIRED)
   find_library(_LIBLZ4 "liblz4.a" REQUIRED)
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
   find_library(_LIBZ "libz.a" REQUIRED)
-  find_library(_LIBSSL "libssl.a" REQUIRED)
+
+  if (NOT WITH_OPENSSL_BUILD)
+    find_library(_LIBSSL "libssl.a" REQUIRED)
+    find_library(_LIBCRYPTO "libcrypto.a" REQUIRED)
+  endif (NOT WITH_OPENSSL_BUILD)
 
   if (NOT IS_MSYS)
     find_library(_LIBACL "libacl.a")
@@ -900,17 +949,27 @@ endif(${RB_W32})
     list(APPEND _LIBRARIES ${_LIBDC})
   endif(${WITH_DC_BUILD})
 
+  if(WITH_OPENSSL_BUILD)
+    add_dwarfs_library(_LIBSSL ${OPENSSL_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBSSL)
+    add_dwarfs_library(_LIBCRYPTO ${OPENSSL_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBCRYPTO)
+  else(WITH_OPENSSL_BUILD)
+    list(APPEND _LIBRARIES ${_LIBSSL})
+    list(APPEND _LIBRARIES ${_LIBCRYPTO})
+  endif(WITH_OPENSSL_BUILD)
+
   list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
   if(IS_DARWIN)
-    list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBSSL} ${_LIBCRYPTO} ${_LIBLZMA})
+    list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBLZMA})
   else(IS_DARWIN)
     if(WITH_ASAN)
-      list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
+      list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBLZ4}
                              ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
       )
     else(WITH_ASAN)
-      list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBSSL}      ${_LIBCRYPTO}  ${_LIBLZ4}
+      list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBLZ4}
                              ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
       )
       if(NOT ${RB_W32})

@@ -54,4 +54,5 @@ tests/tebako-test-config.h
 .vs
 .vscode
 
-#
+# Test files
+Testing/

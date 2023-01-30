@@ -100,7 +100,7 @@ jobs:
             make
           pacboy: >-
             toolchain:p
-            openssl:p
+            ruby:p
             cmake:p
             boost:p
             diffutils:p
@@ -137,20 +137,13 @@ jobs:
           key:  windows-msys-${{ matrix.env.sys }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
 
       - name: Configure
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DWITH_LINK_TESTS=OFF -DWITH_ASAN=${{ env.ASAN }} -D RB_W32=${{ env.RB_W32 }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake -B build -DWITH_LINK_TESTS=OFF -DWITH_ASAN=${{ env.ASAN }} -D RB_W32=${{ env.RB_W32 }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: |
-          cd build
-          cmake --build .
+        run: cmake --build build
 
       - name: Run unit tests
-        run: |
-          cd build
-          ninja test
+        run: ctest --test-dir build
 
       - name: Checkout shell test framework
         uses: actions/checkout@v3
