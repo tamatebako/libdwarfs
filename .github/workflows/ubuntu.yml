@@ -49,28 +49,21 @@ concurrency:
 
 env:
   CACHE_VER: 20
+  CODECOV_TOKEN: 3fd391a5-99c6-434f-a07c-22fdf282ae5b
 
 jobs:
   build:
-    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }} ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04 ]
         env:
-          - CC: gcc
-            CXX: g++
-            ASAN: 'OFF'
-            LOG_LEVEL: 'trace'
-          - CC: clang
-            CXX: clang++
-            ASAN: 'OFF'
-            LOG_LEVEL: 'warn'
-          - CC: clang
-            CXX: clang++
-            ASAN: 'ON'
-            LOG_LEVEL: 'warn'
+          - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'trace' }
+          - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'warn'  }
+          - { CC: clang,  CXX: clang++, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+          - { CC: clang,  CXX: clang++, ASAN: 'ON',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
@@ -82,17 +75,13 @@ jobs:
         run: cat common.env ubuntu.env >> $GITHUB_ENV
 
       - name: Create deps folder
-        run: |
-          mkdir ${{github.workspace}}/${{env.DEPS}}
-          echo "Keys" > key.txt
-          echo ${{ env.DWARFS_TAG }} >> key.txt
-          echo ${{ env.INCBIN_TAG }} >> key.txt
+        run: mkdir ${{github.workspace}}/${{env.DEPS}}
 
       - name: Process cache
         uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key:  ${{ matrix.os }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          key:  ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
 # https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1804-README.md
@@ -104,7 +93,7 @@ jobs:
 # sudo apt install gcc-9 g++-9
 
       - name: Switch to gcc-9
-        if: ${{ matrix.env.CC == 'gcc' }}
+        if: ${{ env.CC == 'gcc' }}
         run: |
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100 --slave /usr/bin/g++ g++ /usr/bin/g++-9 --slave /usr/bin/gcov gcov /usr/bin/gcov-9
           sudo update-alternatives --set gcc /usr/bin/gcc-9
@@ -120,15 +109,16 @@ jobs:
           libboost-regex-dev libboost-system-dev libboost-thread-dev
 
       - name: Configure
-        run: cmake -B ${{ github.workspace }} -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build ${{github.workspace}}
+        run: cmake --build build
 
       - name: Run unit tests
-        run: make test
+        run: ctest --test-dir build --output-on-failure
 
       - name: Checkout shell test framework
+        if: ${{ env.COVERAGE != 'ON' }}
         uses: actions/checkout@v3
         with:
           repository: kward/shunit2
@@ -136,4 +126,19 @@ jobs:
           fetch-depth: 1
 
       - name: Run additional tests
+        if: ${{ env.COVERAGE != 'ON' }}
         run:  ${{github.workspace}}/tests/scripts/tests.sh
+
+      - name: Upload to codecov.io
+        if: ${{ env.COVERAGE == 'ON' }}
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          curl https://uploader.codecov.io/verification.gpg | gpg --no-default-keyring --keyring trustedkeys.gpg --import
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          curl -Os https://uploader.codecov.io/latest/linux/codecov.SHA256SUM
+          curl -Os https://uploader.codecov.io/latest/linux/codecov.SHA256SUM.sig
+          gpgv codecov.SHA256SUM.sig codecov.SHA256SUM
+          shasum -a 256 -c codecov.SHA256SUM
+          find "build" -type f -name '*.gcno' -exec gcov -p {} +
+          chmod +x codecov
+          ./codecov -t ${{ env.CODECOV_TOKEN }}

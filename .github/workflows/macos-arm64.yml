@@ -76,12 +76,6 @@ jobs:
         run: |
           mkdir ${{ github.workspace }}/${{ env.DEPS }}
           mkdir ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
-          echo "Keys" > key.txt
-          echo ${{ env.DWARFS_TAG }} >> key.txt
-          echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.GLOG_TAG }} >> key.txt
-          echo ${{ env.GFLAGS_TAG }} >> key.txt
-          echo ${{ env.JEMALLOC_VER }} >> key.txt
           echo 'LEVEL_UP<<EOF' >> $GITHUB_ENV
           tools/ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
@@ -97,7 +91,7 @@ jobs:
             ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
             ${{ github.workspace }}/${{ env.DEPS }}
             ${{ env.LEVEL_UP }}/arm-homebrew
-          key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
       - name: Install packages [for build system architecture]
         run: |

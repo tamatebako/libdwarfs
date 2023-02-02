@@ -108,17 +108,13 @@ jobs:
         run: tools/ci-scripts/patch-system-includes.sh
 
       - name: Create deps folder
-        run: |
-          mkdir ${{env.DEPS}}
-          echo "Keys" > key.txt
-          echo ${{ env.DWARFS_TAG }} >> key.txt
-          echo ${{ env.INCBIN_TAG }} >> key.txt
+        run: mkdir ${{env.DEPS}}
 
       - name: Process cache
         uses: actions/cache@v3
         with:
           path: ${{env.DEPS}}
-          key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
       - name: Build libjemalloc
         run: |
@@ -130,13 +126,13 @@ jobs:
           make install
 
       - name: Configure
-        run: cmake . -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build .
+        run: cmake --build build
 
       - name: Run unit tests
-        run: ctest --output-on-failure
+        run: ctest --test-dir build --output-on-failure
 
       - name: Checkout shell test framework
         uses: actions/checkout@v3

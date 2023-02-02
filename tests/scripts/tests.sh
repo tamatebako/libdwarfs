@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tebako
 #
@@ -62,13 +62,13 @@ check_shared_libs() {
 # Run ldd to check that wr-bin has been linked to expected set of shared libraries
 test_linkage() {
    echo "==> References to shared libraries test"
-   if [[ "$ASAN" == "ON"* ]]; then
-      echo "... Address sanitizer is on ... skipping"
+   if [[ "$ASAN" == "ON"* || "$COVERAGE" == "ON"* ]]; then
+      echo "... Address sanitizer or coverage test is on ... skipping"
    else
       if [[ "$OSTYPE" == "linux-gnu"* ]]; then
          expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
-         readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
-         assertEquals "readarray -t actual < <(ldd $DIR_ROOT/wr-bin) failed" 0 "${PIPESTATUS[0]}"
+         readarray -t actual < <(ldd "$DIR_SRC/wr-bin")
+         assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
 # Used to be:
 # Run ldd to check that wr-bin has been linked statically
@@ -77,13 +77,13 @@ test_linkage() {
 #        assertContains "$result" "not a dynamic executable"
       elif [[ "$OSTYPE" == "linux-musl"* ]]; then
          expected=("libgcc_s.so" "libc.musl-x86_64.so" "ld-musl-x86_64.so")
-         readarray -t actual < <(ldd "$DIR_ROOT/wr-bin")
-         assertEquals "readarray -t actual < <(ldd $DIR_ROOT/wr-bin) failed" 0 "${PIPESTATUS[0]}"
+         readarray -t actual < <(ldd "$DIR_SRC/wr-bin")
+         assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
       elif [[ "$OSTYPE" == "darwin"* ]]; then
          expected=("libc++.1.dylib" "libSystem.B.dylib" "wr-bin")
-         readarray -t actual < <(otool -L "$DIR_ROOT/wr-bin")
-         assertEquals "readarray -t actual < <(otool -L $DIR_ROOT/wr-bin) failed" 0 "${PIPESTATUS[0]}"
+         readarray -t actual < <(otool -L "$DIR_SRC/wr-bin")
+         assertEquals "readarray -t actual < <(otool -L $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs "${expected[@]}"
       elif [[ "$OSTYPE" == "cygwin" ]]; then
          echo "... cygwin ... skipping"
@@ -98,8 +98,8 @@ test_linkage() {
                       "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
                       "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll")
          fi
-         readarray -t actual < <(ldd "$DIR_ROOT/build/wr-bin")
-         assertEquals "readarray -t actual < <(ldd $DIR_ROOT/build/wr-bin) failed" 0 "${PIPESTATUS[0]}"
+         readarray -t actual < <(ldd "$DIR_SRC/wr-bin.exe")
+         assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin.exe) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
       elif [[ "$OSTYPE" == "win32" ]]; then
          echo "... win32 ... skipping"
@@ -128,9 +128,9 @@ test_C_bindings_and_temp_dir() {
    assertEquals "ls /tmp > $DIR_TESTS/temp/before failed" 0 "${PIPESTATUS[0]}"
 
    if [[ "$OSTYPE" == "msys" ]]; then
-      WR_BIN="$DIR_ROOT"/build/wr-bin.exe
+      WR_BIN="$DIR_SRC"/wr-bin.exe
    else
-      WR_BIN="$DIR_ROOT"/wr-bin
+      WR_BIN="$DIR_SRC"/wr-bin
    fi
 
    "$WR_BIN"
@@ -162,11 +162,9 @@ test_install_script() {
    DIR_INS_I="$DIR_INSTALL"/include/tebako
 
    if [[ "$OSTYPE" == "msys" ]]; then
-      DIR_SRC="$DIR_ROOT"/build
       NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
       NM_LIBARCHIVE="$DIR_INS_L/libarchive_static.a"
    else
-      DIR_SRC="$DIR_ROOT"
       NM_MKDWARFS="$DIR_INS_B/mkdwarfs"
       NM_LIBARCHIVE="$DIR_INS_L/libarchive.a"
    fi
@@ -204,10 +202,11 @@ test_install_script() {
 DIR0="$( cd "$( dirname "$0" )" && pwd )"
 DIR1="${DIR_ROOT:="$DIR0/../.."}"
 DIR_ROOT="$( cd "$DIR1" && pwd )"
-
+DIR_SRC="$DIR_ROOT"/build
 DIR_TESTS="$( cd "$DIR0/.." && pwd)"
 
 ASAN="${ASAN:=OFF}"
+COVERAGE="${COVERAGE:=OFF}"
 RB_W32="${RB_W32:=OFF}"
 
 echo "Running libdwarfs additional tests"

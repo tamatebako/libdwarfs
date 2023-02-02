@@ -52,9 +52,9 @@ concurrency:
 
 env:
   CACHE_VER: 21
-  CFLAGS: -mmacos-version-min=10.15 --target=x86_64-apple-macos10.15
-  CPPFLAGS: -mmacos-version-min=10.15 --target=x86_64-apple-macos10.15
-  LDFLAGS:  --target=x86_64-apple-macos10.15
+  CFLAGS: -mmacos-version-min=11.00 --target=x86_64-apple-macos11.00
+  CPPFLAGS: -mmacos-version-min=11.00 --target=x86_64-apple-macos11.00
+  LDFLAGS:  --target=x86_64-apple-macos11.00
 
 jobs:
   build:
@@ -81,12 +81,6 @@ jobs:
       - name: Create deps folder
         run: |
           mkdir ${{ github.workspace }}/${{ env.DEPS }}
-          echo "Keys" > key.txt
-          echo ${{ env.DWARFS_TAG }} >> key.txt
-          echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.GLOG_TAG }} >> key.txt
-          echo ${{ env.GFLAGS_TAG }} >> key.txt
-          echo ${{ env.JEMALLOC_VER }} >> key.txt
           echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
           brew --prefix >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
@@ -95,7 +89,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/${{ env.DEPS }}
-          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
       - name: Install packages
 # Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz, zlib
@@ -105,13 +99,13 @@ jobs:
           bison flex gnu-sed bash double-conversion boost jemalloc fmt glog
 
       - name: Configure
-        run: cmake -B ${{ github.workspace }} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON
 
       - name: Build
-        run: cmake --build ${{ github.workspace }} --config ${{ env.BUILD_TYPE }}
+        run: cmake --build build --config ${{ env.BUILD_TYPE }}
 
       - name: Run unit tests
-        run: ./wr-tests
+        run: ctest --test-dir build --output-on-failure
 
       - name: Checkout shell test framework
         uses: actions/checkout@v3
