@@ -128,7 +128,7 @@ jobs:
           echo ${{ env.DWARFS_TAG }} >> key.txt
           echo ${{ env.INCBIN_TAG }} >> key.txt
           echo ${{ env.LIBARCHIVE_VER }} >> key.txt
-          echo ${{ matrix.env.RB_W32 }} >> keys.txt
+          echo ${{ env.RB_W32 }} >> keys.txt
 
       - name: Process cache
         uses: actions/cache@v3
