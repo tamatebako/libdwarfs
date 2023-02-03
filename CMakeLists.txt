@@ -54,6 +54,9 @@ include(CheckCSourceCompiles)
 # This is the default that will be overwritten for MacOS and MSys
 set(GNU_BASH "bash")
 
+# May be overwritten on MSys platform by setup-openssl.cmake
+set(WITH_OPENSSL_BUILD OFF)
+
 include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/macos-environment.cmake)
 include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/msys-environment.cmake)
 include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/def-external-project.cmake)
@@ -86,16 +89,15 @@ if (TEBAKO_BUILD_TARGET)
     add_link_options(--target=${TEBAKO_BUILD_TARGET})
     set(CROSSFLAGS --target=${TEBAKO_BUILD_TARGET})
   else()
-    message(${CMAKE_HOST_SYSTEM_NAME})
     message(FATAL_ERROR "Cross-compilation is supported on MacOS only")
   endif()
-endif()
+endif(TEBAKO_BUILD_TARGET)
 
 # log level
 if (NOT TESTS_LOG_LEVEL)
   set(TESTS_LOG_LEVEL "warn")
   message(STATUS "Logging level not specified. Defaulted to warn")
-endif()
+endif(NOT TESTS_LOG_LEVEL)
 
 # coverage
 if (WITH_COVERAGE)
@@ -104,7 +106,7 @@ if (WITH_COVERAGE)
   endif()
   add_compile_options(--coverage -O0)
   add_link_options(--coverage)
-endif()
+endif(WITH_COVERAGE)
 
 # sanitizers
 if (WITH_ASAN)
@@ -113,14 +115,14 @@ if (WITH_ASAN)
   endif()
   add_compile_options(-DWITH_ASAN -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common -O1)
   link_libraries(-fsanitize=address,undefined)
-endif()
+endif(WITH_ASAN)
 
 if (WITH_COVERAGE OR WITH_ASAN)
   message(STATUS "Forcing WITH_TEST=ON for code coverage or sanitizers")
   set(WITH_TESTS ON CACHE BOOL "Forced for code coverage or sanitizers" FORCE)
   message(STATUS "Forcing build type to Debug for code coverage or sanitizers")
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Forced for code coverage or sanitizers" FORCE)
-endif()
+endif(WITH_COVERAGE OR WITH_ASAN)
 
 if (WITH_TESTS)
   if(MKDWARFS)
@@ -183,9 +185,9 @@ elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
   set(WITH_JEMALLOC_BUILD ON)
 endif()
 
-if(NOT ${IS_MSYS})
+if(NOT IS_MSYS)
   set(RB_W32 OFF)
-endif(NOT ${IS_MSYS})
+endif(NOT IS_MSYS)
 
 message("Configuraion summary:")
 message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
@@ -217,29 +219,21 @@ set(CMAKE_CXX_EXTENSIONS   OFF)
 # ...................................................................
 # External projects
 
+include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl.cmake)
+
 def_ext_prj_g(DWARFS "tebako-v0.3.3pre")
 
-if(${WITH_TESTS})
+if(WITH_TESTS)
   def_ext_prj_g(INCBIN "348e36b")
-  if(${RB_W32})
+  if(RB_W32)
     message(STATUS "Building Ruby to support unit tests")
     set(WITH_RUBY_BUILD ON)
-# Ruby 2.7.7 has build script modification that causes an error (on MSys):
-# configure: error: cannot find required auxiliary files: install-sh config.guess config.sub
-# change log mentions a need to use autoreconf -i instead of autoconf
-# (https://github.com/ruby/ruby/commit/4c7ae840818f995ef776ef99c3ee275d14bd3869)
-# but it does not fix the issue
-# (It helps to copy missing config.guess and config.sub from autotools manually)
-#    def_ext_prj_t(RUBY "2.7.7" "e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90")
-    def_ext_prj_t(RUBY "2.7.6" "e7203b0cc09442ed2c08936d483f8ac140ec1c72e37bb5c401646b7866cb5d10")
+    def_ext_prj_t(RUBY "2.7.7" "e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90")
+#    def_ext_prj_t(RUBY "2.7.6" "e7203b0cc09442ed2c08936d483f8ac140ec1c72e37bb5c401646b7866cb5d10")
 #    def_ext_prj_t(RUBY "2.7.5" "2755b900a21235b443bb16dadd9032f784d4a88f143d852bc5d154f22b8781f1")
     string(SUBSTRING ${RUBY_VER} 0 3 RUBY_VER_BASE)
-
-    message(STATUS "Building OpenSSL since Ruby 2.x requires 1.1.x but MSys may have 3.x preinstalled")
-    set(WITH_OPENSSL_BUILD ON)
-    def_ext_prj_g(OPENSSL "OpenSSL_1_1_1s")
-  endif(${RB_W32})
-endif(${WITH_TESTS})
+  endif(RB_W32)
+endif(WITH_TESTS)
 
 find_library(_LIBGLOG "libglog.a")
 if(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
@@ -253,16 +247,16 @@ if(${_LIBGFLAGS} STREQUAL "_LIBGFLAGS-NOTFOUND")
   set(WITH_GFLAGS_BUILD ON)
 endif()
 
-if(${IS_MSYS})
+if(IS_MSYS)
   message(STATUS "Building fmt library locally to ensure consistency of MSys linkage")
   set(WITH_FMT_BUILD ON)
-else(${IS_MSYS})
+else(IS_MSYS)
   find_library(_LIBFMT "libfmt.a")
   if(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
     message(STATUS "fmt static library was not found, building locally")
     set(WITH_FMT_BUILD ON)
   endif(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
-endif(${IS_MSYS})
+endif(IS_MSYS)
 
 find_library(_LIBDC "libdouble-conversion.a")
 if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
@@ -270,39 +264,39 @@ if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
   set(WITH_DC_BUILD ON)
 endif()
 
-if(${WITH_JEMALLOC_BUILD})
+if(WITH_JEMALLOC_BUILD)
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
-elseif(${USE_JEMALLOC})
+elseif(WITH_JEMALLOC_BUILD)
   find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
-endif()
+endif(WITH_JEMALLOC_BUILD)
 
 message("Collecting packages:")
 message(STATUS "dwarfs     -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
-if(${WITH_TESTS})
+if(WITH_TESTS)
   message(STATUS "incbin     -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
-endif(${WITH_TESTS})
-if(${WITH_GLOG_BUILD})
+endif(WITH_TESTS)
+if(WITH_GLOG_BUILD)
   def_ext_prj_g(GLOG "v0.6.0")
   message(STATUS "glog       -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
-endif(${WITH_GLOG_BUILD})
-if(${WITH_GFLAGS_BUILD})
+endif(WITH_GLOG_BUILD)
+if(WITH_GFLAGS_BUILD)
   def_ext_prj_g(GFLAGS "v2.2.2")
   message(STATUS "gflags     -  @${GFLAGS_TAG}  at  ${GFLAGS_SOURCE_DIR}")
-endif(${WITH_GFLAGS_BUILD})
-if(${WITH_FMT_BUILD})
+endif(WITH_GFLAGS_BUILD)
+if(WITH_FMT_BUILD)
   def_ext_prj_g(FMT "8.1.1")
   message(STATUS "fmt        -  @${FMT_TAG}  at  ${FMT_SOURCE_DIR}")
-endif(${WITH_FMT_BUILD})
-if(${WITH_DC_BUILD})
+endif(WITH_FMT_BUILD)
+if(WITH_DC_BUILD)
   def_ext_prj_g(DC "v3.2.0")
   message(STATUS "double-conversion -  @${DC_TAG}  at  ${DC_SOURCE_DIR}")
-endif(${WITH_DC_BUILD})
-if(${WITH_JEMALLOC_BUILD})
+endif(WITH_DC_BUILD)
+if(WITH_JEMALLOC_BUILD)
   message(STATUS "jemalloc   -  v${JEMALLOC_VER}  at  ${JEMALLOC_SOURCE_DIR}")
-endif(${WITH_JEMALLOC_BUILD})
-if(${WITH_RUBY_BUILD})
+endif(WITH_JEMALLOC_BUILD)
+if(WITH_RUBY_BUILD)
   message(STATUS "Ruby       -  v${RUBY_VER}  at  ${RUBY_SOURCE_DIR}")
-endif(${WITH_RUBY_BUILD})
+endif(WITH_RUBY_BUILD)
 if(WITH_OPENSSL_BUILD)
   message(STATUS "OpenSSL    -  @${OPENSSL_TAG}  at  ${OPENSSL_SOURCE_DIR}")
 endif(WITH_OPENSSL_BUILD)
@@ -311,7 +305,7 @@ endif(WITH_OPENSSL_BUILD)
 # ...................................................................
 # incbin
 
-if(${WITH_TESTS})
+if(WITH_TESTS)
   ExternalProject_Add(${INCBIN_PRJ}
     PREFIX ${DEPS}
     GIT_REPOSITORY https://github.com/graphitemaster/incbin.git
@@ -326,30 +320,30 @@ if(${WITH_TESTS})
 # Filesystem locations
 
 # DATA_TEST_DIR folder contains raw data for filesystem tests
-  if(${USE_TEMP_FS})
+  if(USE_TEMP_FS)
     string(RANDOM LENGTH 10 TMPNM)
     set(DATA_TEST_DIR "/tmp/${TMPNM}")
     set(DATA_TEST_DIR_MSG "at '${DATA_TEST_DIR}'")
-  else(${USE_TEMP_FS})
+  else(USE_TEMP_FS)
     set(DATA_TEST_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem)
     set(DATA_TEST_DIR_MSG "")
-  endif(${USE_TEMP_FS})
+  endif(USE_TEMP_FS)
 
-  if (${WITH_LINK_TESTS})
+  if (WITH_LINK_TESTS)
     set(WLT "with link tests")
     add_compile_definitions(WITH_LINK_TESTS)
-  else(${WITH_LINK_TESTS})
+  else(WITH_LINK_TESTS)
     set(WLT "without link tests")
-  endif(${WITH_LINK_TESTS})
+  endif(WITH_LINK_TESTS)
 
-  message("Using test data set ${WLT} from '${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem' ${DATA_TEST_DIR_MSG}")
+  message(STATUS "Using test data set ${WLT} from '${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem' ${DATA_TEST_DIR_MSG}")
 
 # DATA_BIN_DIR folder is used to create packaged filesystem
   set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 # DATA_BIN_FILE is packaged filesystem itself
   set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
 
-endif(${WITH_TESTS})
+endif(WITH_TESTS)
 
 # ...................................................................
 # DwarFS
@@ -396,11 +390,14 @@ ExternalProject_Add(${DWARFS_PRJ}
   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
                    ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
+if(WITH_OPENSSL_BUILD)
+  add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
+endif(WITH_OPENSSL_BUILD)
 
 # ...................................................................
 # glog
 
-if(${WITH_GLOG_BUILD})
+if(WITH_GLOG_BUILD)
   set(__LIBGLOG "${DEPS}/lib/libglog.a")
   ExternalProject_Add(${GLOG_PRJ}
     PREFIX ${DEPS}
@@ -424,12 +421,12 @@ if(${WITH_GLOG_BUILD})
     BUILD_BYPRODUCTS ${__LIBGLOG}
   )
   add_dependencies(${DWARFS_PRJ} ${GLOG_PRJ})
-endif(${WITH_GLOG_BUILD})
+endif(WITH_GLOG_BUILD)
 
 # ...................................................................
 # gflags
 
-if(${WITH_GFLAGS_BUILD})
+if(WITH_GFLAGS_BUILD)
   set(__LIBGFLAGS "${DEPS}/lib/libgflags.a")
   ExternalProject_Add(${GFLAGS_PRJ}
     PREFIX ${DEPS}
@@ -453,12 +450,12 @@ if(${WITH_GFLAGS_BUILD})
   )
   add_dependencies(${GLOG_PRJ} ${GFLAGS_PRJ})
   add_dependencies(${DWARFS_PRJ} ${GFLAGS_PRJ})
-endif(${WITH_GFLAGS_BUILD})
+endif(WITH_GFLAGS_BUILD)
 
 # ...................................................................
 # fmt
 
-if(${WITH_FMT_BUILD})
+if(WITH_FMT_BUILD)
   set(__LIBFMT "${DEPS}/lib/libfmt.a")
   ExternalProject_Add(${FMT_PRJ}
     PREFIX ${DEPS}
@@ -478,12 +475,12 @@ if(${WITH_FMT_BUILD})
     BUILD_BYPRODUCTS ${__LIBFMT}
   )
   add_dependencies(${DWARFS_PRJ} ${FMT_PRJ})
-endif(${WITH_FMT_BUILD})
+endif(WITH_FMT_BUILD)
 
 # ...................................................................
 # double-conversion
 
-if(${WITH_DC_BUILD})
+if(WITH_DC_BUILD)
   set(__LIBDC "${DEPS}/lib/libdouble-conversion.a")
   ExternalProject_Add(${DC_PRJ}
     PREFIX ${DEPS}
@@ -502,12 +499,12 @@ if(${WITH_DC_BUILD})
     BUILD_BYPRODUCTS ${__LIBDC}
   )
   add_dependencies(${DWARFS_PRJ} ${DC_PRJ})
-endif(${WITH_DC_BUILD})
+endif(WITH_DC_BUILD)
 
 # ...................................................................
 # jemalloc
 
-if(${WITH_JEMALLOC_BUILD})
+if(WITH_JEMALLOC_BUILD)
   set(__LIBJEMALLOC "${DEPS}/lib/libjemalloc.a")
 
   ExternalProject_Add(${JEMALLOC_PRJ}
@@ -529,48 +526,25 @@ if(${WITH_JEMALLOC_BUILD})
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBJEMALLOC}
   )
-endif(${WITH_JEMALLOC_BUILD})
-
-# ...................................................................
-# OpenSSL
-if(WITH_OPENSSL_BUILD)
-  set(__LIBSSL "${DEPS}/lib/libssl.a")
-  set(__LIBCRYPTO "${DEPS}/lib/libcrypto.a")
-
-  ExternalProject_Add(${OPENSSL_PRJ}
-    PREFIX ${DEPS}
-    GIT_REPOSITORY "https://github.com/openssl/openssl.git"
-    GIT_TAG ${OPENSSL_TAG}
-    UPDATE_COMMAND ""
-    SOURCE_DIR ${OPENSSL_SOURCE_DIR}
-    BINARY_DIR ${OPENSSL_BINARY_DIR}
-    CONFIGURE_COMMAND   ${GNU_BASH} -c "${OPENSSL_SOURCE_DIR}/config          \
-                                                        --openssldir=${DEPS}  \
-                                                        --prefix=${DEPS}"
-    BUILD_BYPRODUCTS ${__LIBSSL} ${__LIBCRYPTO}
-  )
-  add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
-endif(WITH_OPENSSL_BUILD)
+endif(WITH_JEMALLOC_BUILD)
 
 # ...................................................................
 # Ruby
 # Notes:
 # -- we build ruby for certain MSys tests only, so MSys configuration
 #    is hardcoded (GNUmakefile and probably more)
-# -- there are some strange issues with autoconf. It looks like aclocal.m4
-#    is written after configure and it causes reconf when make is called
-#    In order to fix it I do 'touch' for configure though it does not look good
+# -- starting from Ruby 2.7.7 only in-source build works
 
-if(${WITH_RUBY_BUILD})
-  set(__LIBRUBY "${RUBY_BINARY_DIR}/libx64-msvcrt-ruby270-static.a")
+if(WITH_RUBY_BUILD)
+  set(__LIBRUBY "${RUBY_SOURCE_DIR}/libx64-msvcrt-ruby270-static.a")
 
   ExternalProject_Add(${RUBY_PRJ}
     PREFIX ${DEPS}
     URL https://cache.ruby-lang.org/pub/ruby/${RUBY_VER_BASE}/ruby-${RUBY_VER}.tar.gz
     URL_HASH SHA256=${RUBY_HASH}
     DOWNLOAD_NO_PROGRESS true
+    BUILD_IN_SOURCE true
     SOURCE_DIR ${RUBY_SOURCE_DIR}
-    BINARY_DIR ${RUBY_BINARY_DIR}
     CONFIGURE_COMMAND ${GNU_BASH} -c "${RUBY_SOURCE_DIR}/configure                            \
                                                         --enable-bundled-libyaml              \
                                                         --without-gmp                         \
@@ -579,17 +553,16 @@ if(${WITH_RUBY_BUILD})
                                                         --disable-install-doc                 \
                                                         --with-static-linked-ext              \
                                                         --with-out-ext=syslog,pty,dbm,gdbm    \
-                                                        --srcdir=${RUBY_SOURCE_DIR}           \
                                                         --prefix=${DEPS}                      \
                                                         --with-openssl-dir=${DEPS}"
-    BUILD_COMMAND    ${GNU_BASH} -c "touch ${RUBY_SOURCE_DIR}/configure"
+    BUILD_COMMAND    ${GNU_BASH} -c "make -f GNUmakefile"
     INSTALL_COMMAND  ${GNU_BASH} -c "make -f GNUmakefile install"
     BUILD_BYPRODUCTS ${__LIBRUBY}
   )
   if(WITH_OPENSSL_BUILD)
     add_dependencies(${RUBY_PRJ} ${OPENSSL_PRJ})
   endif(WITH_OPENSSL_BUILD)
-endif(${WITH_RUBY_BUILD})
+endif(WITH_RUBY_BUILD)
 
 # ...................................................................
 # Library
@@ -682,34 +655,34 @@ add_library(dwarfs-wr STATIC
     "include/version.h"
   )
 
-if(${RB_W32})
+if(RB_W32)
   target_sources(dwarfs-wr PUBLIC
     "include/tebako-io-rb-w32.h"
     "include/tebako-io-rb-w32-inner.h"
   )
   add_compile_definitions(RB_W32)
-endif(${RB_W32})
+endif(RB_W32)
 
 add_dependencies(dwarfs-wr ${DWARFS_PRJ})
-if(${WITH_GLOG_BUILD})
+if(WITH_GLOG_BUILD)
   add_dependencies(dwarfs-wr ${GLOG_PRJ})
-endif(${WITH_GLOG_BUILD})
-if(${WITH_GFLAGS_BUILD})
+endif(WITH_GLOG_BUILD)
+if(WITH_GFLAGS_BUILD)
   add_dependencies(dwarfs-wr ${GFLAGS_PRJ})
-endif(${WITH_GFLAGS_BUILD})
-if(${WITH_FMT_BUILD})
+endif(WITH_GFLAGS_BUILD)
+if(WITH_FMT_BUILD)
   add_dependencies(dwarfs-wr ${FMT_PRJ})
-endif(${WITH_FMT_BUILD})
-if(${WITH_DC_BUILD})
+endif(WITH_FMT_BUILD)
+if(WITH_DC_BUILD)
   add_dependencies(dwarfs-wr ${DC_PRJ})
-endif(${WITH_DC_BUILD})
-if(${WITH_JEMALLOC_BUILD})
+endif(WITH_DC_BUILD)
+if(WITH_JEMALLOC_BUILD)
   add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
-endif(${WITH_JEMALLOC_BUILD})
+endif(WITH_JEMALLOC_BUILD)
 # ...................................................................
 # Tests
 
-if(${WITH_TESTS})
+if(WITH_TESTS)
 
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-test-config.h.in
@@ -718,7 +691,7 @@ if(${WITH_TESTS})
   )
 
   if(NOT ${PREFER_SYSTEM_GTEST})
-    message("Fetching googletest")
+    message(STATUS "Fetching googletest")
     include(FetchContent)
 
     FetchContent_Declare(
@@ -752,7 +725,7 @@ if(${WITH_TESTS})
   add_dependencies(PACKAGED_FILESYSTEM_STEP_1 empty)
   add_dependencies(dwarfs-wr PACKAGED_FILESYSTEM_STEP_1)
 
-  if (${WITH_LINK_TESTS})
+  if (WITH_LINK_TESTS)
     add_custom_target(PACKAGED_FILESYSTEM_STEP_2 ALL
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-file-2 s-link-to-file-1 s-link-to-dir-1 s-link-outside-of-memfs s-dir-outside-of-memfs
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
@@ -763,38 +736,38 @@ if(${WITH_TESTS})
     )
     add_dependencies(PACKAGED_FILESYSTEM_STEP_2 PACKAGED_FILESYSTEM_STEP_1)
 
-    if (${USE_TEMP_FS})
+    if (USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
-    else(${USE_TEMP_FS})
+    else(USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
         BYPRODUCTS ${DATA_BIN_FILE}
       )
-    endif(${USE_TEMP_FS})
+    endif(USE_TEMP_FS)
     add_dependencies(PACKAGED_FILESYSTEM_STEP_3 PACKAGED_FILESYSTEM_STEP_2)
 
-  else(${WITH_LINK_TESTS})
-    if (${USE_TEMP_FS})
+  else(WITH_LINK_TESTS)
+    if (USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
-    else(${USE_TEMP_FS})
+    else(USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
-    endif(${USE_TEMP_FS})
+    endif(USE_TEMP_FS)
     add_dependencies(PACKAGED_FILESYSTEM_STEP_3 PACKAGED_FILESYSTEM_STEP_1)
-  endif(${WITH_LINK_TESTS})
+  endif(WITH_LINK_TESTS)
 
   add_dependencies(PACKAGED_FILESYSTEM_STEP_3 ${DWARFS_PRJ})
 
@@ -827,20 +800,16 @@ if(${WITH_TESTS})
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
   find_library(_LIBZ "libz.a" REQUIRED)
 
-  if (NOT WITH_OPENSSL_BUILD)
-    find_library(_LIBSSL "libssl.a" REQUIRED)
-    find_library(_LIBCRYPTO "libcrypto.a" REQUIRED)
-  endif (NOT WITH_OPENSSL_BUILD)
-
   if (NOT IS_MSYS)
     find_library(_LIBACL "libacl.a")
   endif()
 
-  find_library(_LIBPTHREAD "pthread")
-  find_library(_LIBDL "dl")
-  find_library(_LIBC "libc.a")
-  find_library(_LIBM "libm.a")
-  find_library(_LIBRT "librt.a")
+#  find_library(_LIBPTHREAD "pthread")
+#  find_library(_LIBDL "dl")
+#  find_library(_LIBC "libc.a")
+#  find_library(_LIBM "libm.a")
+#  find_library(_LIBRT "librt.a")
+
   find_library(_LIBUNWIND "libunwind.a")
   find_library(_LIBIBERTY "libiberty.a")
 
@@ -881,13 +850,13 @@ if(${WITH_TESTS})
     "tests/tests.h"
   )
 
-if(${RB_W32})
+if(RB_W32)
   target_sources(wr-bin PUBLIC "tests/tests-init-rb-w32.c" "tests/tests-init-rb-w32.h")
   target_sources(wr-tests PUBLIC "tests/tests-dir-io-rb-w32.cpp")
   target_sources(wr-tests PUBLIC "tests/tests-init-rb-w32.c" "tests/tests-init-rb-w32.h")
-else(${RB_W32})
+else(RB_W32)
   target_sources(wr-tests PUBLIC "tests/tests-dir-io.cpp")
-endif(${RB_W32})
+endif(RB_W32)
 
 # ...................................................................
 #  IMPORTANT !!!
@@ -921,33 +890,33 @@ endif(${RB_W32})
   target_link_libraries(wr-tests _LIBDWARFS _LIBFSST   _LIBFOLLY _LIBT_METADATA
                                  _LIBT_LIGHT _LIBXXHASH _LIBZSTD  _LIBARCHIVE)
 
-  if(${WITH_GLOG_BUILD})
+  if(WITH_GLOG_BUILD)
     add_dwarfs_library(_LIBGLOG ${GLOG_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBGLOG)
-  else(${WITH_GLOG_BUILD})
+  else(WITH_GLOG_BUILD)
     list(APPEND _LIBRARIES ${_LIBGLOG})
-  endif(${WITH_GLOG_BUILD})
+  endif(WITH_GLOG_BUILD)
 
-  if(${WITH_GFLAGS_BUILD})
+  if(WITH_GFLAGS_BUILD)
     add_dwarfs_library(_LIBGFLAGS ${GFLAGS_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBGFLAGS)
-  else(${WITH_GFLAGS_BUILD})
+  else(WITH_GFLAGS_BUILD)
     list(APPEND _LIBRARIES ${_LIBGFLAGS})
-  endif(${WITH_GFLAGS_BUILD})
+  endif(WITH_GFLAGS_BUILD)
 
-  if(${WITH_FMT_BUILD})
+  if(WITH_FMT_BUILD)
     add_dwarfs_library(_LIBFMT ${FMT_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBFMT)
-  else(${WITH_FMT_BUILD})
+  else(WITH_FMT_BUILD)
     list(APPEND _LIBRARIES ${_LIBFMT})
-  endif(${WITH_FMT_BUILD})
+  endif(WITH_FMT_BUILD)
 
-  if(${WITH_DC_BUILD})
+  if(WITH_DC_BUILD)
     add_dwarfs_library(_LIBDC ${DC_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBDC)
-  else(${WITH_DC_BUILD})
+  else(WITH_DC_BUILD)
     list(APPEND _LIBRARIES ${_LIBDC})
-  endif(${WITH_DC_BUILD})
+  endif(WITH_DC_BUILD)
 
   if(WITH_OPENSSL_BUILD)
     add_dwarfs_library(_LIBSSL ${OPENSSL_PRJ} wr-bin)
@@ -972,9 +941,9 @@ endif(${RB_W32})
       list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBLZ4}
                              ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
       )
-      if(NOT ${RB_W32})
+      if(NOT RB_W32)
         list(APPEND _LIBRARIES pthread)
-      endif(NOT ${RB_W32})
+      endif(NOT RB_W32)
     endif(WITH_ASAN)
     list(APPEND _LIBRARIES dl)
   endif(IS_DARWIN)
@@ -982,26 +951,26 @@ endif(${RB_W32})
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
 
-  if(${WITH_JEMALLOC_BUILD})
+  if(WITH_JEMALLOC_BUILD)
     add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
     target_link_libraries(wr-tests ${_LIBJEMALLOC})
-  elseif(${USE_JEMALLOC})
+  elseif(WITH_JEMALLOC_BUILD)
     target_link_libraries(wr-bin ${_LIBJEMALLOC})
     target_link_libraries(wr-tests ${_LIBJEMALLOC})
-  endif()
+  endif(WITH_JEMALLOC_BUILD)
 
-  if(${WITH_RUBY_BUILD})
+  if(WITH_RUBY_BUILD)
     add_dwarfs_library(_LIBRUBY ${RUBY_PRJ} wr-bin)
     target_link_libraries(wr-bin imagehlp iphlpapi)
     target_link_libraries(wr-tests ${__LIBRUBY} imagehlp iphlpapi)
-  endif(${WITH_RUBY_BUILD})
+  endif(WITH_RUBY_BUILD)
 
-  if(${IS_MSYS})
+  if(IS_MSYS)
     target_link_libraries(wr-bin shlwapi wsock32 ws2_32)
     target_link_libraries(wr-tests shlwapi wsock32 ws2_32)
-  endif(${IS_MSYS})
+  endif(IS_MSYS)
 
-endif(${WITH_TESTS})
+endif(WITH_TESTS)
 
 install(TARGETS
          dwarfs-wr
@@ -1014,26 +983,26 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-if(${WITH_GLOG_BUILD})
+if(WITH_GLOG_BUILD)
   install(FILES ${__LIBGLOG} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif(${WITH_GLOG_BUILD})
+endif(WITH_GLOG_BUILD)
 
-if(${WITH_GFLAGS_BUILD})
+if(WITH_GFLAGS_BUILD)
   install(FILES ${__LIBGFLAGS} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif(${WITH_GFLAGS_BUILD})
+endif(WITH_GFLAGS_BUILD)
 
-if(${WITH_FMT_BUILD})
+if(WITH_FMT_BUILD)
   install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif(${WITH_FMT_BUILD})
+endif(WITH_FMT_BUILD)
 
-if(${WITH_DC_BUILD})
+if(WITH_DC_BUILD)
   install(FILES ${__LIBDC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif(${WITH_DC_BUILD})
+endif(WITH_DC_BUILD)
 
-if(${WITH_JEMALLOC_BUILD})
+if(WITH_JEMALLOC_BUILD)
   install(FILES ${__LIBJEMALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
   install(DIRECTORY ${DEPS_INCLUDE_DIR}/jemalloc DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-endif(${WITH_JEMALLOC_BUILD})
+endif(WITH_JEMALLOC_BUILD)
 
 install(FILES
         "include/tebako-config.h"

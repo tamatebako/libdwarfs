@@ -55,6 +55,9 @@ concurrency:
 
 env:
   CACHE_VER: 28
+  RUBY_VER: 2.7.7
+  RUBY_HASH: e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90
+# Ruby 'wants' this LC_ALL setting otherwise it fails on ripper extension build
   LC_ALL: en_US.UTF-8
 
 jobs:
@@ -65,21 +68,9 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - sys: mingw64
-            CC: gcc
-            CXX: g++
-            ASAN: 'OFF'
-            LOG_LEVEL: 'warn'
-            RB_W32: 'OFF'
+          - { sys: mingw64, LOG_LEVEL: 'warn', RB_W32: 'OFF' }
+          - { sys: mingw64, LOG_LEVEL: 'warn', RB_W32: 'ON' }
 
-          - sys: mingw64
-            CC: gcc
-            CXX: g++
-            ASAN: 'OFF'
-            LOG_LEVEL: 'warn'
-            RB_W32: 'ON'
-#          - CC: clang
-#            CXX: clang++
     env: ${{ matrix.env }}
 
     defaults:
@@ -129,10 +120,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{env.DEPS}}
-          key:  windows-msys-${{ env.sys }}-${{ env.CC }}-${{ env.RB_W32 }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
+          key:  windows-msys-${{ env.sys }}-${{ env.RB_W32 }}-${{ env.RUBY_VER }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
       - name: Configure
-        run: cmake -B build -DWITH_LINK_TESTS=OFF -DWITH_ASAN=${{ env.ASAN }} -DRB_W32=${{ env.RB_W32 }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake -B build -DWITH_LINK_TESTS=OFF -DRB_W32=${{ env.RB_W32 }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
         run: cmake --build build

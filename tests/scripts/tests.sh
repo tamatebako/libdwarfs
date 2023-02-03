@@ -36,7 +36,9 @@ set -o errexit -o pipefail -o noclobber -o nounset
 check_shared_libs() {
    expected_size="${#expected[@]}"
    actual_size="${#actual[@]}"
-   assertEquals "The number of references to shared libraries does not meet our expectations" "$expected_size" "$actual_size"
+# On linux-gnu libm is sometimes referenced, sometimes not
+# It depends on some other library so we have '-ge' below
+   assertTrue "The number of references to shared libraries does not meet our expectations" "[[ $expected_size -ge $actual_size ]]"
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
