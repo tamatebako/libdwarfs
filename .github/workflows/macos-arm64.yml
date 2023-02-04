@@ -50,7 +50,7 @@ concurrency:
 env:
   TARGET: arm64
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: 21
+  CACHE_VER: 23
 
 jobs:
   build:

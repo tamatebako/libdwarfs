@@ -54,11 +54,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 28
+  CACHE_VER: 24
   RUBY_VER: 2.7.7
   RUBY_HASH: e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90
-# Ruby 'wants' this LC_ALL setting otherwise it fails on ripper extension build
-  LC_ALL: en_US.UTF-8
 
 jobs:
   build:

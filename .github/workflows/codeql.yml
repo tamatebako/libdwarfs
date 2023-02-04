@@ -39,6 +39,9 @@ concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
 
+env:
+  CACHE_VER: 3
+
 jobs:
   analyze:
     name: Analyze
@@ -83,7 +86,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{github.workspace}}/${{env.DEPS}}
-        key:  CodeQL-${{ hashFiles('**/common.env') }}
+        key:  CodeQL-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
     - name: Install packages
       run: |

@@ -51,7 +51,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 21
+  CACHE_VER: 23
   CFLAGS: -mmacos-version-min=11.00 --target=x86_64-apple-macos11.00
   CPPFLAGS: -mmacos-version-min=11.00 --target=x86_64-apple-macos11.00
   LDFLAGS:  --target=x86_64-apple-macos11.00
@@ -96,7 +96,7 @@ jobs:
 # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
           brew install \
-          bison flex gnu-sed bash double-conversion boost jemalloc fmt glog zlib
+          bison flex gnu-sed bash double-conversion boost jemalloc fmt glog
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON

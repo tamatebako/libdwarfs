@@ -48,7 +48,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 20
+  CACHE_VER: 24
   CODECOV_TOKEN: 3fd391a5-99c6-434f-a07c-22fdf282ae5b
 
 jobs:

@@ -219,8 +219,6 @@ set(CMAKE_CXX_EXTENSIONS   OFF)
 # ...................................................................
 # External projects
 
-include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl.cmake)
-
 def_ext_prj_g(DWARFS "tebako-v0.3.3pre")
 
 if(WITH_TESTS)
@@ -231,8 +229,15 @@ if(WITH_TESTS)
     def_ext_prj_t(RUBY "2.7.7" "e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90")
 #    def_ext_prj_t(RUBY "2.7.6" "e7203b0cc09442ed2c08936d483f8ac140ec1c72e37bb5c401646b7866cb5d10")
 #    def_ext_prj_t(RUBY "2.7.5" "2755b900a21235b443bb16dadd9032f784d4a88f143d852bc5d154f22b8781f1")
+
     string(SUBSTRING ${RUBY_VER} 0 3 RUBY_VER_BASE)
+
+    if(${RUBY_VER} VERSION_LESS "3.0.0")
+      include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl.cmake)
+    endif()
   endif(RB_W32)
+
+
 endif(WITH_TESTS)
 
 find_library(_LIBGLOG "libglog.a")
@@ -270,6 +275,10 @@ elseif(WITH_JEMALLOC_BUILD)
   find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
 endif(WITH_JEMALLOC_BUILD)
 
+if(WITH_OPENSSL_BUILD)
+  def_ext_prj_g(OPENSSL "1.1.1s")
+endif(WITH_OPENSSL_BUILD)
+
 message("Collecting packages:")
 message(STATUS "dwarfs     -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
 if(WITH_TESTS)
@@ -300,7 +309,6 @@ endif(WITH_RUBY_BUILD)
 if(WITH_OPENSSL_BUILD)
   message(STATUS "OpenSSL    -  @${OPENSSL_TAG}  at  ${OPENSSL_SOURCE_DIR}")
 endif(WITH_OPENSSL_BUILD)
-
 
 # ...................................................................
 # incbin
@@ -390,9 +398,6 @@ ExternalProject_Add(${DWARFS_PRJ}
   BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
                    ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
 )
-if(WITH_OPENSSL_BUILD)
-  add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
-endif(WITH_OPENSSL_BUILD)
 
 # ...................................................................
 # glog
@@ -527,6 +532,31 @@ if(WITH_JEMALLOC_BUILD)
     BUILD_BYPRODUCTS ${__LIBJEMALLOC}
   )
 endif(WITH_JEMALLOC_BUILD)
+
+
+# ...................................................................
+# OpenSSL
+if(WITH_OPENSSL_BUILD)
+  message(STATUS "Building OpenSSL since Ruby 2.x requires 1.1.x")
+  def_ext_prj_g(OPENSSL "OpenSSL_1_1_1s")
+
+  set(__LIBSSL "${DEPS}/lib/libssl.a")
+  set(__LIBCRYPTO "${DEPS}/lib/libcrypto.a")
+
+  ExternalProject_Add(${OPENSSL_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/openssl/openssl.git"
+    GIT_TAG ${OPENSSL_TAG}
+    UPDATE_COMMAND ""
+    SOURCE_DIR ${OPENSSL_SOURCE_DIR}
+    BINARY_DIR ${OPENSSL_BINARY_DIR}
+    CONFIGURE_COMMAND   ${GNU_BASH} -c "${OPENSSL_SOURCE_DIR}/config          \
+                                                        --openssldir=${DEPS}  \
+                                                        --prefix=${DEPS}"
+    BUILD_BYPRODUCTS ${__LIBSSL} ${__LIBCRYPTO}
+  )
+  add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
+endif(WITH_OPENSSL_BUILD)
 
 # ...................................................................
 # Ruby
@@ -798,9 +828,17 @@ if(WITH_TESTS)
   find_library(_LIBEVENT "libevent.a" REQUIRED)
   find_library(_LIBLZ4 "liblz4.a" REQUIRED)
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
-  find_library(_LIBZ "libz.a" REQUIRED)
 
-  if (NOT IS_MSYS)
+# Starting with MacOS BigSur  '/usr/lib' is replaced with a cache of system libraries
+# So we cannot just look for libz.a, it is not there anymore
+# brew version is keg-only so it cannot be located without a hint
+
+  find_library(_LIBZ "libz.a" REQUIRED HINTS ${DEPS}/lib ${CMAKE_PREFIX_PATH}/opt/zlib/lib)
+
+  find_library(_LIBSSL "libssl.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
+  find_library(_LIBCRYPTO "libcrypto.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
+
+  if(NOT IS_MSYS)
     find_library(_LIBACL "libacl.a")
   endif()
 

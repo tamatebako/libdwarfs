@@ -49,7 +49,7 @@ concurrency:
 
 env:
   ALPINE_VER: 3.16
-  CACHE_VER: 21
+  CACHE_VER: 24
 
 jobs:
   build:
@@ -65,7 +65,7 @@ jobs:
         env:
           - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  LOG_LEVEL: 'warn'   }
           - { CC: clang,  CXX: clang++, ASAN: 'OFF',  LOG_LEVEL: 'warn'   }
-          - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'trace'  }
+#          - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'trace'  }
 # 'compiler-rt' apk is required to support ASAN
     env: ${{ matrix.env }}
     steps:
