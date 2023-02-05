@@ -28,8 +28,8 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
 #include <tebako-dirent.h>
@@ -48,8 +48,7 @@ uintptr_t sync_tebako_dstable::opendir(int vfd, size_t& size) noexcept {
 			err = ENOMEM;
 		}
 		else {
-			err = ds->load_cache(0, true);
-			if (err == DWARFS_IO_CONTINUE) {
+			if (ds->load_cache(0, true) == DWARFS_IO_CONTINUE) {
 				ret = reinterpret_cast<uintptr_t>(ds.get());
 				(**wlock())[ret] = ds;
 				size = ds->dir_size;
@@ -128,7 +127,7 @@ long sync_tebako_dstable::dirfd(uintptr_t dirp) noexcept {
 	return ret;
 }
 
-int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcept {
+int sync_tebako_dstable::readdir(uintptr_t  dirp, tebako_dirent*& entry) noexcept {
 	int ret = DWARFS_INVALID_FD;
 	entry = NULL;
 	auto p_dstable = *rlock();
@@ -148,7 +147,7 @@ int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcep
 					try {
 						ret = p_ds->second->load_cache(p_ds->second->dir_position, false);
 						if (ret == DWARFS_IO_CONTINUE) {
-							entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start].e;
+							entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start];
 						}
 						else {
 							TEBAKO_SET_LAST_ERROR(ret);
@@ -160,7 +159,7 @@ int sync_tebako_dstable::readdir(uintptr_t  dirp, struct dirent*& entry) noexcep
 					}
 				}
 				else {
-					entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start].e;
+					entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start];
 					ret = DWARFS_IO_CONTINUE;
 				}
 			}

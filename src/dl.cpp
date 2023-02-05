@@ -28,14 +28,19 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
+#include <tebako-io-rb-w32.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
+#include <tebako-io-rb-w32.h>
+
+#ifndef TEBAKO_HAS_O_BINARY
+#define O_BINARY 0x0
+#endif
 
 using namespace std;
-namespace fs = std::filesystem;
 
 struct tebako_dlerror_data {
 	int err;
@@ -77,12 +82,12 @@ private:
     }
 
 	void map_name(const char* path, std::string& mapped) {
-        const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH + 1] == '\0' ?
-                path + TEBAKO_MOUNT_POINT_LENGTH + 1 :
-                path + TEBAKO_MOUNT_POINT_LENGTH + 2;
+        const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ?
+                path + TEBAKO_MOUNT_POINT_LENGTH :
+                path + TEBAKO_MOUNT_POINT_LENGTH + 1;
         fs::path _mapped = dl_tmpdir / adj;
 		fs::create_directories(_mapped.parent_path());
-	    mapped = _mapped;
+	    mapped = _mapped.make_preferred().string();
 	}
 
 public:
@@ -119,12 +124,12 @@ public:
 					fh_in = -1;
 				}
 				else {
-					struct stat st;
+					struct STAT_TYPE st;
 					if (tebako_fstat(fh_in, &st) == -1) {
 						*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
 					}
 					else {
-						int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT, st.st_mode);
+						int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT | O_BINARY, st.st_mode);
 						if (fh_out == -1) {
 							*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
 						}

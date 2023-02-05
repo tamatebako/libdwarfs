@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -11,7 +11,7 @@
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *    documentation and/or other matrials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -27,27 +27,20 @@
  *
  */
 
-/*
-* This a set of standard "C++" headers used through libdwarfs-wr source files
-*/
+#ifdef RB_W32
 
-#pragma once
+#include <string.h>
+#include "tests-init-rb-w32.h"
 
-#include <algorithm>
-#include <array>
-#include <set>
-#include <map>
-#include <iostream>
-#include <stdexcept>
-#include <sstream>
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <random>
-#include <filesystem>
-namespace fs = std::filesystem;
+void do_rb_w32_init(void) {
+    int targc=1;
+    const char* t___argv = "test";
+    char t__argv[sizeof(t___argv)];
+    strcpy(t__argv, t___argv);
+	char* t_argv[1];
+	t_argv[0] = &t__argv[0];
+	char** targv = &t_argv[0];
+	rb_w32_sysinit(&targc, &targv);
+}
 
-#include <folly/Conv.h>
-#include <folly/Synchronized.h>
-
-#include <dwarfs/logger.h>
+#endif

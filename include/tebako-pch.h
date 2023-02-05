@@ -43,6 +43,11 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#if !defined(RB_W32)
+#include <dirent.h>
+#endif
+#include <dlfcn.h>
+#include <unistd.h>
 #include <errno.h>
 
 #if defined(TEBAKO_HAS_GETATTRLIST) || defined(TEBAKO_HAS_FGETATTRLIST)
@@ -50,14 +55,10 @@
 #endif
 
 #ifdef _WIN32
- #include <direct.h>
- #include <Shlwapi.h>
+ #include <winsock2.h>
+ #include <windows.h>
 #else
  #include <sys/param.h>
  #include <sys/uio.h>
- #include <unistd.h>
  #include <ftw.h>
- #include <dirent.h>
- #include <dlfcn.h>
 #endif
-

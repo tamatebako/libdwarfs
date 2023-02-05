@@ -28,13 +28,14 @@
  */
 
 #include <tebako-pch.h>
-#include <tebako-common.h>
 #include <tebako-pch-pp.h>
+#include <tebako-common.h>
+#include <tebako-dirent.h>
 #include <tebako-dfs.h>
+#include <tebako-io-rb-w32.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
-#include <tebako-dirent.h>
 #include <tebako-mfs.h>
 
 namespace stdfs = std::filesystem;
@@ -185,9 +186,9 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, const char* path, Args&&.
         try {
 // Normally we remove '/__tebako_memfs__/'
 // However, there is also a case when it is memfs root and path isn just '/__tebako_memfs__'
-            const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH + 1] == '\0' ?
-                path + TEBAKO_MOUNT_POINT_LENGTH + 1 :
-                path + TEBAKO_MOUNT_POINT_LENGTH + 2;
+            const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ?
+                path + TEBAKO_MOUNT_POINT_LENGTH :
+                path + TEBAKO_MOUNT_POINT_LENGTH + 1;
             auto inode = p->fs.find(adj);
             if (p->opts.debuglevel >= logger::DEBUG) {
               LOG_PROXY(debug_logger_policy, p->lgr);
@@ -260,11 +261,13 @@ int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid, std::string
     return ret;
 }
 
+#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32)
 int dwarfs_lstat(const char* path, struct stat* buf) noexcept {
     return safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
     { [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int { return fs->getattr(inode, buf); } },
         __func__, path, buf);
 }
+#endif
 
 int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept {
     int ret = safe_dwarfs_call(std::function<int(filesystem_v2*, inode_view&, struct stat*)>
@@ -279,8 +282,16 @@ int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept {
                 if (p_lnk.is_relative())    p_new.replace_filename(lnk);
                 else                        p_new = lnk;
                 p_new = p_new.lexically_normal();
-                if (is_tebako_path(p_new.c_str()))  ret = tebako_stat(p_new.c_str(), buf);
-                else                                ret = DWARFS_S_LINK_OUTSIDE;
+                if (is_tebako_path(p_new.generic_string().c_str()))  {
+#ifdef RB_W32
+                    struct STAT_TYPE _buf;
+                    ret = tebako_stat(p_new.generic_string().c_str(), &_buf);
+                    buf << _buf;
+#else
+                    ret = tebako_stat(p_new.generic_string().c_str(), buf);
+#endif
+                }
+                else  ret = DWARFS_S_LINK_OUTSIDE;
            }
         }
     }
@@ -319,7 +330,7 @@ static int internal_getattr_relative(uint32_t inode, stdfs::path p_path, struct 
         auto pi = p->fs.find(inode);
         for (auto p_it = p_path.begin(); p_it != p_path.end(); ++p_it) {
             if (!pi) break;
-            pi = p->fs.find(pi->inode_num(), p_it->c_str());
+            pi = p->fs.find(pi->inode_num(), p_it->string().c_str());
         }
         ret =  pi ? p->fs.getattr(*pi, buf) : ENOENT;
     }
@@ -342,7 +353,15 @@ int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* bu
                     if (ret == DWARFS_IO_CONTINUE) {
                         stdfs::path p_path(lnk);
                         if (p_path.is_relative()) ret =  internal_getattr_relative(inode, p_path, buf);
-                        else                      ret =  tebako_stat(p_path.c_str(), buf);  
+                        else {
+#ifdef RB_W32
+                                struct STAT_TYPE _buf;
+                                ret =  tebako_stat(p_path.generic_string().c_str(), &_buf);
+                                buf << _buf;
+#else
+                                ret =  tebako_stat(p_path.generic_string().c_str(), buf);
+#endif
+                        }
                     }
                 }
         }
@@ -391,16 +410,41 @@ static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* ca
                     auto [entry, name_view] = *res;
                     std::string name(name_view);
                     fs->getattr(entry, &st);
+#ifndef _WIN32
                     cache[cache_size].e.d_ino = st.st_ino;
-#if __MACH__
+#   if __MACH__
                     cache[cache_size].e.d_seekoff = cache_start + cache_size;
-#else
+#   else
                     cache[cache_size].e.d_off = cache_start + cache_size;
-#endif
+#   endif
                     cache[cache_size].e.d_type = IFTODT(st.st_mode);
                     strncpy(cache[cache_size]._e.d_name, name.c_str(), TEBAKO_PATH_LENGTH);
                     cache[cache_size]._e.d_name[TEBAKO_PATH_LENGTH] = '\0';
                     cache[cache_size].e.d_reclen = sizeof(cache[0]);
+#else
+#   ifdef RB_W32
+                	cache[cache_size].e.d_altname = 0;
+	                cache[cache_size].e.d_altlen = 0;
+                	cache[cache_size].e.d_name = cache[cache_size].d_name;
+                    if (S_ISDIR(st.st_mode)) {
+                        cache[cache_size].e.d_type = DT_DIR;
+                    }
+                    else if (S_ISLNK(st.st_mode)) {
+                        cache[cache_size].e.d_type = DT_LNK;
+                    }
+                    else {
+                        cache[cache_size].e.d_type = DT_REG;
+                    }
+                    cache[cache_size].e.d_namlen = TEBAKO_PATH_LENGTH-1;
+#   else
+                    cache[cache_size].e.d_reclen = 0;
+                    cache[cache_size].e.d_namlen = std::min(name.length(), sizeof(cache[cache_size].e.d_name)-1);
+#   endif
+                    static int dummy = INT_MAX;
+                    cache[cache_size].e.d_ino = dummy--;
+                    strncpy(cache[cache_size].e.d_name, name.c_str(), cache[cache_size].e.d_namlen);
+                    cache[cache_size].e.d_name[cache[cache_size].e.d_namlen] = '\0';
+#endif
                     ++cache_size;
                 }
             }
@@ -420,4 +464,3 @@ int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start
     return safe_dwarfs_call(std::function<int(filesystem_v2*, uint32_t, tebako_dirent*, off_t, size_t, size_t&, size_t& )> { internal_readdir },
                             __func__, inode, cache, cache_start, buffer_size, cache_size, dir_size);
 }
-

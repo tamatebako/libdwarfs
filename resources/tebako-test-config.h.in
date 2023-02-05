@@ -1,8 +1,8 @@
 /**
  *
- * Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako (dwarfs-wr)
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,26 +29,26 @@
 
 #pragma once
 
-const int DWARFS_IO_CONTINUE = 0;
-// DWARFS_IO_ERROR is a real error
-const int DWARFS_IO_ERROR = -1;
-// DWARFS_INVALID_FD is a suggestion that given file descriptor point to *real* fs
-const int DWARFS_INVALID_FD = -2;
-// DWARFS_S_LINK_OUTSIDE indicates a soft link from memfs towards an entity outside memfs
-const int DWARFS_S_LINK_OUTSIDE = -3;
+#define __MSYS_BIN__  "@MSYS_BIN@"
+#define __MSYS_USR__  "@MSYS_USR@"
+#define __MSYS_TMP__  "@MSYS_TMP@"
 
-#ifdef RB_W32
-    struct tebako_dirent;
+#ifndef _WIN32
+#  define __S__   "/"
+#  define __BIN__ "/bin"
+#  define __USR__ "/usr"
+#  define __TMP__ "/tmp"
+#  define __AT_BIN__(A) "/bin/" A
+#  define __AT_TMP__(A) "/tmp/" A
+#  define __WITH_LIB_EXT__(A)  A ".so"
+#  define __WITH_EXE_EXT__(A)  A
 #else
-    union tebako_dirent;
+#  define __S__   "\\"
+#  define __BIN__ __MSYS_BIN__
+#  define __USR__ __MSYS_USR__
+#  define __TMP__ __MSYS_TMP__
+#  define __AT_BIN__(A) __BIN__ "\\" A
+#  define __AT_TMP__(A) __TMP__ "\\" A
+#  define __WITH_LIB_EXT__(A)  A ".dll"
+#  define __WITH_EXE_EXT__(A)  A ".exe"
 #endif
-
-int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept;
-int dwarfs_lstat(const char* path, struct stat* buf) noexcept;
-int dwarfs_readlink(const char* path, std::string& lnk) noexcept;
-int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept ;
-
-int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept;
-int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf, bool follow) noexcept;
-ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept;
-int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;

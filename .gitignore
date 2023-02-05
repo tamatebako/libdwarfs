@@ -47,10 +47,12 @@ tests/tebako-fs.cpp
 tests/shunit2
 include/version.h
 include/tebako-config.h
+tests/tebako-test-config.h
 *.bin
 
 # VS files
 .vs
 .vscode
 
-#
+# Test files
+Testing/

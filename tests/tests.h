@@ -31,8 +31,16 @@
 
 #include <gtest/gtest.h>
 #include "tebako-pch.h"
-#include "tebako-io.h"
 
+#ifdef RB_W32
+#include <tebako-io-rb-w32.h>
+#include "tests-init-rb-w32.h"
+#else
+#include <dirent.h>
+#endif
+
+#include "tebako-io.h"
 #include "tebako-fs.h"
 #include "tests-defines.h"
 
+#include "tebako-test-config.h"
