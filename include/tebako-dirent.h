@@ -30,17 +30,17 @@
 #pragma once
 
 /* The d_name field
- The dirent structure definition is taken from the
- glibc headers, and shows the d_name field with a fixed size.
+ 	The dirent structure definition is taken from the
+ 	glibc headers, and shows the d_name field with a fixed size.
 
- Warning: applications should avoid any dependence on the size of
- the d_name field.POSIX defines it as char d_name[], a character
- array of unspecified size, with at most NAME_MAX characters
- preceding the terminating null byte('\0').
+ 	Warning: applications should avoid any dependence on the size of
+ 	the d_name field.POSIX defines it as char d_name[], a character
+ 	array of unspecified size, with at most NAME_MAX characters
+ 	preceding the terminating null byte('\0').
 
- POSIX.1 explicitly notes that this field should not be used as an
- lvalue.The standard also notes that the use of sizeof(d_name)
- is incorrect; use strlen(d_name) instead.  (On some systems, this
+ 	POSIX.1 explicitly notes that this field should not be used as an
+ 	lvalue.The standard also notes that the use of sizeof(d_name)
+ 	is incorrect; use strlen(d_name) instead.  (On some systems, this
     field is defined as char d_name[1]!)  By implication, the use
     sizeof(struct dirent) to capture the size of the record including
     the size of d_name is also incorrect.
@@ -56,14 +56,25 @@
     that exceeds the size of the glibc dirent structure shown above.
 */
 
-typedef struct _tebako_dirent {
-	unsigned char padding[offsetof(struct dirent, d_name)/sizeof(unsigned char)];
-    tebako_path_t d_name;
-} _tebako_dirent;
+#ifdef RB_W32
+#	include <tebako-io-rb-w32.h>
+#else
+#	include <dirent.h>
+	typedef struct _tebako_dirent {
+		unsigned char padding[offsetof(struct dirent, d_name)/sizeof(unsigned char)];
+    	tebako_path_t d_name;
+	} _tebako_dirent;
+#endif
 
+#ifdef RB_W32
+typedef struct tebako_dirent {
+	struct direct e;
+   	tebako_path_t d_name;
+#else
 typedef union tebako_dirent {
     struct dirent e;
     struct _tebako_dirent _e;
+#endif
 } tebako_dirent;
 
 const size_t TEBAKO_DIR_CACHE_SIZE = 50;
@@ -93,7 +104,7 @@ public:
 	long telldir(uintptr_t dirp) noexcept;
 	int seekdir(uintptr_t dirp, long pos) noexcept;
 	long dirfd(uintptr_t dirp) noexcept;
-	int readdir(uintptr_t  dirp, struct dirent*& entry) noexcept;
+	int readdir(uintptr_t  dirp, tebako_dirent*& entry) noexcept;
 
 	static sync_tebako_dstable dstable;
 };

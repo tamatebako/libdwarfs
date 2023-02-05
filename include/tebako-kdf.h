@@ -1,8 +1,8 @@
 /**
  *
- * Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako (dwarfs-wr)
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,26 +29,27 @@
 
 #pragma once
 
-const int DWARFS_IO_CONTINUE = 0;
-// DWARFS_IO_ERROR is a real error
-const int DWARFS_IO_ERROR = -1;
-// DWARFS_INVALID_FD is a suggestion that given file descriptor point to *real* fs
-const int DWARFS_INVALID_FD = -2;
-// DWARFS_S_LINK_OUTSIDE indicates a soft link from memfs towards an entity outside memfs
-const int DWARFS_S_LINK_OUTSIDE = -3;
+typedef std::set<uintptr_t> tebako_kfdtable;
 
-#ifdef RB_W32
-    struct tebako_dirent;
-#else
-    union tebako_dirent;
-#endif
+class sync_tebako_kfdtable : public folly::Synchronized<tebako_kfdtable*> {
+public:
+	sync_tebako_kfdtable(void) : folly::Synchronized<tebako_kfdtable*>(new tebako_kfdtable) { }
 
-int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept;
-int dwarfs_lstat(const char* path, struct stat* buf) noexcept;
-int dwarfs_readlink(const char* path, std::string& lnk) noexcept;
-int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept ;
+	bool check(uintptr_t dirp) {
+		auto p_kfdtable = *rlock();
+		auto p_kfd = p_kfdtable->find(dirp);
+		return (p_kfd != p_kfdtable->end());
+	};
 
-int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept;
-int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf, bool follow) noexcept;
-ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept;
-int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;
+	void erase(uintptr_t dirp) {
+		auto p_kfdtable = *wlock();
+		p_kfdtable->erase(dirp);
+	}
+
+	void insert(uintptr_t dirp) {
+		auto p_kfdtable = *wlock();
+		p_kfdtable->insert(dirp);
+	}
+
+	static sync_tebako_kfdtable kfdtable;
+};

@@ -29,7 +29,6 @@
 
 #include "tests.h"
 #include <filesystem>
-
 namespace fs = std::filesystem;
 
 namespace {
@@ -39,6 +38,9 @@ namespace {
 		static bool cross_test;
 		static bool path_initialized;
 		static void SetUpTestSuite() {
+#ifdef RB_W32
+			do_rb_w32_init();
+#endif
 			load_fs(&gfsData[0],
 				gfsSize,
 				tests_log_level,
@@ -48,7 +50,7 @@ namespace {
 				NULL	/* decompress_ratio*/,
 				NULL    /* image_offset */
 			);
-
+#ifdef WITH_LINK_TESTS
 			std::string tdp_template = (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
 			size_t l = tdp_template.length();
 			char* dir_name = new char[l+1];
@@ -66,13 +68,16 @@ namespace {
 			}
 
 			cross_test = (std::getenv("TEBAKO_CROSS_TEST") != NULL);
+#endif
 		}
 
 		static void TearDownTestSuite() {
+#ifdef WITH_LINK_TESTS
 			if (path_initialized) {
 				fs::remove_all(tmp_path);
 			}
 			path_initialized = false;
+#endif
 			drop_fs();
 		}
 
@@ -213,7 +218,7 @@ namespace {
 	}
 
 	TEST_F(LnTests, tebako_lstat_absolute_path) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_lstat(TEBAKIZE_PATH("s-link-to-file-1"), &st);
 		EXPECT_EQ(0, ret);
 		EXPECT_EQ(35, st.st_size);
@@ -224,21 +229,21 @@ namespace {
 	}
 
 	TEST_F(LnTests, tebako_lstat_absolute_path_no_file) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_stat(TEBAKIZE_PATH("no_file"), &st);
 		EXPECT_EQ(ENOENT, errno);
 		EXPECT_EQ(-1, ret);
 	}
 
 	TEST_F(LnTests, tebako_lstat_null) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_lstat(NULL, &st);
 		EXPECT_EQ(ENOENT, errno);
 		EXPECT_EQ(-1, ret);
 	}
 
 	TEST_F(LnTests, tebako_lstat_relative_path) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_chdir(TEBAKIZE_PATH(""));
 		EXPECT_EQ(0, ret);
 		ret = tebako_stat("s-link-to-file-1", &st);
@@ -246,7 +251,7 @@ namespace {
 	}
 
 	TEST_F(LnTests, tebako_lstat_relative_path_no_file) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
 		EXPECT_EQ(0, ret);
 		ret = tebako_lstat("no_file", &st);
@@ -255,13 +260,13 @@ namespace {
 	}
 
 	TEST_F(LnTests, tebako_lstat_absolute_path_pass_through) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_lstat((tmp_path / "link2true").c_str(), &st);
 		EXPECT_EQ(0, ret);
 	}
 
 	TEST_F(LnTests, tebako_lstat_relative_path_pass_through) {
-		struct stat st;
+		struct STAT_TYPE st;
 		int ret = tebako_chdir(tmp_path.c_str());
 		EXPECT_EQ(0, ret);
 		ret = tebako_lstat("link2false", &st);
@@ -270,7 +275,7 @@ namespace {
 
 	TEST_F(LnTests, tebako_stat_link_outside_of_memfs) {
 		if (!cross_test) {
-			struct stat st;
+			struct STAT_TYPE st;
 			int ret = tebako_stat(TEBAKIZE_PATH("s-link-outside-of-memfs"), &st);
 			EXPECT_EQ(0, ret);
 		}
@@ -344,21 +349,21 @@ namespace {
 	}
 
 	TEST_F(LnTests, tebako_fstatat_link_follow_absolute) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, 0);
 		EXPECT_EQ(0, ret);
 		EXPECT_EQ(strlen("This is a file in the first directory"), buf.st_size);		// Content of the file
 	}
 
 	TEST_F(LnTests, tebako_fstatat_link_nofollow_absolute) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, AT_SYMLINK_NOFOLLOW);
 		EXPECT_EQ(0, ret);
 		EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"), buf.st_size);		    // The link itself
 	}
 
 	TEST_F(LnTests, tebako_fstatat_link_follow_relative) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY | O_DIRECTORY);
 		EXPECT_LT(0, fd);
 		int ret = tebako_fstatat(fd, "s-link-to-file-1", &buf, 0);
@@ -369,7 +374,7 @@ namespace {
 	}
 
 	TEST_F(LnTests, tebako_fstatat_link_nofollow_relative) {
-		struct stat buf;
+		struct STAT_TYPE buf;
 		int fd = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY | O_DIRECTORY);
 		EXPECT_LT(0, fd);
 		int ret = tebako_fstatat(fd, "s-link-to-file-1", &buf, AT_SYMLINK_NOFOLLOW);
@@ -385,7 +390,7 @@ namespace {
 
 		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("")));
 		int fh2 = tebako_openat(3, fh1, "s-link-to-file-1", O_RDONLY|O_NOFOLLOW);
-		EXPECT_EQ(-1, fh2);		
+		EXPECT_EQ(-1, fh2);
 		EXPECT_EQ(ELOOP, errno);
 
 		EXPECT_EQ(-1, tebako_close(fh2));

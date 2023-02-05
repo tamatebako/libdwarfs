@@ -1,4 +1,4 @@
-# Copyright (c) 2022 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2022-2023 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tamatebako
 #
@@ -32,43 +32,25 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/alpine.yml'
-      - '.github/workflows/ubuntu.yml'
-      - '.github/workflows/macos.yml'
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/macos-arm64.yml'
   pull_request:
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
-      - '.github/workflows/alpine.yml'
-      - '.github/workflows/ubuntu.yml'
-      - '.github/workflows/macos.yml'
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/macos-arm64.yml'
   workflow_dispatch:
-
-env:
-  MAKEFLAGS: -j4
-  BUILD_TYPE: Release
-  CC: clang
-  CXX: clang++
-  TARGET: arm64
-# The folder for dwarfs and other dependenies
-  DEPS: deps
-  DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: "12"
-# GitHub dependencies'
-  INCBIN_TAG: "348e36b"
-  DWARFS_TAG: "tebako-v0.2.1"
-  GLOG_TAG: "v0.5.0"
-  GFLAGS_TAG: "v2.2.2"
-# Tarball dependencies
-  JEMALLOC_VER: "5.2.1"
-  JEMALLOC_HASH: "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6"
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
+
+env:
+  TARGET: arm64
+  DWARFS_BUILD: dwarfs-x86_64
+  CACHE_VER: 23
 
 jobs:
   build:
@@ -87,16 +69,13 @@ jobs:
         with:
           submodules: true
 
+      - name: Setup environment
+        run: cat common.env macos.env >> $GITHUB_ENV
+
       - name: Create deps folders and keys
         run: |
           mkdir ${{ github.workspace }}/${{ env.DEPS }}
           mkdir ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
-          echo "Keys" > key.txt
-          echo ${{ env.DWARFS_TAG }} >> key.txt
-          echo ${{ env.INCBIN_TAG }} >> key.txt
-          echo ${{ env.GLOG_TAG }} >> key.txt
-          echo ${{ env.GFLAGS_TAG }} >> key.txt
-          echo ${{ env.JEMALLOC_VER }} >> key.txt
           echo 'LEVEL_UP<<EOF' >> $GITHUB_ENV
           tools/ci-scripts/level-up.sh "${{ github.workspace }}/.." >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
@@ -112,7 +91,7 @@ jobs:
             ${{ github.workspace }}/${{ env.DWARFS_BUILD }}
             ${{ github.workspace }}/${{ env.DEPS }}
             ${{ env.LEVEL_UP }}/arm-homebrew
-          key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('key.txt') }}-v${{ env.CACHE_VER }}
+          key: macos-11.0-arm64-${{ env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
       - name: Install packages [for build system architecture]
         run: |

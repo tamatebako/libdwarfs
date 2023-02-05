@@ -29,7 +29,8 @@
 
 #include "tests.h"
 
-#if not (__MACH__ || __musl__)
+
+#if not (__MACH__ || __musl__ || _WIN32)
 #include <gnu/lib-names.h>
 #endif
 
@@ -37,6 +38,9 @@ namespace {
 	class DlTests : public testing::Test {
 	protected:
 		static void SetUpTestSuite() {
+#ifdef RB_W32
+			do_rb_w32_init();
+#endif
 			load_fs(&gfsData[0],
 				gfsSize,
 				tests_log_level,
@@ -59,29 +63,41 @@ namespace {
 		EXPECT_EQ(dlptr, nullptr);
 		char *r = tebako_dlerror();
 		std::string expected = std::string(TEBAKIZE_PATH("no_file")) + ": cannot open shared object file: No such file or directory";
+		std::replace( expected.begin(), expected.end(), '\\', '/');
 		EXPECT_EQ(expected, r);
 	}
 
 	TEST_F(DlTests, tebako_dlopen_no_file_pass_through) {
 		errno = 0;
-		void* dlptr = tebako_dlopen("/bin/no_file", RTLD_LAZY | RTLD_GLOBAL);
+		void* dlptr = tebako_dlopen(__AT_BIN__("no_file"), RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_EQ(dlptr, nullptr);
 		EXPECT_NE(tebako_dlerror(), nullptr) ; // Specific otput cannot be guaranteed accross diffrent OSs
 	}
 
 	TEST_F(DlTests, tebako_dlopen_absolute_path) {
 		void *handle;
-		handle = tebako_dlopen(TEBAKIZE_PATH("directory-1/libempty.so"), RTLD_LAZY | RTLD_GLOBAL);
+		handle = tebako_dlopen(TEBAKIZE_PATH(__WITH_LIB_EXT__("directory-1/libempty")), RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_NE(handle, nullptr);
         if (handle != nullptr) {
 			EXPECT_EQ(0, dlclose(handle));
 		}
 	}
 
+#ifdef _WIN32
+	TEST_F(DlTests, tebako_dlopen_absolute_path_win) {
+		void *handle;
+		handle = tebako_dlopen(TEBAKIZE_PATH(__WITH_LIB_EXT__("directory-1\\libempty")), RTLD_LAZY | RTLD_GLOBAL);
+		EXPECT_NE(handle, nullptr);
+        if (handle != nullptr) {
+			EXPECT_EQ(0, dlclose(handle));
+		}
+	}
+#endif
+
 	TEST_F(DlTests, tebako_dlopen_relative_path) {
 		EXPECT_EQ(0,tebako_chdir(TEBAKIZE_PATH("directory-1")));
 		void* handle;
-		handle = tebako_dlopen("libempty.so", RTLD_LAZY | RTLD_GLOBAL);
+		handle = tebako_dlopen(__WITH_LIB_EXT__("libempty"), RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_TRUE(handle != NULL);
 		if (handle != nullptr) {
 			EXPECT_EQ(0, dlclose(handle));
@@ -91,12 +107,24 @@ namespace {
 	TEST_F(DlTests, tebako_dlopen_relative_path_dot_dot) {
 		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-3/level-1/level-2///")));
 		void* handle;
-		handle = tebako_dlopen("../../../directory-1/libempty.so", RTLD_LAZY | RTLD_GLOBAL);
+		handle = tebako_dlopen(__WITH_LIB_EXT__("../../../directory-1/libempty"), RTLD_LAZY | RTLD_GLOBAL);
 		EXPECT_NE(handle, nullptr);
 		if (handle != nullptr) {
 			EXPECT_EQ(0, dlclose(handle));
 		}
 	}
+
+#ifdef _WIN32
+	TEST_F(DlTests, tebako_dlopen_relative_path_dot_dot_win) {
+		EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-3\\level-1\\level-2\\\\\\")));
+		void* handle;
+		handle = tebako_dlopen(__WITH_LIB_EXT__("..\\..\\..\\directory-1\\libempty"), RTLD_LAZY | RTLD_GLOBAL);
+		EXPECT_NE(handle, nullptr);
+		if (handle != nullptr) {
+			EXPECT_EQ(0, dlclose(handle));
+		}
+	}
+#endif
 
 	TEST_F(DlTests, tebako_dlopen_pass_through) {
 		void* handle;
@@ -106,6 +134,8 @@ namespace {
         handle = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY | RTLD_GLOBAL);
 #elif __musl__
  		handle = dlopen("/usr/lib/libc.so", RTLD_LAZY | RTLD_GLOBAL);
+#elif defined(_WIN32)
+		handle = dlopen(__AT_BIN__("msys-2.0.dll"), RTLD_LAZY | RTLD_GLOBAL);
 #else
 		handle = dlopen(LIBM_SO, RTLD_LAZY | RTLD_GLOBAL);
 #endif

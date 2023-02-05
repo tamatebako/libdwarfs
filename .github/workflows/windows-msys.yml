@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2022-2023, [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tamatebako
 #
@@ -26,7 +26,10 @@
 # The purpose of this workflow is to check that build procedures work correctly
 # in specific environment. Due to this reason there is no caching. It is done by
 # intention. All caching is in upstream projects.
-name: MacOS
+#
+# Also this file contains comments that will be useful is dwarfs has to be build
+# in different environment, not GHA.
+name: Windows-MSys
 
 on:
   push:
@@ -36,14 +39,14 @@ on:
       - '**.adoc'
       - '**.md'
       - '.github/workflows/*.yml'
-      - '!.github/workflows/macos.yml'
+      - '!.github/workflows/windows-msys.yml'
   pull_request:
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
       - '.github/workflows/*.yml'
-      - '!.github/workflows/macos.yml'
+      - '!.github/workflows/windows-msys.yml'
   workflow_dispatch:
 
 concurrency:
@@ -51,24 +54,54 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 23
-  CFLAGS: -mmacos-version-min=11.00 --target=x86_64-apple-macos11.00
-  CPPFLAGS: -mmacos-version-min=11.00 --target=x86_64-apple-macos11.00
-  LDFLAGS:  --target=x86_64-apple-macos11.00
+  CACHE_VER: 24
+  RUBY_VER: 2.7.7
+  RUBY_HASH: e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90
 
 jobs:
   build:
-    name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: windows-msys with RB_W32:${{ matrix.env.RB_W32 }} [${{ matrix.env.sys }}, CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }}]
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-11.0 ]
+        env:
+          - { sys: mingw64, LOG_LEVEL: 'warn', RB_W32: 'OFF' }
+          - { sys: mingw64, LOG_LEVEL: 'warn', RB_W32: 'ON' }
+
+    env: ${{ matrix.env }}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
     steps:
-      - name: Select XCode 12.4 & SDK 11.1
-        uses: maxim-lobanov/setup-xcode@v1
+      - name: Setup MSys
+        uses: msys2/setup-msys2@v2
         with:
-          xcode-version: '12.4'
+          msystem: ${{ matrix.env.sys }}
+          path-type: minimal
+          update: true
+          install: >-
+            git
+            tar
+            bison
+            flex
+            make
+          pacboy: >-
+            toolchain:p
+            ruby:p
+            cmake:p
+            boost:p
+            diffutils:p
+            libevent:p
+            double-conversion:p
+            glog:p
+            dlfcn:p
+            gtest:p
+
+# fmt is built locally
+# Otherwise folly library will be built in a manner that is not compatible with a static library that we build
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -76,33 +109,22 @@ jobs:
           submodules: true
 
       - name: Setup environment
-        run: cat common.env macos.env >> $GITHUB_ENV
+        run: cat common.env >> $GITHUB_ENV
 
       - name: Create deps folder
-        run: |
-          mkdir ${{ github.workspace }}/${{ env.DEPS }}
-          echo 'BREW_HOME<<EOF' >> $GITHUB_ENV
-          brew --prefix >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
+        run: mkdir ${{ env.DEPS }}
 
       - name: Process cache
         uses: actions/cache@v3
         with:
-          path: ${{ github.workspace }}/${{ env.DEPS }}
-          key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
-
-      - name: Install packages
-# Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz, zlib
-# Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
-        run: |
-          brew install \
-          bison flex gnu-sed bash double-conversion boost jemalloc fmt glog
+          path: ${{env.DEPS}}
+          key:  windows-msys-${{ env.sys }}-${{ env.RB_W32 }}-${{ env.RUBY_VER }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON
+        run: cmake -B build -DWITH_LINK_TESTS=OFF -DRB_W32=${{ env.RB_W32 }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build build --config ${{ env.BUILD_TYPE }}
+        run: cmake --build build
 
       - name: Run unit tests
         run: ctest --test-dir build --output-on-failure
@@ -111,43 +133,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: kward/shunit2
-          path: ${{ github.workspace }}/tests/shunit2
+          path: tests/shunit2
           fetch-depth: 1
 
       - name: Run additional tests
-        run:  ${{ env.BREW_HOME }}/bin/bash ${{ github.workspace }}/tests/scripts/tests.sh
-
-# The code below runs tests on another veriosn of MacOS
-# 10.15 GHA handlers are decomissioned but we may need it later
-#      - name: Upload tests
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: tests
-#          retention-days: 1
-#          path: |
-#            ${{github.workspace}}/wr-bin
-#            ${{github.workspace}}/wr-tests
-
-#  test-on-macos-10-15:
-#    needs: build
-#    name: run tests on MacOS-10.15
-#    runs-on: macos-10.15
-#    env:
-#      TEBAKO_CROSS_TEST: ON
-#    strategy:
-#      fail-fast: false
-#    steps:
-#      - name: Download tests
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: tests
-
-#      - name: Provision execute permissions
-#        run: |
-#          chmod +x wr-bin
-#          chmod +x wr-tests
-#      - name: Run statically linked application
-#        run: ./wr-bin
-
-#      - name: Run unit tests
-#        run: ./wr-tests
+        run:  tests/scripts/tests.sh

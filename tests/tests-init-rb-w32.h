@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -11,7 +11,7 @@
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *    documentation and/or other matrials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -27,27 +27,15 @@
  *
  */
 
-/*
-* This a set of standard "C++" headers used through libdwarfs-wr source files
-*/
-
 #pragma once
 
-#include <algorithm>
-#include <array>
-#include <set>
-#include <map>
-#include <iostream>
-#include <stdexcept>
-#include <sstream>
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <random>
-#include <filesystem>
-namespace fs = std::filesystem;
-
-#include <folly/Conv.h>
-#include <folly/Synchronized.h>
-
-#include <dwarfs/logger.h>
+#ifdef RB_W32
+#ifdef __cplusplus
+extern "C" {
+#endif 	// __cplusplus
+    void rb_w32_sysinit(int *argc, char ***argv);
+    void do_rb_w32_init(void);
+#ifdef __cplusplus
+}
+#endif 	// __cplusplus
+#endif

@@ -88,6 +88,9 @@ namespace {
 #endif
 
 	TEST(LoadTests, tebako_load_valid_filesystem) {
+#ifdef RB_W32
+		do_rb_w32_init();
+#endif
 		int ret = load_fs(	&gfsData[0],
 							gfsSize,
 							tests_log_level,
@@ -103,27 +106,39 @@ namespace {
 	}
 
 	TEST(LoadTests, tebako_stat_not_loaded_filesystem) {
-		struct stat buf;
+#ifdef RB_W32
+		do_rb_w32_init();
+#endif
+		struct STAT_TYPE buf;
 		int ret = tebako_stat(TEBAKIZE_PATH("file.txt"), &buf);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOENT, errno);
 	}
 
 	TEST(LoadTests, tebako_access_not_loaded_filesystem) {
-		struct stat buf;
+#ifdef RB_W32
+		do_rb_w32_init();
+#endif
+		struct STAT_TYPE buf;
 		int ret = tebako_access(TEBAKIZE_PATH("file.txt"), W_OK);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOENT, errno);
 	}
 
 	TEST(LoadTests, tebako_open_not_loaded_filesystem) {
-		struct stat buf;
+#ifdef RB_W32
+		do_rb_w32_init();
+#endif
+		struct STAT_TYPE buf;
 		int ret = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDONLY);
 		EXPECT_EQ(-1, ret);
 		EXPECT_EQ(ENOENT, errno);
 	}
 
 	TEST(LoadTests, tebako_close_all_fd) {
+#ifdef RB_W32
+		do_rb_w32_init();
+#endif
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
 			tests_log_level,
@@ -148,6 +163,9 @@ namespace {
 	}
 
 	TEST(LoadTests, tebako_close_all_dir) {
+#ifdef RB_W32
+		do_rb_w32_init();
+#endif
 		int ret = load_fs(&gfsData[0],
 			gfsSize,
 			tests_log_level,
@@ -179,11 +197,15 @@ namespace {
 		EXPECT_EQ(EBADF, errno);
 
 		errno = 0;
+#ifdef RB_W32
+		struct direct* entry = tebako_readdir(dirp, NULL);
+#else
 		struct dirent* entry = tebako_readdir(dirp);
+#endif
 		EXPECT_EQ(NULL, entry);
 		EXPECT_EQ(EBADF, errno);
 
-		tebako_rewinddir(dirp);
+		tebako_seekdir(dirp, 0);
 
 		errno = 0;
 		ret = tebako_closedir(dirp);

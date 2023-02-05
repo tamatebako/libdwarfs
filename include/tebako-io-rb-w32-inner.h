@@ -1,8 +1,8 @@
 /**
  *
- * Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako (dwarfs-wr)
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,26 +29,35 @@
 
 #pragma once
 
-const int DWARFS_IO_CONTINUE = 0;
-// DWARFS_IO_ERROR is a real error
-const int DWARFS_IO_ERROR = -1;
-// DWARFS_INVALID_FD is a suggestion that given file descriptor point to *real* fs
-const int DWARFS_INVALID_FD = -2;
-// DWARFS_S_LINK_OUTSIDE indicates a soft link from memfs towards an entity outside memfs
-const int DWARFS_S_LINK_OUTSIDE = -3;
-
 #ifdef RB_W32
-    struct tebako_dirent;
-#else
-    union tebako_dirent;
+#ifdef __cplusplus
+extern "C" {
+#endif 	// __cplusplus
+	char* 			rb_w32_ugetcwd(char *, int);
+	int 			rb_w32_uchdir(const char *);
+	int 			rb_w32_umkdir(const char *, int);
+	int 			rb_w32_access(const char *, int);
+
+	int  			rb_w32_uopen(const char *, int, ...);
+	int  			rb_w32_close(int);
+	ssize_t 		rb_w32_read(int, void *, size_t);
+	off_t  			rb_w32_lseek(int, off_t, int);
+
+	int 			rb_w32_stati128(const char *, struct stati128 *);
+	int 			rb_w32_lstati128(const char *, struct stati128 *);
+	int 			rb_w32_fstati128(int, struct stati128 *);
+
+#if defined(RUBY_WIN32_DIR_H) || defined(RB_W32_DIR_DEFINED)
+    DIR*           	rb_w32_uopendir(const char*);
+	struct direct* 	rb_w32_readdir(DIR *, void *);
+	long           	rb_w32_telldir(DIR *);
+	void           	rb_w32_seekdir(DIR *, long);
+	void           	rb_w32_rewinddir(DIR *);
+	void           	rb_w32_closedir(DIR *);
 #endif
 
-int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept;
-int dwarfs_lstat(const char* path, struct stat* buf) noexcept;
-int dwarfs_readlink(const char* path, std::string& lnk) noexcept;
-int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept ;
+#ifdef __cplusplus
+}
+#endif 	// __cplusplus
 
-int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid)  noexcept;
-int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf, bool follow) noexcept;
-ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept;
-int dwarfs_inode_readdir(uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size, size_t& cache_size, size_t& dir_size) noexcept;
+#endif // RB_W32
