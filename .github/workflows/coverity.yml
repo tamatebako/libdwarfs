@@ -26,7 +26,7 @@
 # The purpose of this workflow is to check that build procedures work correctly
 # in specific environment. Due to this reason there is no caching. It is done by
 # intention. All caching is in upstream projects.
-name: codeql
+name: coverity
 
 on:
   push:
@@ -40,40 +40,18 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 3
+  CACHE_VER: 1
+  COVERITY_TOKEN: "MmhAl7FrANiA8oF25A9hEg"
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'cpp' ]
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
-        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
         submodules: true
-
-    # Initializes the CodeQL tools for scanning.
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: ${{ matrix.language }}
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
-
-        # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
-        # queries: security-extended,security-and-quality
 
     - name: Setup environment
       run: cat common.env ubuntu.env >> $GITHUB_ENV
@@ -85,7 +63,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{github.workspace}}/${{env.DEPS}}
-        key:  CodeQL-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
+        key:  coverity-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
     - name: Install packages
       run: |
@@ -100,10 +78,26 @@ jobs:
     - name: Configure
       run: cmake -B build -DWITH_TESTS=OFF -DWITH_ASAN=OFF -DWITH_COVERAGE=OFF -DTESTS_LOG_LEVEL=warn
 
-    - name: Build
-      run: cmake --build build
+    - name: Download Coverity
+      run: |
+        wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$COVERITY_TOKEN&project=$GITHUB_REPOSITORY" -O cov-analysis-linux64.tar.gz
+        mkdir cov-analysis-linux64
+        tar xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
-      with:
-        category: "/language:${{matrix.language}}"
+    - name: Build
+      run: |
+        set -x
+        export PATH="$PWD/cov-analysis-linux64/bin:$PATH"
+        cov-build --dir cov-int cmake --build build
+
+    - name: Submit
+      run: |
+        tar czvf results.tgz cov-int
+        curl \
+          --form project=$GITHUB_REPOSITORY \
+          --form token=$COVERITY_TOKEN \
+          --form email=m.samsonov@computer.org \
+          --form file=@results.tgz \
+          --form version=$GITHUB_REF \
+          --form description=$GITHUB_SHA \
+          https://scan.coverity.com/builds?project=$GITHUB_REPOSITORY

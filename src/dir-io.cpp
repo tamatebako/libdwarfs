@@ -243,9 +243,9 @@ int tebako_scandir(const char* dirname, struct dirent*** namelist,
 							p = (struct dirent*)malloc(ent->d_reclen);
 							if (p == NULL) {
 								while (--n >= 0) {
-									delete list[n];
+									free(list[n]);
 								}
-								delete[] list;
+								free(list);
 								list = NULL;
 							}
 							else {
