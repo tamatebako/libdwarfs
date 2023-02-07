@@ -130,31 +130,28 @@ public:
 					}
 					else {
 						int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT | O_BINARY, st.st_mode);
-						if (fh_out == -1) {
+						if (fh_out < 0) {
 							*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
 						}
 						else {
 							f_size = st.st_size;
 							const int bsize = 16 * 1024;
 							char buf[bsize];
-							ssize_t r_size = 1;
-							while (f_size > 0 && r_size > 0) {
-								ssize_t r_size = tebako_read(fh_in, buf, bsize);
+							ssize_t r_size;
+							while (f_size > 0 && (r_size = tebako_read(fh_in, buf, bsize)) > 0) {
 								f_size -= r_size;
-								if (r_size != ::write(fh_out, buf, r_size)) {
-									r_size = -1;
-								}
+								if (r_size != ::write(fh_out, buf, r_size)) break;
 							}
+							if (f_size == 0) {
+								ret = mapped;
+								(*p_dltable)[path] = mapped;
+							}
+							else {
+								::unlink(mapped.c_str());
+								*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
+							}
+							::close(fh_out);
 						}
-						if (f_size == 0) {
-							ret = mapped;
-							(*p_dltable)[path] = mapped;
-						}
-						else {
-							::unlink(mapped.c_str());
-							*tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
-						}
-						::close(fh_out);
 					}
 					tebako_close(fh_in);
 				}

@@ -251,20 +251,29 @@ ssize_t sync_tebako_fdtable::readv(int vfd, const struct iovec* iov, int iovcnt)
 }
 
 off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence)  noexcept {
-	off_t pos;
 	ssize_t ret = DWARFS_INVALID_FD;
 	auto p_fdtable = *this->rlock();
 	auto p_fd = p_fdtable->find(vfd);
 	if (p_fd != p_fdtable->end()) {
 		switch (whence) {
 		case SEEK_SET:
-			ret = pos = offset;
+			ret = p_fd->second->pos = offset;
 			break;
 		case SEEK_CUR:
-			ret = pos = p_fd->second->pos + offset;
+			ret = p_fd->second->pos = p_fd->second->pos + offset;
+			if (ret < 0) {
+			// [EOVERFLOW] The resulting file offset would be a value which cannot be represented correctly in an object of type off_t.
+				TEBAKO_SET_LAST_ERROR(EOVERFLOW);
+				ret = DWARFS_IO_ERROR;
+			}
 			break;
 		case SEEK_END:
-			ret = pos = p_fd->second->st.st_size + offset;
+			ret = p_fd->second->pos = p_fd->second->st.st_size + offset;
+			if (ret < 0) {
+			// [EOVERFLOW] The resulting file offset would be a value which cannot be represented correctly in an object of type off_t.
+				TEBAKO_SET_LAST_ERROR(EOVERFLOW);
+				ret = DWARFS_IO_ERROR;
+			}
 			break;
 		default:
 			// [EINVAL] The whence argument is not a proper value, or the resulting file offset would be negative for a regular file, block special file, or directory.
@@ -272,13 +281,9 @@ off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence)  noexcept {
 			ret = DWARFS_IO_ERROR;
 			break;
 		}
-		if (pos < 0) {
-			// [EOVERFLOW] The resulting file offset would be a value which cannot be represented correctly in an object of type off_t.
-			TEBAKO_SET_LAST_ERROR((offset < 0 ? EINVAL : EOVERFLOW));
+		if (ret < 0) {
+			TEBAKO_SET_LAST_ERROR(EOVERFLOW);
 			ret = DWARFS_IO_ERROR;
-		}
-		else {
-			p_fd->second->pos = pos;
 		}
 	}
 	return ret;
