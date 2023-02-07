@@ -50,11 +50,11 @@ concurrency:
 env:
   TARGET: arm64
   DWARFS_BUILD: dwarfs-x86_64
-  CACHE_VER: 23
+  CACHE_VER: 24
 
 jobs:
   build:
-    name: macos-11.0 [x86_64 --> arm64]
+    name: macos-11.0 [host x86_64; target arm64]
     runs-on: macos-11.0
     strategy:
       fail-fast: false

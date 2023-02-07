@@ -54,13 +54,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 24
+  CACHE_VER: 25
   RUBY_VER: 2.7.7
   RUBY_HASH: e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90
 
 jobs:
   build:
-    name: windows-msys with RB_W32:${{ matrix.env.RB_W32 }} [${{ matrix.env.sys }}, CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }}]
+    name: windows-msys ${{ matrix.env.sys }} with RB_W32=${{ matrix.env.RB_W32 }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
