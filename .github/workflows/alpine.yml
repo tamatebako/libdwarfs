@@ -87,13 +87,11 @@ jobs:
 
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
-        run: |
-          apk --no-cache --upgrade add clang
+        run: apk --no-cache --upgrade add clang
 
       - name: Install ASAN libraries
         if: ${{ matrix.env.ASAN == 'ON' }}
-        run: |
-          apk --no-cache --upgrade add compiler-rt
+        run: apk --no-cache --upgrade add compiler-rt
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -102,10 +100,6 @@ jobs:
 
       - name: Setup environment
         run: cat common.env ubuntu.env >> $GITHUB_ENV
-
-      - name: Patch system includes
-        if: ${{ matrix.env.CC == 'clang' }}
-        run: tools/ci-scripts/patch-system-includes.sh
 
       - name: Create deps folder
         run: mkdir ${{env.DEPS}}
@@ -116,11 +110,12 @@ jobs:
           path: ${{env.DEPS}}
           key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
-      - name: Build libjemalloc
+      - name: Patch system includes and build libjemalloc
         run: |
-          wget -q https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
-          tar -xf jemalloc-5.2.1.tar.bz2
-          cd jemalloc-5.2.1
+          tools/ci-scripts/patch-system-includes.sh
+          wget -q https://github.com/jemalloc/jemalloc/releases/download/${{ env.JEMALLOC_VER }}/jemalloc-${{ env.JEMALLOC_VER }}.tar.bz2
+          tar -xf jemalloc-${{ env.JEMALLOC_VER }}.tar.bz2
+          cd jemalloc-${{ env.JEMALLOC_VER }}
           ./configure
           make -j4
           make install
