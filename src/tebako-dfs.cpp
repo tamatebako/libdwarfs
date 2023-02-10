@@ -435,7 +435,7 @@ static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* ca
                     else {
                         cache[cache_size].e.d_type = DT_REG;
                     }
-                    cache[cache_size].e.d_namlen = TEBAKO_PATH_LENGTH-1;
+                    cache[cache_size].e.d_namlen = std::min(name.length(), TEBAKO_PATH_LENGTH-1);
 #   else
                     cache[cache_size].e.d_reclen = 0;
                     cache[cache_size].e.d_namlen = std::min(name.length(), sizeof(cache[cache_size].e.d_name)-1);

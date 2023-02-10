@@ -72,7 +72,7 @@ namespace {
 		if (dirp != NULL) {
 			errno = 0;
 
-			const off_t start_fnum = 10;  /* The first file nane is file - 10.txt */
+			const off_t start_fnum = 10;  /* The first filename is file-10.txt */
 			const size_t size_dir = 89;
 			long pos = 49;
 			std::string fname;
@@ -94,6 +94,7 @@ namespace {
 			if (entry != NULL) {
 				fname = "file-"; fname += std::to_string(pos + start_fnum - 2 /* for '.' and '..' */); fname += ".txt";
 				EXPECT_TRUE(fname == entry->d_name);
+				EXPECT_EQ(fname.length(), strlen(entry->d_name));
 				EXPECT_EQ(++pos, tebako_telldir(dirp));
 			}
 
