@@ -26,6 +26,8 @@
 name: Alpine
 
 on:
+  schedule:
+    - cron: "0 9 * * 0"
   push:
     branches: [ main ]
     paths-ignore:
