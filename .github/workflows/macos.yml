@@ -94,11 +94,11 @@ jobs:
           key: ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
       - name: Install packages
-# Already installed: pkg-config, openssl@1.1, libevent, libsodium, lz4, xz, zlib
+# Already installed: openssl@1.1, libevent, libsodium, lz4, xz, zlib
 # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
           brew install \
-          bison flex gnu-sed bash double-conversion boost jemalloc fmt glog
+          bison flex gnu-sed bash double-conversion boost jemalloc fmt glog pkg-config
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWITH_TESTS=ON

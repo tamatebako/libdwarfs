@@ -98,7 +98,7 @@ jobs:
       - name: Install packages [for build system architecture]
         run: |
           brew install \
-          bison flex gnu-sed bash libarchive double-conversion boost jemalloc fmt glog
+          bison flex gnu-sed bash libarchive double-conversion boost jemalloc fmt glog pkg-config
 
 # Note: we cannot rely on dependencies here since resolved dependencies will point to x86_64 version
 # TODO: use brew deps -n to create full list of dependencies rather then hardcode
