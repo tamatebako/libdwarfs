@@ -101,6 +101,7 @@ jobs:
             glog:p
             dlfcn:p
             gtest:p
+            autotools:p
 
 # fmt is built locally
 # Otherwise folly library will be built in a manner that is not compatible with a static library that we build
