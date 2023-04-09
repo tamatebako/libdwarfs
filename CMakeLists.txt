@@ -857,11 +857,11 @@ if(WITH_TESTS)
   find_library(_LIBUNWIND "libunwind.a")
   find_library(_LIBIBERTY "libiberty.a")
 
-  if (IS_MSYS)
-    add_link_options(-static-libstdc++ -static)
-  elseif (NOT IS_DARWIN)
+#  if (IS_MSYS)
+#    add_link_options(-static-libstdc++ -static)
+#  elseif (NOT IS_DARWIN)
     add_link_options(-static-libstdc++)
-  endif()
+#  endif()
 
   if (IS_MUSL)
     add_compile_definitions(__musl__)
@@ -977,18 +977,12 @@ endif(RB_W32)
   if(IS_DARWIN)
     list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBLZMA})
   else(IS_DARWIN)
-    if(WITH_ASAN)
-      list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBLZ4}
-                             ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
-      )
-    else(WITH_ASAN)
-      list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBLZ4}
-                             ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
-      )
-      if(NOT RB_W32)
-        list(APPEND _LIBRARIES pthread)
-      endif(NOT RB_W32)
-    endif(WITH_ASAN)
+    list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBLZ4}
+                           ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
+    )
+    if(NOT RB_W32)
+      list(APPEND _LIBRARIES pthread)
+    endif(NOT RB_W32)
     list(APPEND _LIBRARIES dl)
   endif(IS_DARWIN)
 
