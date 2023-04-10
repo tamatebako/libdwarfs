@@ -94,11 +94,12 @@ test_linkage() {
             expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
                       "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
                       "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll"
-                      "imagehlp.dll" "shell32.dll" "iphlpapi.dll")
+                      "imagehlp.dll" "shell32.dll" "iphlpapi.dll" "libgcc_s_seh-1.dll" "libwinpthread-1.dll")
          else
             expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
                       "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
-                      "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll")
+                      "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll"
+                      "libgcc_s_seh-1.dll" "libwinpthread-1.dll")
          fi
          readarray -t actual < <(ldd "$DIR_SRC/wr-bin.exe")
          assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin.exe) failed" 0 "${PIPESTATUS[0]}"
