@@ -33,7 +33,10 @@ if(${CMAKE_VERSION} VERSION_GREATER "3.23.10")
   cmake_policy(SET CMP0135 NEW)
 endif()
 
-project(libdwarfs-wr VERSION 0.3.2)
+include(tools/cmake-scripts/version.cmake)
+determine_version("${CMAKE_CURRENT_SOURCE_DIR}" LIBDWARFS_WR)
+
+project(libdwarfs-wr VERSION ${LIBDWARFS_WR_VERSION})
 
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
@@ -70,28 +73,6 @@ set(DEPS_SBIN_DIR ${DEPS}/sbin)
 
 include_directories(${DEPS_INCLUDE_DIR})
 link_directories(${DEPS_LIB_DIR})
-
-if (TEBAKO_BUILD_TARGET)
-  if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
-    if(${TEBAKO_BUILD_TARGET} STREQUAL "arm64-apple-macos11")
-      set(JEMALLOC_HOST_OPTION --host=arm-apple-darwin --with-lg-page=16)
-      set(HOST_OPTION --host=arm-apple-darwin)
-      set(CMAKE_OSX_ARCHITECTURES arm64)
-    elseif(${TEBAKO_BUILD_TARGET} STREQUAL "x86_64-apple-macos11")
-      set(JEMALLOC_HOST_OPTION --host=x86_64-apple-darwin --with-lg-vaddr=48)
-      set(HOST_OPTION --host=x86_64-apple-darwin)
-      set(CMAKE_OSX_ARCHITECTURES x86_64)
-    else()
-      message(FATAL_ERROR "Cannot cross-compile for target ${TEBAKO_BUILD_TARGET}")
-    endif()
-    message(STATUS "Configuring libdwarfs build script for ${TEBAKO_BUILD_TARGET}")
-    add_compile_options(--target=${TEBAKO_BUILD_TARGET})
-    add_link_options(--target=${TEBAKO_BUILD_TARGET})
-    set(CROSSFLAGS --target=${TEBAKO_BUILD_TARGET})
-  else()
-    message(FATAL_ERROR "Cross-compilation is supported on MacOS only")
-  endif()
-endif(TEBAKO_BUILD_TARGET)
 
 # log level
 if (NOT TESTS_LOG_LEVEL)
@@ -192,11 +173,7 @@ endif(NOT IS_MSYS)
 message("Configuraion summary:")
 message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
 message(STATUS "Building for Ruby Win32: ${RB_W32}")
-message(STATUS "Cross-compile options: ${CROSSFLAGS}")
-message(STATUS "Generic configure cross-compile options: ${HOST_OPTION}")
-message(STATUS "jemalloc configure cross-compile options: ${JEMALLOC_HOST_OPTION}")
 message(STATUS "use jemalloc: ${USE_JEMALLOC}")
-message(STATUS "CMake OSX architecture flag: ${CMAKE_OSX_ARCHITECTURES}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
@@ -392,12 +369,9 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}
              -DWITH_TESTS=OFF
              -DTEBAKO_BUILD_SCOPE=${TEBAKO_BUILD_SCOPE}
-             -DTEBAKO_BUILD_TARGET=${TEBAKO_BUILD_TARGET}
              -DDEPS=${DEPS}
              -DCMAKE_PREFIX_PATH=${DEPS}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-             -DTARGET_HOMEBREW=${TARGET_HOMEBREW}
-             -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
              -DUSE_JEMALLOC=${USE_JEMALLOC}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
@@ -423,10 +397,6 @@ if(WITH_GLOG_BUILD)
                -DCMAKE_CXX_STANDARD_REQUIRED=ON
                -DCMAKE_CXX_EXTENSIONS=OFF
                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
-               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
     SOURCE_DIR ${GLOG_SOURCE_DIR}
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
@@ -451,10 +421,6 @@ if(WITH_GFLAGS_BUILD)
                -DINSTALL_SHARED_LIBS:BOOL=OFF
                -DCMAKE_BUILD_TYPE=Release
                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
-               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
     SOURCE_DIR ${GFLAGS_SOURCE_DIR}
     BINARY_DIR ${GFLAGS_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGFLAGS}
@@ -476,10 +442,6 @@ if(WITH_FMT_BUILD)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DCMAKE_BUILD_TYPE=Release
                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
-               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
                -DFMT_TEST=OFF
     SOURCE_DIR ${FMT_SOURCE_DIR}
     BINARY_DIR ${FMT_BINARY_DIR}
@@ -501,10 +463,6 @@ if(WITH_DC_BUILD)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DCMAKE_BUILD_TYPE=Release
                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-               -DCMAKE_CXX_FLAGS=${CROSSFLAGS}
-               -DCMAKE_EXE_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_SHARED_LINKER_FLAGS=${CROSSFLAGS}
-               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
     SOURCE_DIR ${DC_SOURCE_DIR}
     BINARY_DIR ${DC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBDC}
@@ -524,9 +482,7 @@ if(WITH_JEMALLOC_BUILD)
     URL_HASH SHA256=${JEMALLOC_HASH}
     DOWNLOAD_NO_PROGRESS true
     UPDATE_COMMAND ""
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CROSSFLAGS}  CXXFLAGS=${CROSSFLAGS}
-                      ${JEMALLOC_SOURCE_DIR}/configure
-                      ${JEMALLOC_HOST_OPTION}
+    CONFIGURE_COMMAND ${JEMALLOC_SOURCE_DIR}/configure
                       --srcdir=${JEMALLOC_SOURCE_DIR}
                       --prefix=${DEPS}
                       --enable-static
