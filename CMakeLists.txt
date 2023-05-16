@@ -196,7 +196,7 @@ set(CMAKE_CXX_EXTENSIONS   OFF)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.3.3")
+def_ext_prj_g(DWARFS "tebako-v0.3.4")
 
 if(WITH_TESTS)
   def_ext_prj_g(INCBIN "348e36b")
