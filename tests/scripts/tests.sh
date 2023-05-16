@@ -38,7 +38,15 @@ check_shared_libs() {
    actual_size="${#actual[@]}"
 # On linux-gnu libm is sometimes referenced, sometimes not
 # It depends on some other library so we have '-ge' below
+<<<<<<< HEAD
    assertTrue "The number of references to shared libraries does not meet our expectations" "[[ $expected_size -ge $actual_size ]]"
+=======
+
+   echo "Expected $expected_size shared libraries --> ${expected[@]}"
+   echo "Actiual $actual_size shared libraries --> ${actual[@]}"
+
+   assertTrue "The number of references to shared libraries ($actual_size) does not meet our expectations ($expected_size)" "[[ $expected_size -ge $actual_size ]]"
+>>>>>>> 9cc3e5d (MacOS arm64, Ubuntu aarch64 builds on Cirrus-CI)
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
@@ -68,7 +76,7 @@ test_linkage() {
       echo "... Address sanitizer or coverage test is on ... skipping"
    else
       if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-         expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-x86-64.so")
+         expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-")
          readarray -t actual < <(ldd "$DIR_SRC/wr-bin")
          assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
@@ -78,7 +86,7 @@ test_linkage() {
 #        assertEquals 1 "${PIPESTATUS[0]}"
 #        assertContains "$result" "not a dynamic executable"
       elif [[ "$OSTYPE" == "linux-musl"* ]]; then
-         expected=("libgcc_s.so" "libc.musl-x86_64.so" "ld-musl-x86_64.so")
+         expected=("libgcc_s.so" "libc.musl-" "ld-musl-")
          readarray -t actual < <(ldd "$DIR_SRC/wr-bin")
          assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
