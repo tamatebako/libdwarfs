@@ -40,6 +40,7 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.cirrus.yml'
       - '.github/workflows/*.yml'
       - '!.github/workflows/windows-msys.yml'
   pull_request:
@@ -47,6 +48,7 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - '.cirrus.yml'
       - '.github/workflows/*.yml'
       - '!.github/workflows/windows-msys.yml'
   workflow_dispatch:
