@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -87,7 +87,7 @@
 #endif
 
 typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];
-char* tebako_path_assign(tebako_path_t out, std::string in);
+char* tebako_path_assign(tebako_path_t out, const std::string& in);
 
 bool tebako_set_cwd(const char* path);
 const char* tebako_get_cwd(tebako_path_t cwd, bool win_separator = false);

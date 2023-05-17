@@ -41,7 +41,9 @@ struct tebako_fd {
 	std::string filename;
 	int* handle;
 
-	tebako_fd(const char* p) : filename(p), pos(0), handle(NULL) {	}
+	tebako_fd(const char* p) : filename(p), pos(0), handle(NULL) {
+		memset(&st, 0, sizeof(st));
+	}
 	~tebako_fd() {
 		if (handle) {
 			::close(*handle);
