@@ -408,7 +408,7 @@ static int internal_readdir(filesystem_v2* fs, uint32_t inode, tebako_dirent* ca
                 }
                 else {
                     auto [entry, name_view] = *res;
-                    std::string name(name_view);
+                    std::string name(std::move(name_view));
                     fs->getattr(entry, &st);
 #ifndef _WIN32
                     cache[cache_size].e.d_ino = st.st_ino;

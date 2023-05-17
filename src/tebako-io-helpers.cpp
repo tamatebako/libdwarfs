@@ -31,13 +31,13 @@
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
 
-char* tebako_path_assign(tebako_path_t out, std::string in) {
+char* tebako_path_assign(tebako_path_t out, const std::string& in) {
 		strncpy(out, in.c_str(), TEBAKO_PATH_LENGTH);
 		out[TEBAKO_PATH_LENGTH] = '\0';
 		return out;
 }
 
-char* tebako_path_assign(tebako_path_t out, fs::path in, bool win_separator = false) {
+static char* tebako_path_assign(tebako_path_t out, const fs::path& in, bool win_separator = false) {
 		return tebako_path_assign(out, win_separator ? in.string() : in.generic_string());
 }
 
