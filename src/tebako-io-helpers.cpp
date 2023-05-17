@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2022, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -16,14 +16,14 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
@@ -31,14 +31,19 @@
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
 
-char* tebako_path_assign(tebako_path_t out, const std::string& in) {
-		strncpy(out, in.c_str(), TEBAKO_PATH_LENGTH);
-		out[TEBAKO_PATH_LENGTH] = '\0';
-		return out;
+char* tebako_path_assign(tebako_path_t out, const std::string& in)
+{
+  strncpy(out, in.c_str(), TEBAKO_PATH_LENGTH);
+  out[TEBAKO_PATH_LENGTH] = '\0';
+  return out;
 }
 
-static char* tebako_path_assign(tebako_path_t out, const fs::path& in, bool win_separator = false) {
-		return tebako_path_assign(out, win_separator ? in.string() : in.generic_string());
+static char* tebako_path_assign(tebako_path_t out,
+                                const fs::path& in,
+                                bool win_separator = false)
+{
+  return tebako_path_assign(out,
+                            win_separator ? in.string() : in.generic_string());
 }
 
 //  Current working direcory (within tebako memfs)
@@ -46,178 +51,194 @@ static char* tebako_path_assign(tebako_path_t out, const fs::path& in, bool win_
 //  github.com/facebook/folly/blob/master/folly/docs/Synchronized
 
 class tebako_path_s {
-private:
-	fs::path p;
+ private:
+  fs::path p;
 
-public:
-    tebako_path_s(void): p("") {
-	}
+ public:
+  tebako_path_s(void) : p("") {}
 
-//	Gets current working directory
-	virtual const char* get_cwd(tebako_path_t cwd, bool win_separator = false) {
-		return tebako_path_assign(cwd, p, win_separator);
-	}
+  //	Gets current working directory
+  virtual const char* get_cwd(tebako_path_t cwd, bool win_separator = false)
+  {
+    return tebako_path_assign(cwd, p, win_separator);
+  }
 
-//	Sets current working directory to lexically normal path
-	virtual void set_cwd(const char* path) {
-		if (path) {
-			p.assign(path);
-			p += "/";
-			p = p.lexically_normal();
-		}
-		else {
-			p.assign("");
-		}
-	}
+  //	Sets current working directory to lexically normal path
+  virtual void set_cwd(const char* path)
+  {
+    if (path) {
+      p.assign(path);
+      p += "/";
+      p = p.lexically_normal();
+    }
+    else {
+      p.assign("");
+    }
+  }
 
-//	Checks if the current cwd path is withing tebako memfs
-	virtual bool is_in(void) {
-		return !p.empty();
-	}
+  //	Checks if the current cwd path is withing tebako memfs
+  virtual bool is_in(void) { return !p.empty(); }
 
-//  Expands a path withing tebako memfs
-	virtual const char* expand_path(tebako_path_t expanded_path, const char* path) {
-		const char* ret = NULL;
-		if (path != NULL) {
-			fs::path rpath = (p / path).lexically_normal();
-			ret = tebako_path_assign(expanded_path, rpath);
-		}
-		return ret;
-	}
+  //  Expands a path withing tebako memfs
+  virtual const char* expand_path(tebako_path_t expanded_path, const char* path)
+  {
+    const char* ret = NULL;
+    if (path != NULL) {
+      fs::path rpath = (p / path).lexically_normal();
+      ret = tebako_path_assign(expanded_path, rpath);
+    }
+    return ret;
+  }
 };
 
 template <typename LoggerPolicy>
-class tebako_path_s_l: public tebako_path_s {
-private:
-    LOG_PROXY_DECL(LoggerPolicy);
-public:
-    tebako_path_s_l(dwarfs::logger& lgr):
-        tebako_path_s(),
-        LOG_PROXY_INIT(lgr) {
-			LOG_TRACE << __func__ << " [ constructing ] ";
-	}
+class tebako_path_s_l : public tebako_path_s {
+ private:
+  LOG_PROXY_DECL(LoggerPolicy);
 
-    virtual ~tebako_path_s_l() {
-        LOG_TRACE << __func__ << " [ destroying ] ";
-	}
+ public:
+  tebako_path_s_l(dwarfs::logger& lgr) : tebako_path_s(), LOG_PROXY_INIT(lgr)
+  {
+    LOG_TRACE << __func__ << " [ constructing ] ";
+  }
 
-    virtual const char* get_cwd(tebako_path_t cwd, bool win_separator = false) {
-	    tebako_path_s::get_cwd(cwd, win_separator);
-	    LOG_TRACE << __func__ << " returning [ " << cwd << " ]";
-		return cwd;
-	}
+  virtual ~tebako_path_s_l() { LOG_TRACE << __func__ << " [ destroying ] "; }
 
-	virtual void set_cwd(const char* path) {
-        LOG_TRACE << __func__ << " setting [ " << (path ? path : "NULL") << " ]";
-	    tebako_path_s::set_cwd(path);
-	}
+  virtual const char* get_cwd(tebako_path_t cwd, bool win_separator = false)
+  {
+    tebako_path_s::get_cwd(cwd, win_separator);
+    LOG_TRACE << __func__ << " returning [ " << cwd << " ]";
+    return cwd;
+  }
 
-	virtual bool is_in(void) {
-	    bool ret = tebako_path_s::is_in();
-        LOG_TRACE << __func__ << " [ " << (ret ? "true" : "false") << " ]";
-        return ret;
-	}
+  virtual void set_cwd(const char* path)
+  {
+    LOG_TRACE << __func__ << " setting [ " << (path ? path : "NULL") << " ]";
+    tebako_path_s::set_cwd(path);
+  }
 
-    virtual const char* expand_path(tebako_path_t expanded_path, const char* path) {
-        tebako_path_s::expand_path(expanded_path, path);
-        LOG_TRACE << __func__ << " expanding [ " << (path ? path : NULL) << " --> " << expanded_path << " ]";
-        return expanded_path;
-    }
+  virtual bool is_in(void)
+  {
+    bool ret = tebako_path_s::is_in();
+    LOG_TRACE << __func__ << " [ " << (ret ? "true" : "false") << " ]";
+    return ret;
+  }
 
+  virtual const char* expand_path(tebako_path_t expanded_path, const char* path)
+  {
+    tebako_path_s::expand_path(expanded_path, path);
+    LOG_TRACE << __func__ << " expanding [ " << (path ? path : NULL) << " --> "
+              << expanded_path << " ]";
+    return expanded_path;
+  }
 };
 
-static folly::Synchronized<tebako_path_s *> tebako_cwd{ NULL };
+static folly::Synchronized<tebako_path_s*> tebako_cwd{NULL};
 
-void tebako_init_cwd(dwarfs::logger& lgr, bool need_debug_policy) {
-    auto locked = tebako_cwd.wlock();
-//	*locked = new tebako_path_s;
-    *locked = (need_debug_policy) ? static_cast<tebako_path_s *>(new tebako_path_s_l<dwarfs::debug_logger_policy>(lgr)):
-	                                static_cast<tebako_path_s *>(new tebako_path_s_l<dwarfs::prod_logger_policy>(lgr));
+void tebako_init_cwd(dwarfs::logger& lgr, bool need_debug_policy)
+{
+  auto locked = tebako_cwd.wlock();
+  //	*locked = new tebako_path_s;
+  *locked = (need_debug_policy)
+                ? static_cast<tebako_path_s*>(
+                      new tebako_path_s_l<dwarfs::debug_logger_policy>(lgr))
+                : static_cast<tebako_path_s*>(
+                      new tebako_path_s_l<dwarfs::prod_logger_policy>(lgr));
 }
 
-void tebako_drop_cwd(void) {
-    auto locked = tebako_cwd.wlock();
-	if (*locked) {
-        delete *locked;
-	    *locked = NULL;
-	}
+void tebako_drop_cwd(void)
+{
+  auto locked = tebako_cwd.wlock();
+  if (*locked) {
+    delete *locked;
+    *locked = NULL;
+  }
 }
 
 //	Gets current working directory
-const char* tebako_get_cwd(tebako_path_t cwd, bool win_separator) {
-    auto locked = tebako_cwd.rlock();
-    return (*locked) ? (*locked)->get_cwd(cwd, win_separator) : "";
+const char* tebako_get_cwd(tebako_path_t cwd, bool win_separator)
+{
+  auto locked = tebako_cwd.rlock();
+  return (*locked) ? (*locked)->get_cwd(cwd, win_separator) : "";
 }
 
 //	Sets current working directory to lexically normal path
-bool tebako_set_cwd(const char* path) {
-	bool ret = false;
-	try {
-	    auto locked = tebako_cwd.wlock();
-// *locked == NULL is not an error condition
-		if (*locked) {
-	        (*locked)->set_cwd(path);
-		}
-		ret = true;
-	}
-	catch (...) {
-	}
-	return ret;
+bool tebako_set_cwd(const char* path)
+{
+  bool ret = false;
+  try {
+    auto locked = tebako_cwd.wlock();
+    // *locked == NULL is not an error condition
+    if (*locked) {
+      (*locked)->set_cwd(path);
+    }
+    ret = true;
+  }
+  catch (...) {
+  }
+  return ret;
 }
 
 //  Checks if a path is withing tebako memfs
 #ifdef _WIN32
-bool is_tebako_path(const char* path) {
-	return (strncmp(path, TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0) ||
-		   (strncmp(path, TEBAKO_MOUNT_POINT_S, TEBAKO_MOUNT_POINT_LENGTH) == 0);
+bool is_tebako_path(const char* path)
+{
+  return (strncmp(path, TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0) ||
+         (strncmp(path, TEBAKO_MOUNT_POINT_S, TEBAKO_MOUNT_POINT_LENGTH) == 0);
 }
-extern "C" int is_tebako_path_w(const WCHAR* path) {
-	return (wcsncmp(path, TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH) == 0 ||
-		   wcsncmp(path, TEBAKO_MOUNT_POINT_WS, TEBAKO_MOUNT_POINT_LENGTH) == 0	  )? -1 : 0;
+extern "C" int is_tebako_path_w(const WCHAR* path)
+{
+  return (wcsncmp(path, TEBAKO_MOUNT_POINT_W, TEBAKO_MOUNT_POINT_LENGTH) == 0 ||
+          wcsncmp(path, TEBAKO_MOUNT_POINT_WS, TEBAKO_MOUNT_POINT_LENGTH) == 0)
+             ? -1
+             : 0;
 }
 #else
-bool is_tebako_path(const char* path) {
-	return (strncmp(path, TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0);
+bool is_tebako_path(const char* path)
+{
+  return (strncmp(path, TEBAKO_MOUNT_POINT, TEBAKO_MOUNT_POINT_LENGTH) == 0);
 }
 #endif
 
 //	Checks if the current cwd path is withing tebako memfs
-bool is_tebako_cwd(void) {
-    auto locked = tebako_cwd.rlock();
-    return (*locked) ? (*locked)->is_in() : false;
+bool is_tebako_cwd(void)
+{
+  auto locked = tebako_cwd.rlock();
+  return (*locked) ? (*locked)->is_in() : false;
 }
 
 //  Expands a path withing tebako memfs
-const char* tebako_expand_path(tebako_path_t expanded_path, const char* path) {
-	const char* p = NULL;
-	try {
-	    auto locked = tebako_cwd.rlock();
-		if (*locked) {
-	        p = (*locked)->expand_path(expanded_path, path);
-		}
-	}
-	catch (...) {
-	}
-	return p;
+const char* tebako_expand_path(tebako_path_t expanded_path, const char* path)
+{
+  const char* p = NULL;
+  try {
+    auto locked = tebako_cwd.rlock();
+    if (*locked) {
+      p = (*locked)->expand_path(expanded_path, path);
+    }
+  }
+  catch (...) {
+  }
+  return p;
 }
 
 //  Returns tebako path is cwd if within tebako memfs
 //  NULL otherwise
-const char* to_tebako_path(tebako_path_t t_path, const char* path) {
-
-	const char* p_path = NULL;
-	try {
-	    fs::path p = path;
-	    p = p.lexically_normal();
-	    auto locked = tebako_cwd.rlock();
-	    if ((*locked) && (*locked)->is_in() && p.is_relative()) {
-		    p_path = (*locked)->expand_path(t_path, p.generic_string().c_str());
-	    }
-		else if (is_tebako_path(path)) {
-			p_path = tebako_path_assign(t_path, p);
-		}
-	}
-	catch (...) {
-	}
-	return p_path;
+const char* to_tebako_path(tebako_path_t t_path, const char* path)
+{
+  const char* p_path = NULL;
+  try {
+    fs::path p = path;
+    p = p.lexically_normal();
+    auto locked = tebako_cwd.rlock();
+    if ((*locked) && (*locked)->is_in() && p.is_relative()) {
+      p_path = (*locked)->expand_path(t_path, p.generic_string().c_str());
+    }
+    else if (is_tebako_path(path)) {
+      p_path = tebako_path_assign(t_path, p);
+    }
+  }
+  catch (...) {
+  }
+  return p_path;
 }

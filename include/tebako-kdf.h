@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2022, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022-2023, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -16,14 +16,14 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
@@ -32,24 +32,30 @@
 typedef std::set<uintptr_t> tebako_kfdtable;
 
 class sync_tebako_kfdtable : public folly::Synchronized<tebako_kfdtable*> {
-public:
-	sync_tebako_kfdtable(void) : folly::Synchronized<tebako_kfdtable*>(new tebako_kfdtable) { }
+ public:
+  sync_tebako_kfdtable(void)
+      : folly::Synchronized<tebako_kfdtable*>(new tebako_kfdtable)
+  {
+  }
 
-	bool check(uintptr_t dirp) {
-		auto p_kfdtable = *rlock();
-		auto p_kfd = p_kfdtable->find(dirp);
-		return (p_kfd != p_kfdtable->end());
-	};
+  bool check(uintptr_t dirp)
+  {
+    auto p_kfdtable = *rlock();
+    auto p_kfd = p_kfdtable->find(dirp);
+    return (p_kfd != p_kfdtable->end());
+  };
 
-	void erase(uintptr_t dirp) {
-		auto p_kfdtable = *wlock();
-		p_kfdtable->erase(dirp);
-	}
+  void erase(uintptr_t dirp)
+  {
+    auto p_kfdtable = *wlock();
+    p_kfdtable->erase(dirp);
+  }
 
-	void insert(uintptr_t dirp) {
-		auto p_kfdtable = *wlock();
-		p_kfdtable->insert(dirp);
-	}
+  void insert(uintptr_t dirp)
+  {
+    auto p_kfdtable = *wlock();
+    p_kfdtable->insert(dirp);
+  }
 
-	static sync_tebako_kfdtable kfdtable;
+  static sync_tebako_kfdtable kfdtable;
 };
