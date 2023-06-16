@@ -55,7 +55,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 24
+  CACHE_VER: 26
   CFLAGS: -mmacos-version-min=11.00 --target=x86_64-apple-macos11.00
   CPPFLAGS: -mmacos-version-min=11.00 --target=x86_64-apple-macos11.00
   LDFLAGS:  --target=x86_64-apple-macos11.00
