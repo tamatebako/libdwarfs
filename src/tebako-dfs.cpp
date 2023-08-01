@@ -271,6 +271,19 @@ int safe_dwarfs_call(Functor&& fn,
   return ret;
 }
 
+// We are testing against owner permissions
+static int dwarfs_access_inner(int amode, struct stat* st)
+{
+  int ret = DWARFS_IO_CONTINUE;
+  if ((!(st->st_mode & S_IRUSR) && (amode & R_OK)) ||
+      (!(st->st_mode & S_IWUSR) && (amode & W_OK)) ||
+      (!(st->st_mode & S_IXUSR) && (amode & X_OK))) {
+    ret = DWARFS_IO_ERROR;
+    TEBAKO_SET_LAST_ERROR(EACCES);
+  }
+  return ret;
+}
+
 int dwarfs_access(const char* path,
                   int amode,
                   uid_t uid,
@@ -280,7 +293,7 @@ int dwarfs_access(const char* path,
   struct stat st;
   int ret = dwarfs_stat(path, &st, lnk);
   if (ret == DWARFS_IO_CONTINUE) {
-    ret = dwarfs_inode_access(st.st_ino, amode, uid, gid);
+    ret = dwarfs_access_inner(amode, &st);
   }
   return ret;
 }
@@ -434,8 +447,19 @@ int dwarfs_inode_access(uint32_t inode,
       std::function<int(filesystem_v2*, uint32_t, int, uid_t, gid_t)>{
           [](filesystem_v2* fs, uint32_t inode, int amode, uid_t uid,
              gid_t gid) -> int {
+            int ret = DWARFS_IO_ERROR;
             auto pi = fs->find(inode);
-            return pi ? fs->access(*pi, amode, uid, gid) : ENOENT;
+            if (pi) {
+              struct stat st;
+              ret = fs->getattr(*pi, &st);
+              if (ret == DWARFS_IO_CONTINUE) {
+                ret = dwarfs_access_inner(amode, &st);
+              }
+            }
+            else {
+              TEBAKO_SET_LAST_ERROR(ENOENT);
+            }
+            return ret;
           }},
       __func__, inode, amode, uid, gid);
 }

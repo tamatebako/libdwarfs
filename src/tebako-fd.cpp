@@ -191,7 +191,8 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
               // on a read - only file system and either O_WRONLY, O_RDWR,
               // O_CREAT(if the file does not exist), or O_TRUNC is set in the
               // oflag argument.
-              TEBAKO_SET_LAST_ERROR((flags & O_CREAT) ? EROFS : ENOENT);
+              if (flags & O_CREAT)
+                TEBAKO_SET_LAST_ERROR(EROFS);
             }
           }
           catch (bad_alloc&) {
@@ -365,9 +366,6 @@ int sync_tebako_fdtable::fstatat(int vfd,
       ret = dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid());
       if (ret == DWARFS_IO_CONTINUE) {
         ret = dwarfs_inode_relative_stat(stfd.st_ino, path, st, follow);
-      }
-      else {
-        TEBAKO_SET_LAST_ERROR(ENOENT);
       }
     }
   }

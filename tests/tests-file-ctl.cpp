@@ -55,11 +55,21 @@ TEST_F(FileCtlTests, tebako_access_absolute_path)
 {
   int ret = tebako_access(TEBAKIZE_PATH("file.txt"), F_OK);
   EXPECT_EQ(0, ret);
+  ret = tebako_access(TEBAKIZE_PATH("file.txt"), R_OK);
+  EXPECT_EQ(0, ret);
+  ret = tebako_access(TEBAKIZE_PATH("file.txt"), W_OK);
+  EXPECT_EQ(0, ret);
+  ret = tebako_access(TEBAKIZE_PATH("file.txt"), X_OK);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(EACCES, errno);
 }
 
 TEST_F(FileCtlTests, tebako_access_absolute_path_no_file)
 {
-  int ret = tebako_access(TEBAKIZE_PATH("no-directory/file.txt"), W_OK);
+  int ret = tebako_access(TEBAKIZE_PATH("no-directory/file.txt"), X_OK);
+  EXPECT_EQ(ENOENT, errno);
+  EXPECT_EQ(-1, ret);
+  ret = tebako_access(TEBAKIZE_PATH("no-file.txt"), F_OK);
   EXPECT_EQ(ENOENT, errno);
   EXPECT_EQ(-1, ret);
 }
@@ -75,8 +85,16 @@ TEST_F(FileCtlTests, tebako_access_relative_path)
 {
   int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
   EXPECT_EQ(0, ret);
+  ret = tebako_access("file-in-directory-2.txt", F_OK);
+  EXPECT_EQ(0, ret);
   ret = tebako_access("file-in-directory-2.txt", R_OK);
   EXPECT_EQ(0, ret);
+  ret = tebako_access("file-in-directory-2.txt", W_OK);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(EACCES, errno);
+  ret = tebako_access("file-in-directory-2.txt", X_OK);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(EACCES, errno);
 }
 
 TEST_F(FileCtlTests, tebako_access_relative_path_no_file)
