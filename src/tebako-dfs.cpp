@@ -79,7 +79,6 @@ using namespace dwarfs;
 // dwarFS user data including fs pointer
 // RW lock implemented using folly tooling
 // github.com/facebook/folly/blob/master/folly/docs/Synchronized
-
 static folly::Synchronized<dwarfs_userdata*> usd{NULL};
 
 // Drop previously loaded dwarFS image
@@ -207,10 +206,12 @@ int safe_dwarfs_call(Functor&& fn,
       auto inode = p->fs.find(adj);
       if (p->opts.debuglevel >= logger::DEBUG) {
         LOG_PROXY(debug_logger_policy, p->lgr);
-        if (inode)
+        if (inode) {
           LOG_DEBUG << "inode: " << inode->inode_num();
-        else
+        }
+        else {
           LOG_DEBUG << "inode: not found";
+        }
       }
       if (inode) {
         err = fn(&p->fs, *inode, std::forward<Args>(args)...);
