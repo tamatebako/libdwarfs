@@ -45,7 +45,7 @@ int sync_tebako_fdtable::open(const char* path,
 {
   int ret = DWARFS_IO_ERROR;
   if (flags & (O_RDWR | O_WRONLY | O_TRUNC)) {
-    //	[EROFS] The named file resides on a read - only file system and either
+    // [EROFS] The named file resides on a read - only file system and either
     // O_WRONLY, O_RDWR, O_CREAT(if the file does not exist), or O_TRUNC is set
     // in the oflag argument.
     TEBAKO_SET_LAST_ERROR(EROFS);
@@ -61,10 +61,9 @@ int sync_tebako_fdtable::open(const char* path,
             TEBAKO_SET_LAST_ERROR(ENOTDIR);
           }
           else if (S_ISLNK(fd->st.st_mode) && (flags & O_NOFOLLOW)) {
-            //    [O_NOFOLLOW] If the trailing component (i.e., basename) of
-            //    pathname is
-            //                 a symbolic link, then the open fails, with the
-            //                 error ELOOP.
+            // [O_NOFOLLOW] If the trailing component (i.e., basename) of
+            // pathname is a symbolic link, then the open fails, with the
+            // error ELOOP.
             TEBAKO_SET_LAST_ERROR(ELOOP);
           }
           else {
