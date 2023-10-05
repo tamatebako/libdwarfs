@@ -30,10 +30,12 @@
 #pragma once
 
 #include "dwarfs/error.h"
+#include "dwarfs/file_stat.h"
 #include "dwarfs/filesystem_v2.h"
 #include "dwarfs/fstypes.h"
 #include "dwarfs/metadata_v2.h"
 #include "dwarfs/mmap.h"
+#include "dwarfs/performance_monitor.h"
 #include "dwarfs/options.h"
 #include "dwarfs/util.h"
 
@@ -41,7 +43,7 @@ void tebako_init_cwd(dwarfs::logger& lgr, bool need_debug_policy);
 void tebako_drop_cwd(void);
 
 namespace dwarfs {
-struct options {
+/*struct options {
   int enable_nlink{0};
   int readonly{0};
   int cache_image{0};
@@ -52,6 +54,37 @@ struct options {
   double decompress_ratio{0.0};
   logger::level_type debuglevel{logger::level_type::ERROR};
   off_t image_offset{0};
+};
+*/
+
+struct options {
+  std::filesystem::path progname;
+  std::filesystem::path fsimage;
+  int seen_mountpoint{0};
+  char const* cachesize_str{nullptr};
+  char const* debuglevel_str{nullptr};
+  char const* workers_str{nullptr};
+  char const* mlock_str{nullptr};
+  char const* decompress_ratio_str{nullptr};
+  char const* image_offset_str{nullptr};
+  char const* cache_tidy_strategy_str{nullptr};
+  char const* cache_tidy_interval_str{nullptr};
+  char const* cache_tidy_max_age_str{nullptr};
+#if DWARFS_PERFMON_ENABLED
+  char const* perfmon_enabled_str{nullptr};
+#endif
+  int enable_nlink{0};
+  int readonly{0};
+  int cache_image{0};
+  int cache_files{0};
+  size_t cachesize{0};
+  size_t workers{0};
+  mlock_mode lock_mode{mlock_mode::NONE};
+  double decompress_ratio{0.0};
+  logger::level_type debuglevel{logger::level_type::ERROR};
+  cache_tidy_strategy block_cache_tidy_strategy{cache_tidy_strategy::NONE};
+  std::chrono::milliseconds block_cache_tidy_interval{std::chrono::minutes(5)};
+  std::chrono::milliseconds block_cache_tidy_max_age{std::chrono::minutes{10}};
 };
 
 struct dwarfs_userdata {
@@ -66,5 +99,20 @@ struct dwarfs_userdata {
   dwarfs::options opts;
   stream_logger lgr;
   filesystem_v2 fs;
+
+  std::shared_ptr<performance_monitor> perfmon;
+  PERFMON_EXT_PROXY_DECL
+  PERFMON_EXT_TIMER_DECL(op_init)
+  PERFMON_EXT_TIMER_DECL(op_lookup)
+  PERFMON_EXT_TIMER_DECL(op_getattr)
+  PERFMON_EXT_TIMER_DECL(op_access)
+  PERFMON_EXT_TIMER_DECL(op_readlink)
+  PERFMON_EXT_TIMER_DECL(op_open)
+  PERFMON_EXT_TIMER_DECL(op_read)
+  PERFMON_EXT_TIMER_DECL(op_readdir)
+  PERFMON_EXT_TIMER_DECL(op_statfs)
+  PERFMON_EXT_TIMER_DECL(op_getxattr)
+  PERFMON_EXT_TIMER_DECL(op_listxattr)
+
 };
 }  // namespace dwarfs

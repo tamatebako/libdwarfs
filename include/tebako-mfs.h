@@ -44,9 +44,11 @@ class mfs : public dwarfs::mmif {
   void const* addr() const override;
   size_t size() const override;
 
-  boost::system::error_code lock(off_t offset, size_t size) override;
-  boost::system::error_code release(off_t offset, size_t size) override;
-  boost::system::error_code release_until(off_t offset) override;
+  std::error_code lock(off_t offset, size_t size) override;
+  std::error_code release(off_t offset, size_t size) override;
+  std::error_code release_until(off_t offset) override;
+
+  std::filesystem::path const& path() const override;
 
  private:
   size_t size_;

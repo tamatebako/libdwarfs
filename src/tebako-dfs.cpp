@@ -43,16 +43,10 @@ namespace stdfs = std::filesystem;
 namespace dwarfs {
 
 template <typename LoggerPolicy>
-static void load_filesystem(dwarfs_userdata* userdata)
-{
-  std::set_terminate([]() {
-    std::cout << "Unhandled exception" << std::endl;
-    std::abort();
-  });
-
-  LOG_PROXY(LoggerPolicy, userdata->lgr);
+void load_filesystem(dwarfs_userdata& userdata) {
+  LOG_PROXY(LoggerPolicy, userdata.lgr);
   auto ti = LOG_TIMED_INFO;
-  auto& opts = userdata->opts;
+  auto& opts = userdata.opts;
 
   filesystem_options fsopts;
   fsopts.lock_mode = opts.lock_mode;
@@ -60,18 +54,64 @@ static void load_filesystem(dwarfs_userdata* userdata)
   fsopts.block_cache.num_workers = opts.workers;
   fsopts.block_cache.decompress_ratio = opts.decompress_ratio;
   fsopts.block_cache.mm_release = !opts.cache_image;
-  fsopts.block_cache.init_workers = false;
+  fsopts.block_cache.init_workers = true;
   fsopts.metadata.enable_nlink = bool(opts.enable_nlink);
   fsopts.metadata.readonly = bool(opts.readonly);
-  fsopts.image_offset = opts.image_offset;
 
-  userdata->fs = filesystem_v2(
-      userdata->lgr,
-      std::make_shared<tebako::mfs>(userdata->data, userdata->size), fsopts);
-  userdata->fs.set_num_workers(userdata->opts.workers);
+  if (opts.image_offset_str) {
+    std::string image_offset{opts.image_offset_str};
+
+    try {
+      fsopts.image_offset = image_offset == "auto"
+                                ? filesystem_options::IMAGE_OFFSET_AUTO
+                                : folly::to<file_off_t>(image_offset);
+    } catch (...) {
+      DWARFS_THROW(runtime_error, "failed to parse offset: " + image_offset);
+    }
+  }
+
+  constexpr int inode_offset =
+#ifdef FUSE_ROOT_ID
+      FUSE_ROOT_ID
+#else
+      0
+#endif
+      ;
+
+  std::unordered_set<std::string> perfmon_enabled;
+#if DWARFS_PERFMON_ENABLED
+  if (opts.perfmon_enabled_str) {
+    folly::splitTo<std::string>(
+        ',', opts.perfmon_enabled_str,
+        std::inserter(perfmon_enabled, perfmon_enabled.begin()));
+  }
+#endif
+
+  userdata.perfmon = nullptr;
+/*  performance_monitor::create(perfmon_enabled);
+
+  PERFMON_EXT_PROXY_SETUP(userdata, userdata.perfmon, "fuse")
+  PERFMON_EXT_TIMER_SETUP(userdata, op_init)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_lookup)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_getattr)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_access)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_readlink)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_open)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_read)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_readdir)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_statfs)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_getxattr)
+  PERFMON_EXT_TIMER_SETUP(userdata, op_listxattr)
+*/
+  userdata.fs =
+      filesystem_v2(userdata.lgr, std::make_shared<tebako::mfs>(userdata.data, userdata.size) /*std::make_shared<mmap>(opts.fsimage) */, fsopts,
+                    inode_offset, userdata.perfmon);
 
   ti << "file system initialized";
 }
+
+
+
 }  // namespace dwarfs
 
 using namespace dwarfs;
@@ -139,31 +179,16 @@ extern "C" int load_fs(const void* data,
       return 1;
     }
 
-    if (image_offset) {
-      std::string img_offset{image_offset};
-      if (img_offset == "auto") {
-        p->opts.image_offset = filesystem_options::IMAGE_OFFSET_AUTO;
-      }
-      else {
-        auto o1 = folly::tryTo<off_t>(img_offset);
-        if (o1.hasValue()) {
-          p->opts.image_offset = o1.value();
-        }
-        else {
-          std::cerr << "error: failed to parse offset: " + img_offset
-                    << std::endl;
-          return 1;
-        }
-      }
-    }
+    p->opts.image_offset_str = image_offset;
 
     LOG_PROXY(debug_logger_policy, p->lgr);
     LOG_INFO << PRJ_NAME << " version " << PRJ_VERSION_STRING;
 
     tebako_init_cwd(p->lgr, p->opts.debuglevel >= logger::DEBUG);
+
     (p->opts.debuglevel >= logger::DEBUG)
-        ? load_filesystem<debug_logger_policy>(p)
-        : load_filesystem<prod_logger_policy>(p);
+        ? load_filesystem<debug_logger_policy>(*p)
+        : load_filesystem<prod_logger_policy>(*p);
   }
 
   catch (stdfs::filesystem_error const& e) {
@@ -305,7 +330,10 @@ int dwarfs_lstat(const char* path, struct stat* buf) noexcept
   return safe_dwarfs_call(
       std::function<int(filesystem_v2*, inode_view&, struct stat*)>{
           [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int {
-            return fs->getattr(inode, buf);
+            dwarfs::file_stat dwarfs_file_stat;
+            int ret = fs->getattr(inode, &dwarfs_file_stat);
+            copy_file_stat(buf, dwarfs_file_stat);
+            return ret;
           }},
       __func__, path, buf);
 }
@@ -316,7 +344,10 @@ int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept
   int ret = safe_dwarfs_call(
       std::function<int(filesystem_v2*, inode_view&, struct stat*)>{
           [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int {
-            return fs->getattr(inode, buf);
+            dwarfs::file_stat dwarfs_file_stat;
+            int ret = fs->getattr(inode, &dwarfs_file_stat);
+            copy_file_stat(buf, dwarfs_file_stat);
+            return ret;
           }},
       __func__, path, buf);
   try {
@@ -390,7 +421,14 @@ static int internal_getattr_relative(uint32_t inode,
         break;
       pi = p->fs.find(pi->inode_num(), p_it->string().c_str());
     }
-    ret = pi ? p->fs.getattr(*pi, buf) : ENOENT;
+    if (pi) {
+      dwarfs::file_stat dwarfs_file_stat;
+      ret = p->fs.getattr(*pi, &dwarfs_file_stat);
+      copy_file_stat(buf, dwarfs_file_stat);
+    }
+    else {
+      ret = ENOENT;
+    }
   }
   return ret;
 }
@@ -405,7 +443,13 @@ int dwarfs_inode_relative_stat(uint32_t inode,
           [](filesystem_v2* fs, uint32_t inode, const char* path,
              struct stat* buf) -> int {
             auto pi = fs->find(inode, path);
-            return pi ? fs->getattr(*pi, buf) : ENOENT;
+            int ret = ENOENT;
+            if (pi) {
+              dwarfs::file_stat dwarfs_file_stat;
+              ret = fs->getattr(*pi, &dwarfs_file_stat);
+              copy_file_stat(buf, dwarfs_file_stat);
+            }
+            return ret;
           }},
       __func__, inode, path, buf);
   try {
@@ -452,7 +496,9 @@ int dwarfs_inode_access(uint32_t inode,
             auto pi = fs->find(inode);
             if (pi) {
               struct stat st;
-              ret = fs->getattr(*pi, &st);
+              dwarfs::file_stat dwarfs_file_stat;
+              ret = fs->getattr(*pi, &dwarfs_file_stat);
+              copy_file_stat(&st, dwarfs_file_stat);
               if (ret == DWARFS_IO_CONTINUE) {
                 ret = dwarfs_access_inner(amode, &st);
               }
@@ -505,7 +551,11 @@ static int internal_readdir(filesystem_v2* fs,
         else {
           auto [entry, name_view] = *res;
           std::string name(std::move(name_view));
-          fs->getattr(entry, &st);
+
+          dwarfs::file_stat dwarfs_file_stat;
+          fs->getattr(entry, &dwarfs_file_stat);
+          copy_file_stat(&st, dwarfs_file_stat);
+
 #ifndef _WIN32
           cache[cache_size].e.d_ino = st.st_ino;
 #if __MACH__

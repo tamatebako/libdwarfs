@@ -52,17 +52,17 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ALPINE_VER: 3.16
-  CACHE_VER: 24
+  ALPINE_VER: 3.17
+  CACHE_VER: 1
 
 jobs:
   build:
-    name: alpine-3.16 [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    name: alpine-3.17 [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
 # 3.17 requires xz-static apk that installs a lz4 library that asks for 'lto plugin' with clang
 # (???)
     runs-on: ubuntu-latest
     container:
-      image: alpine:3.16
+      image: alpine:3.17
     strategy:
       fail-fast: false
       matrix:
@@ -113,16 +113,6 @@ jobs:
         with:
           path: ${{env.DEPS}}
           key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
-
-      - name: Patch system includes and build libjemalloc
-        run: |
-          tools/ci-scripts/patch-system-includes.sh
-          wget -q https://github.com/jemalloc/jemalloc/releases/download/${{ env.JEMALLOC_VER }}/jemalloc-${{ env.JEMALLOC_VER }}.tar.bz2
-          tar -xf jemalloc-${{ env.JEMALLOC_VER }}.tar.bz2
-          cd jemalloc-${{ env.JEMALLOC_VER }}
-          ./configure
-          make -j4
-          make install
 
       - name: Configure
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
