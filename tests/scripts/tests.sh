@@ -155,6 +155,15 @@ test_C_bindings_and_temp_dir() {
 }
 
 # ......................................................................
+# Check that filea were installed
+test_files_installed() {
+   for fl in "$@"
+   do
+      assertTrue "$fl was not installed" "[ -f $fl ]"
+   done
+}
+
+# ......................................................................
 # Check that libdwarfs_wr, dwarfs utilities and all dependencies are installed as expected
 test_install_script() {
    echo "==> Install script test"
@@ -168,12 +177,11 @@ test_install_script() {
    DIR_INS_L="$DIR_INSTALL"/lib
    DIR_INS_I="$DIR_INSTALL"/include/tebako
 
+   local NM_MKDWARFS="$DIR_INS_B/mkdwarfs"
+   local NM_LIBARCHIVE="$DIR_INS_L/libarchive.a"
    if [[ "$OSTYPE" == "msys" ]]; then
       NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
       NM_LIBARCHIVE="$DIR_INS_L/libarchive_static.a"
-   else
-      NM_MKDWARFS="$DIR_INS_B/mkdwarfs"
-      NM_LIBARCHIVE="$DIR_INS_L/libarchive.a"
    fi
 
    cmake --install  "$DIR_SRC" --prefix "$DIR_INSTALL"
@@ -188,20 +196,22 @@ test_install_script() {
 #   assertTrue ""$DIR_INS_B"/dwarfsck was not installed" "[ -f "$DIR_INS_B"/dwarfsck ]"
 #   assertTrue ""$DIR_INS_B"/dwarfsextract was not installed" "[ -f "$DIR_INS_B"/dwarfsextract ]"
 
-   assertTrue "$NM_MKDWARFS was not installed" "[ -f $NM_MKDWARFS ]"
-   assertTrue "$DIR_INS_L/libdwarfs-wr.a was not installed" "[ -f $DIR_INS_L/libdwarfs-wr.a ]"
-   assertTrue "$DIR_INS_L/libdwarfs.a was not installed" "[ -f $DIR_INS_L/libdwarfs.a ]"
-   assertTrue "$DIR_INS_L/libfsst.a was not installed" "[ -f $DIR_INS_L/libfsst.a ]"
-   assertTrue "$DIR_INS_L/libfolly.a was not installed" "[ -f $DIR_INS_L/libfolly.a ]"
-   assertTrue "$DIR_INS_L/libmetadata_thrift.a was not installed" "[ -f $DIR_INS_L/libmetadata_thrift.a ]"
-   assertTrue "$DIR_INS_L/libthrift_light.a was not installed" "[ -f $DIR_INS_L/libthrift_light.a ]"
-   assertTrue "$DIR_INS_L/libxxhash.a was not installed" "[ -f $DIR_INS_L/libxxhash.a ]"
-   assertTrue "$DIR_INS_L/libzstd.a was not installed" "[ -f $DIR_INS_L/libzstd.a ]"
-   assertTrue "$NM_LIBARCHIVE was not installed" "[ -f $NM_LIBARCHIVE ]"
-   assertTrue "$DIR_INS_I/tebako-config.h was not installed" "[ -f $DIR_INS_I/tebako-config.h ]"
-   assertTrue "$DIR_INS_I/tebako-defines.h was not installed" "[ -f $DIR_INS_I/tebako-defines.h ]"
-   assertTrue "$DIR_INS_I/tebako-io.h was not installed" "[ -f $DIR_INS_I/tebako-io.h ]"
-   assertTrue "$DIR_INS_I/tebako-io-rb-w32.h was not installed" "[ -f $DIR_INS_I/tebako-io-rb-w32.h ]"
+   test_files_installed "$NM_MKDWARFS"                       \
+                        "$DIR_INS_L/libdwarfs-wr.a"          \
+                        "$DIR_INS_L/libdwarfs.a"             \
+                        "$DIR_INS_L/libdwarfs_compression.a" \
+                        "$DIR_INS_L/libfsst.a"               \
+                        "$DIR_INS_L/libfolly.a"              \
+                        "$DIR_INS_L/libmetadata_thrift.a"    \
+                        "$DIR_INS_L/libthrift_light.a"       \
+                        "$DIR_INS_L/libxxhash.a"             \
+                        "$DIR_INS_L/libzstd.a"               \
+                        "$DIR_INS_L/libfmt.a"                \
+                        "$NM_LIBARCHIVE"                     \
+                        "$DIR_INS_I/tebako-config.h"         \
+                        "$DIR_INS_I/tebako-defines.h"        \
+                        "$DIR_INS_I/tebako-io.h"             \
+                        "$DIR_INS_I/tebako-io-rb-w32.h"
 }
 
 # ......................................................................

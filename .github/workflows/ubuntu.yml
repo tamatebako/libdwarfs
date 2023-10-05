@@ -29,7 +29,7 @@ on:
   schedule:
     - cron: "0 6 * * 0"
   push:
-    branches: [ main ]
+    branches: [ main, maxirmx-dwarfs-update ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -52,7 +52,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 24
+  CACHE_VER: 1
   CODECOV_TOKEN: 3fd391a5-99c6-434f-a07c-22fdf282ae5b
 
 jobs:
@@ -64,10 +64,10 @@ jobs:
       matrix:
         os: [ ubuntu-20.04 ]
         env:
-          - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'trace' }
-          - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'warn'  }
-          - { CC: clang,  CXX: clang++, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
-          - { CC: clang,  CXX: clang++, ASAN: 'ON',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+          - { CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'trace' }
+          - { CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'warn'  }
+          - { CC: clang-12,  CXX: clang++-12, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+          - { CC: clang-12,  CXX: clang++-12, ASAN: 'ON',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
@@ -76,7 +76,11 @@ jobs:
           submodules: true
 
       - name: Setup environment
-        run: cat common.env ubuntu.env >> $GITHUB_ENV
+        run: |
+          cat common.env ubuntu.env >> $GITHUB_ENV
+          echo "CORES=$(nproc --all)" >> $GITHUB_ENV
+          echo "MAKEFLAGS=j$(nproc --all)" >> $GITHUB_ENV
+
 
       - name: Create deps folder
         run: mkdir ${{github.workspace}}/${{env.DEPS}}
@@ -85,41 +89,28 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key:  ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
+          key:  ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
-# https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md
-# https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu1804-README.md
 # Already installed: bison flex pkg-config
-
-# gcc/g++ 9 is also there otherwise we would need:
-# sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-# sudo apt update
-# sudo apt install gcc-9 g++-9
-
-      - name: Switch to gcc-9
-        if: ${{ env.CC == 'gcc' }}
-        run: |
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100 --slave /usr/bin/g++ g++ /usr/bin/g++-9 --slave /usr/bin/gcov gcov /usr/bin/gcov-9
-          sudo update-alternatives --set gcc /usr/bin/gcc-9
 
       - name: Install packages
         run: |
-          sudo apt-get -y update
           sudo apt-get -y install \
-          binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev \
-          libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev \
-          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev \
-          libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
-          libboost-regex-dev libboost-system-dev libboost-thread-dev
+          binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev                \
+          libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev    \
+          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libutfcpp-dev      \
+          libboost-filesystem-dev libboost-program-options-dev libboost-system-dev    \
+          libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev         \
+          libboost-regex-dev libboost-thread-dev
 
       - name: Configure
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build --parallel "$CORES"
 
       - name: Run unit tests
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --parallel "$CORES"
 
       - name: Checkout shell test framework
         if: ${{ env.COVERAGE != 'ON' }}
@@ -130,7 +121,7 @@ jobs:
           fetch-depth: 1
 
       - name: Run additional tests
-        if: ${{ env.COVERAGE != 'ON' }}
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
         run:  ${{github.workspace}}/tests/scripts/tests.sh
 
       - name: Upload to codecov.io

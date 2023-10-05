@@ -39,9 +39,9 @@
 
 namespace tebako {
 
-boost::system::error_code mfs::lock(off_t offset, size_t size)
+std::error_code mfs::lock(off_t offset, size_t size)
 {
-  boost::system::error_code ec;
+  std::error_code ec;
   auto addr = reinterpret_cast<const uint8_t*>(addr_) + offset;
   if (::mlock(addr, size) != 0) {
     ec.assign(errno, boost::system::generic_category());
@@ -49,9 +49,9 @@ boost::system::error_code mfs::lock(off_t offset, size_t size)
   return ec;
 }
 
-boost::system::error_code mfs::release(off_t offset, size_t size)
+std::error_code mfs::release(off_t offset, size_t size)
 {
-  boost::system::error_code ec;
+  std::error_code ec;
   auto misalign = offset % page_size_;
 
   offset -= misalign;
@@ -65,9 +65,9 @@ boost::system::error_code mfs::release(off_t offset, size_t size)
   return ec;
 }
 
-boost::system::error_code mfs::release_until(off_t offset)
+std::error_code mfs::release_until(off_t offset)
 {
-  boost::system::error_code ec;
+  std::error_code ec;
 
   offset -= offset % page_size_;
 
@@ -91,4 +91,11 @@ mfs::mfs(const void* addr, size_t size)
     : size_(size), addr_(addr), page_size_(sysconf(_SC_PAGESIZE))
 {
 }
+
+std::filesystem::path const& mfs::path() const
+{
+  static std::filesystem::path p("/__tebako_memfs__");
+  return p;
+}
+
 }  // namespace tebako

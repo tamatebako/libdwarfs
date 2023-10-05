@@ -189,14 +189,22 @@ set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_LINK_STATIC       ON)
 set(USE_STATIC_DEPS_ON_UNIX ON)
 set(GFLAGS_SHARED          OFF)
-set(CMAKE_CXX_STANDARD      17)
+set(CMAKE_CXX_STANDARD      20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS   OFF)
+
+
+# This is due to a bug in folly's Portability.h
+# Adopted 'as is' from Dwarfs CMake scrotpt
+add_compile_definitions(FOLLY_CFG_NO_COROUTINES)
+add_compile_definitions(GLOG_NO_ABBREVIATED_SEVERITIES NOMINMAX NOGDI)
+set(CXX_STD "gnu++20" CACHE STRING "The C++ standard argument to pass to the compiler.")
+set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pass to the compiler.")
 
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.3.5")
+def_ext_prj_g(DWARFS "main")
 
 if(WITH_TESTS)
   def_ext_prj_g(INCBIN "348e36b")
@@ -235,17 +243,6 @@ if (NOT WITH_GFLAGS_BUILD)
   endif()
 endif()
 
-if(IS_MSYS)
-  message(STATUS "Building fmt library locally to ensure consistency of MSys linkage")
-  set(WITH_FMT_BUILD ON)
-else(IS_MSYS)
-  find_library(_LIBFMT "libfmt.a")
-  if(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
-    message(STATUS "fmt static library was not found, building locally")
-    set(WITH_FMT_BUILD ON)
-  endif(${_LIBFMT} STREQUAL "_LIBFMT-NOTFOUND")
-endif(IS_MSYS)
-
 find_library(_LIBDC "libdouble-conversion.a")
 if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
   message(STATUS "double-conversion static library was not found, building locally")
@@ -275,10 +272,6 @@ if(WITH_GFLAGS_BUILD)
   def_ext_prj_g(GFLAGS "v2.2.2")
   message(STATUS "gflags     -  @${GFLAGS_TAG}  at  ${GFLAGS_SOURCE_DIR}")
 endif(WITH_GFLAGS_BUILD)
-if(WITH_FMT_BUILD)
-  def_ext_prj_g(FMT "8.1.1")
-  message(STATUS "fmt        -  @${FMT_TAG}  at  ${FMT_SOURCE_DIR}")
-endif(WITH_FMT_BUILD)
 if(WITH_DC_BUILD)
   def_ext_prj_g(DC "v3.2.0")
   message(STATUS "double-conversion -  @${DC_TAG}  at  ${DC_SOURCE_DIR}")
@@ -346,12 +339,20 @@ endif(WITH_TESTS)
 # Otherwise add_dependencies would be enough for 'Unix makefiles' generator
 
 set(__LIBDWARFS "${DWARFS_BINARY_DIR}/libdwarfs.a")
+set(__LIBDWARFS_COMPRESSION "${DWARFS_BINARY_DIR}/libdwarfs_compression.a")
 set(__LIBFOLLY "${DWARFS_BINARY_DIR}/folly/libfolly.a")
 set(__LIBFSST "${DWARFS_BINARY_DIR}/libfsst.a")
 set(__LIBT_METADATA "${DWARFS_BINARY_DIR}/libmetadata_thrift.a")
 set(__LIBT_LIGHT "${DWARFS_BINARY_DIR}/libthrift_light.a")
 set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
 set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+  set(__LIBFMT "${DWARFS_BINARY_DIR}/_deps/fmt-build/libfmtd.a")
+else()
+  set(__LIBFMT "${DWARFS_BINARY_DIR}/_deps/fmt-build/libfmt.a")
+endif()
+
 if(IS_MSYS)
   set(__LIBARCHIVE "${DEPS}/lib/libarchive_static.a")
 else(IS_MSYS)
@@ -360,23 +361,25 @@ endif(IS_MSYS)
 
 ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
-  GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
+  GIT_REPOSITORY https://github.com/tamatebako/dwarfs-2.git
   GIT_TAG ${DWARFS_TAG}
   UPDATE_COMMAND ""
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
-             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
-             -DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}
-             -DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}
              -DWITH_TESTS=OFF
              -DTEBAKO_BUILD_SCOPE=${TEBAKO_BUILD_SCOPE}
              -DDEPS=${DEPS}
              -DCMAKE_PREFIX_PATH=${DEPS}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
              -DUSE_JEMALLOC=${USE_JEMALLOC}
+             -DFOLLY_NO_EXCEPTION_TRACER=ON
+             -DDISABLE_CCACHE=ON
+             -DWITH_MAN_PAGES=OFF
+             -DNIXPKGS_DWARFS_VERSION_OVERRIDE=tebako-${LIBDWARFS_WR_VERSION}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
-  BUILD_BYPRODUCTS ${__LIBDWARFS} ${__LIBFSST} ${__LIBFOLLY} ${__LIBT_METADATA}
-                   ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD} ${__LIBARCHIVE}
+  BUILD_BYPRODUCTS ${__LIBDWARFS}       ${__LIBDWARFS_COMPRESSION} ${__LIBFSST}   ${__LIBFOLLY}
+                   ${__LIBT_METADATA}   ${__LIBT_LIGHT}            ${__LIBXXHASH} ${__LIBZSTD}
+                   ${__LIBFMT}          ${__LIBARCHIVE}
 )
 
 # ...................................................................
@@ -428,27 +431,6 @@ if(WITH_GFLAGS_BUILD)
   add_dependencies(${GLOG_PRJ} ${GFLAGS_PRJ})
   add_dependencies(${DWARFS_PRJ} ${GFLAGS_PRJ})
 endif(WITH_GFLAGS_BUILD)
-
-# ...................................................................
-# fmt
-
-if(WITH_FMT_BUILD)
-  set(__LIBFMT "${DEPS}/lib/libfmt.a")
-  ExternalProject_Add(${FMT_PRJ}
-    PREFIX ${DEPS}
-    GIT_REPOSITORY "https://github.com/fmtlib/fmt.git"
-    GIT_TAG ${FMT_TAG}
-    UPDATE_COMMAND ""
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
-               -DCMAKE_BUILD_TYPE=Release
-               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
-               -DFMT_TEST=OFF
-    SOURCE_DIR ${FMT_SOURCE_DIR}
-    BINARY_DIR ${FMT_BINARY_DIR}
-    BUILD_BYPRODUCTS ${__LIBFMT}
-  )
-  add_dependencies(${DWARFS_PRJ} ${FMT_PRJ})
-endif(WITH_FMT_BUILD)
 
 # ...................................................................
 # double-conversion
@@ -620,6 +602,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${INCBIN_SOURCE_DIR}
                     ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift
                     ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include ${BREW_PREFIX}/include
+                    ${DWARFS_BINARY_DIR}/_deps/fmt-src/include
 )
 
 add_library(dwarfs-wr STATIC
@@ -732,14 +715,14 @@ if(WITH_TESTS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
         COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
-        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} --force -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     else(USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
-        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} --force -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -750,14 +733,14 @@ if(WITH_TESTS)
     if (USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
-        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} --force -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     else(USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
-        COMMAND ${MKDWARFS} -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} --force -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -780,6 +763,22 @@ if(WITH_TESTS)
     target_link_libraries(${APP_NM} ${NAME})
   endfunction()
 
+  function(ADD_DWARFS_OBJECT_LIBRARY NAME PRJ APP_NM)
+    add_library(${NAME} STATIC IMPORTED)
+    set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
+    add_dependencies(${NAME} ${PRJ})
+    target_link_libraries(${APP_NM} "$<LINK_LIBRARY:WHOLE_ARCHIVE,${NAME}>")
+#    target_link_libraries(${APP_NM} ${NAME})
+  endfunction()
+
+  function(ADD_DWARFS_LIBRARY_W NAME PRJ APP_NM)
+    add_library(${NAME} STATIC IMPORTED)
+    set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
+    add_dependencies(${NAME} ${PRJ})
+    target_link_libraries(${APP_NM} -Wl,--whole-archive ${NAME} -Wl,--no-whole-archive)
+  endfunction()
+
+
 # ...................................................................
 # System libraries
 # Each library name given to the NAMES option is first considered
@@ -789,7 +788,7 @@ if(WITH_TESTS)
 # used to locate static libraries on UNIX-like systems.
 #
 
-  find_package(Boost 1.65 REQUIRED COMPONENTS date_time filesystem program_options system)
+  find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options system)
 
   find_library(_LIBEVENT "libevent.a" REQUIRED)
   find_library(_LIBLZ4 "liblz4.a" REQUIRED)
@@ -877,22 +876,27 @@ endif(RB_W32)
 
 # ...................................................................
 # The libraries that are build by dwarfs project
-# libdwarfs libfolly libfsst libxxhash libmetadata_thrift libthrift_light
+# libdwarfs libdwarfs_compression libfmt libarchive libfolly libfsst libxxhash
+# libmetadata_thrift libthrift_light
   add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} wr-bin)
+  add_dwarfs_library_w(_LIBDWARFS_COMPRESSION ${DWARFS_PRJ} wr-bin)
+  add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBFSST ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBFOLLY ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBT_METADATA ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-bin)
+  add_dwarfs_library(_LIBFMT ${DWARFS_PRJ} wr-bin)
+
+#  target_link_libraries(${tgt} "$<LINK_LIBRARY:WHOLE_ARCHIVE,dwarfs_compression>")
 
 # ...................................................................
 #  libarchive
 
-  add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
-
-  target_link_libraries(wr-tests _LIBDWARFS _LIBFSST   _LIBFOLLY _LIBT_METADATA
-                                 _LIBT_LIGHT _LIBXXHASH _LIBZSTD  _LIBARCHIVE)
+  target_link_libraries(wr-tests _LIBDWARFS "$<LINK_LIBRARY:WHOLE_ARCHIVE,_LIBDWARFS_COMPRESSION>"
+                        _LIBARCHIVE _LIBFSST   _LIBFOLLY _LIBT_METADATA
+                        _LIBT_LIGHT _LIBXXHASH _LIBZSTD  _LIBFMT)
 
   if(WITH_GLOG_BUILD)
     add_dwarfs_library(_LIBGLOG ${GLOG_PRJ} wr-bin)
@@ -978,8 +982,11 @@ install(TARGETS
 install(FILES
         ${__LIBDWARFS}  ${__LIBFSST}   ${__LIBFOLLY} ${__LIBT_METADATA}
         ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD}  ${__LIBARCHIVE}
+        ${__LIBFMT}     ${__LIBDWARFS_COMPRESSION}
         DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+install(DIRECTORY ${DWARFS_BINARY_DIR}/_deps/fmt-src/include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if(WITH_GLOG_BUILD)
   install(FILES ${__LIBGLOG} DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -988,10 +995,6 @@ endif(WITH_GLOG_BUILD)
 if(WITH_GFLAGS_BUILD)
   install(FILES ${__LIBGFLAGS} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(WITH_GFLAGS_BUILD)
-
-if(WITH_FMT_BUILD)
-  install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif(WITH_FMT_BUILD)
 
 if(WITH_DC_BUILD)
   install(FILES ${__LIBDC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
