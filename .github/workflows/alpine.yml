@@ -29,7 +29,7 @@ on:
   schedule:
     - cron: "0 9 * * 0"
   push:
-    branches: [ main ]
+    branches: [ main, maxirmx-dwarfs-update ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -58,8 +58,6 @@ env:
 jobs:
   build:
     name: alpine-3.17 [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
-# 3.17 requires xz-static apk that installs a lz4 library that asks for 'lto plugin' with clang
-# (???)
     runs-on: ubuntu-latest
     container:
       image: alpine:3.17
@@ -67,31 +65,31 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  LOG_LEVEL: 'warn'   }
+          - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  LOG_LEVEL: 'trace'   }
           - { CC: clang,  CXX: clang++, ASAN: 'OFF',  LOG_LEVEL: 'warn'   }
-#          - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'trace'  }
-# 'compiler-rt' apk is required to support ASAN
+          - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'warn'   }
     env: ${{ matrix.env }}
     steps:
       - name: Install packages
-# glog, fmt and double-conversion
-# do not provide static versions so we build them locally
-# using apk in parallel would create a risk of version mismatch since
-# folly 'prefers' globally installed shared library
-# ideal solution would be to build from source static libraries for
-# already installed shared versions but it may be overcomplicated
+# glog and double-conversion do not provide static versions so we build them locally
+# fmt (10.x.x) is built by dwarfs script
+# lz4-static apk installs a lbrary that requires lto plugin (binutil-gold) so we build it locally as well
         run: |
           apk --no-cache --upgrade add build-base cmake git bash   \
             autoconf boost-static boost-dev flex-dev bison         \
-            binutils-dev libevent-dev acl-dev                      \
-            lz4-dev openssl-dev zlib-dev gflags-dev                \
-            libunwind-dev libdwarf-dev elfutils-dev                \
-            libevent-static openssl-libs-static lz4-static xz-dev  \
+            binutils-dev libevent-dev acl-dev xz-static            \
+            lz4-dev openssl-dev zlib-dev gflags-dev jemalloc-dev   \
+            libunwind-dev libdwarf-dev elfutils-dev fmt-dev        \
+            libevent-static openssl-libs-static xz-dev             \
             zlib-static libunwind-static acl-static tar
 
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
         run: apk --no-cache --upgrade add clang
+
+      - name: Install lz4-static
+        if: ${{ matrix.env.CC == 'gcc' }}
+        run: apk --no-cache --upgrade add lz4-static
 
       - name: Install ASAN libraries
         if: ${{ matrix.env.ASAN == 'ON' }}
@@ -103,7 +101,10 @@ jobs:
           submodules: true
 
       - name: Setup environment
-        run: cat common.env ubuntu.env >> $GITHUB_ENV
+        run: |
+          cat common.env ubuntu.env >> $GITHUB_ENV
+          echo "CORES=$(nproc --all)" >> $GITHUB_ENV
+          echo "MAKEFLAGS=j$(nproc --all)" >> $GITHUB_ENV
 
       - name: Create deps folder
         run: mkdir ${{env.DEPS}}
@@ -112,18 +113,19 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{env.DEPS}}
-          key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
+          key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
       - name: Configure
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build --parallel "$CORES"
 
       - name: Run unit tests
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --parallel "$CORES"
 
       - name: Checkout shell test framework
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
         uses: actions/checkout@v3
         with:
           repository: kward/shunit2
@@ -131,4 +133,5 @@ jobs:
           fetch-depth: 1
 
       - name: Run additional tests
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
         run:  tests/scripts/tests.sh

@@ -29,7 +29,7 @@ on:
   schedule:
     - cron: "0 6 * * 0"
   push:
-    branches: [ main, maxirmx-dwarfs-update ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -113,7 +113,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure --parallel "$CORES"
 
       - name: Checkout shell test framework
-        if: ${{ env.COVERAGE != 'ON' }}
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
         uses: actions/checkout@v3
         with:
           repository: kward/shunit2
