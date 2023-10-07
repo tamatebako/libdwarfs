@@ -139,10 +139,10 @@ endif(OSTYPE_RES EQUAL 0)
 # Reasonable defaults
 set(USE_JEMALLOC ON)
 set(WITH_JEMALLOC_BUILD OFF)
-set(WITH_FMT_BUILD OFF)
 set(WITH_GLOG_BUILD OFF)
 set(WITH_GFLAGS_BUILD OFF)
 set(WITH_DC_BUILD OFF)
+set(WITH_LZ4_BUILD OFF)
 set(WITH_RUBY_BUILD OFF)
 
 set(PREFER_SYSTEM_GTEST OFF)
@@ -153,6 +153,11 @@ set(IS_DARWIN OFF)
 
 if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
   set(IS_MUSL ON)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Alpine 3.17++ lz4 library uses lto and I did not find tool's configuration that works
+  # (binutils-gold triggers issues with libstdc++)
+    set(WITH_LZ4_BUILD ON)
+  endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif("${OSTYPE_TXT}" MATCHES "^msys*")
   include_directories(${CMAKE_SOURCE_DIR}/tools/include)
   add_compile_definitions(FOLLY_ASSUME_NO_JEMALLOC)
@@ -187,15 +192,21 @@ endif(WITH_TESTS)
 
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_LINK_STATIC       ON)
+
+# If Boost was built using the boost-cmake project or from Boost 1.70.0 on it provides
+# a package configuration file for use with find_package's config mode.
+# This configuration  file enforces -lz -lbz2 -llzma and it is an issue for us on Alpine/clang
+# See https://cmake.org/cmake/help/latest/module/FindBoost.html#boost-cmake for details
+set(Boost_NO_BOOST_CMAKE    ON)
+
 set(USE_STATIC_DEPS_ON_UNIX ON)
 set(GFLAGS_SHARED          OFF)
 set(CMAKE_CXX_STANDARD      20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS   OFF)
 
-
 # This is due to a bug in folly's Portability.h
-# Adopted 'as is' from Dwarfs CMake scrotpt
+# Adopted 'as is' from Dwarfs CMake script
 add_compile_definitions(FOLLY_CFG_NO_COROUTINES)
 add_compile_definitions(GLOG_NO_ABBREVIATED_SEVERITIES NOMINMAX NOGDI)
 set(CXX_STD "gnu++20" CACHE STRING "The C++ standard argument to pass to the compiler.")
@@ -212,8 +223,6 @@ if(WITH_TESTS)
     message(STATUS "Building Ruby to support unit tests")
     set(WITH_RUBY_BUILD ON)
     def_ext_prj_t(RUBY "2.7.7" "e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90")
-#    def_ext_prj_t(RUBY "2.7.6" "e7203b0cc09442ed2c08936d483f8ac140ec1c72e37bb5c401646b7866cb5d10")
-#    def_ext_prj_t(RUBY "2.7.5" "2755b900a21235b443bb16dadd9032f784d4a88f143d852bc5d154f22b8781f1")
 
     string(SUBSTRING ${RUBY_VER} 0 3 RUBY_VER_BASE)
 
@@ -221,8 +230,6 @@ if(WITH_TESTS)
       include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl.cmake)
     endif()
   endif(RB_W32)
-
-
 endif(WITH_TESTS)
 
 find_library(_LIBGLOG "libglog.a")
@@ -248,6 +255,10 @@ if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
   message(STATUS "double-conversion static library was not found, building locally")
   set(WITH_DC_BUILD ON)
 endif()
+
+if(NOT WITH_LZ4_BUILD)
+  find_library(_LIBLZ4 "liblz4.a" REQUIRED)
+endif(NOT WITH_LZ4_BUILD)
 
 if(WITH_JEMALLOC_BUILD)
   def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
@@ -276,6 +287,10 @@ if(WITH_DC_BUILD)
   def_ext_prj_g(DC "v3.2.0")
   message(STATUS "double-conversion -  @${DC_TAG}  at  ${DC_SOURCE_DIR}")
 endif(WITH_DC_BUILD)
+if(WITH_LZ4_BUILD)
+  def_ext_prj_g(LZ4 "v1.9.4")
+  message(STATUS "lz4        -  @${LZ4_TAG}  at  ${LZ4_SOURCE_DIR}")
+endif(WITH_LZ4_BUILD)
 if(WITH_JEMALLOC_BUILD)
   message(STATUS "jemalloc   -  v${JEMALLOC_VER}  at  ${JEMALLOC_SOURCE_DIR}")
 endif(WITH_JEMALLOC_BUILD)
@@ -334,7 +349,9 @@ endif(WITH_TESTS)
 
 # ...................................................................
 # The libraries that are build by DwarFS project
-# libdwarfs libfolly libfsst libxxhash libmetadata_thrift libthrift_light
+# libdwarfs libdwarfs_compression
+# libfolly libfsst libxxhash libmetadata_thrift libthrift_light
+# libfmt libarchive
 # These forward-declarations and BUILD_BYPRODICTS are required to support 'Ninja'
 # Otherwise add_dependencies would be enough for 'Unix makefiles' generator
 
@@ -451,6 +468,26 @@ if(WITH_DC_BUILD)
   )
   add_dependencies(${DWARFS_PRJ} ${DC_PRJ})
 endif(WITH_DC_BUILD)
+
+# ...................................................................
+# lz4
+
+if(WITH_LZ4_BUILD)
+  set(__LIBLZ4 "${DEPS}/lib/liblz4.a")
+  ExternalProject_Add(${LZ4_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/lz4/lz4.git"
+    GIT_TAG ${LZ4_TAG}
+    UPDATE_COMMAND ""
+    CONFIGURE_COMMAND ""
+    BUILD_IN_SOURCE true
+    BUILD_COMMAND cd "${LZ4_SOURCE_DIR}" && make "prefix=${DEPS}"
+    INSTALL_COMMAND cd "${LZ4_SOURCE_DIR}" && make "prefix=${DEPS}" install
+    SOURCE_DIR ${LZ4_SOURCE_DIR}
+    BUILD_BYPRODUCTS ${__LIBLZ4}
+  )
+  add_dependencies(${DWARFS_PRJ} ${LZ4_PRJ})
+endif(WITH_LZ4_BUILD)
 
 # ...................................................................
 # jemalloc
@@ -651,6 +688,9 @@ endif(WITH_FMT_BUILD)
 if(WITH_DC_BUILD)
   add_dependencies(dwarfs-wr ${DC_PRJ})
 endif(WITH_DC_BUILD)
+if(WITH_LZ4_BUILD)
+  add_dependencies(dwarfs-wr ${LZ4_PRJ})
+endif(WITH_LZ4_BUILD)
 if(WITH_JEMALLOC_BUILD)
   add_dependencies(dwarfs-wr ${JEMALLOC_PRJ})
 endif(WITH_JEMALLOC_BUILD)
@@ -763,19 +803,12 @@ if(WITH_TESTS)
     target_link_libraries(${APP_NM} ${NAME})
   endfunction()
 
-  function(ADD_DWARFS_OBJECT_LIBRARY NAME PRJ APP_NM)
-    add_library(${NAME} STATIC IMPORTED)
-    set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
-    add_dependencies(${NAME} ${PRJ})
-    target_link_libraries(${APP_NM} "$<LINK_LIBRARY:WHOLE_ARCHIVE,${NAME}>")
-#    target_link_libraries(${APP_NM} ${NAME})
-  endfunction()
-
   function(ADD_DWARFS_LIBRARY_W NAME PRJ APP_NM)
     add_library(${NAME} STATIC IMPORTED)
     set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
     add_dependencies(${NAME} ${PRJ})
-    target_link_libraries(${APP_NM} -Wl,--whole-archive ${NAME} -Wl,--no-whole-archive)
+#    target_link_libraries(${APP_NM} -Wl,--whole-archive ${NAME} -Wl,--no-whole-archive)
+    target_link_libraries(${APP_NM} "$<LINK_LIBRARY:WHOLE_ARCHIVE,_LIBDWARFS_COMPRESSION>")
   endfunction()
 
 
@@ -791,7 +824,6 @@ if(WITH_TESTS)
   find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options system)
 
   find_library(_LIBEVENT "libevent.a" REQUIRED)
-  find_library(_LIBLZ4 "liblz4.a" REQUIRED)
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
 
 # Starting with MacOS BigSur  '/usr/lib' is replaced with a cache of system libraries
@@ -876,7 +908,9 @@ endif(RB_W32)
 
 # ...................................................................
 # The libraries that are build by dwarfs project
-# libdwarfs libdwarfs_compression libfmt libarchive libfolly libfsst libxxhash
+# libdwarfs
+# libdwarfs_compression (whole archive needs to be linked)
+# libfmt libarchive libfolly libfsst libxxhash
 # libmetadata_thrift libthrift_light
   add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library_w(_LIBDWARFS_COMPRESSION ${DWARFS_PRJ} wr-bin)
@@ -888,8 +922,6 @@ endif(RB_W32)
   add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBFMT ${DWARFS_PRJ} wr-bin)
-
-#  target_link_libraries(${tgt} "$<LINK_LIBRARY:WHOLE_ARCHIVE,dwarfs_compression>")
 
 # ...................................................................
 #  libarchive
@@ -912,19 +944,19 @@ endif(RB_W32)
     list(APPEND _LIBRARIES ${_LIBGFLAGS})
   endif(WITH_GFLAGS_BUILD)
 
-  if(WITH_FMT_BUILD)
-    add_dwarfs_library(_LIBFMT ${FMT_PRJ} wr-bin)
-    target_link_libraries(wr-tests _LIBFMT)
-  else(WITH_FMT_BUILD)
-    list(APPEND _LIBRARIES ${_LIBFMT})
-  endif(WITH_FMT_BUILD)
-
   if(WITH_DC_BUILD)
     add_dwarfs_library(_LIBDC ${DC_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBDC)
   else(WITH_DC_BUILD)
     list(APPEND _LIBRARIES ${_LIBDC})
   endif(WITH_DC_BUILD)
+
+  if(WITH_LZ4_BUILD)
+    add_dwarfs_library(_LIBLZ4 ${LZ4_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBLZ4)
+  else(WITH_LZ4_BUILD)
+    list(APPEND _LIBRARIES ${_LIBLZ4})
+  endif(WITH_LZ4_BUILD)
 
   if(WITH_OPENSSL_BUILD)
     add_dwarfs_library(_LIBSSL ${OPENSSL_PRJ} wr-bin)
@@ -939,10 +971,10 @@ endif(RB_W32)
   list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
   if(IS_DARWIN)
-    list(APPEND _LIBRARIES ${_LIBLZ4} ${_LIBZ} ${_LIBLZMA})
+    list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA})
   else(IS_DARWIN)
-    list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL}      ${_LIBLZ4}
-                           ${_LIBZ}      ${_LIBUNWIND}   ${_LIBLZMA}
+    list(APPEND _LIBRARIES ${_LIBIBERTY}   ${_LIBACL}
+                           ${_LIBZ}        ${_LIBUNWIND}   ${_LIBLZMA}
     )
     if(NOT RB_W32)
       list(APPEND _LIBRARIES pthread)

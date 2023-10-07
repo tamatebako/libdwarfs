@@ -149,7 +149,7 @@ struct dirent* tebako_readdir(DIR* dirp)
     }
   }
   else {
-    entry = &e->e;
+    entry = e ? &e->e : nullptr;
   }
   return entry;
 }
@@ -213,7 +213,7 @@ static struct dirent* internal_readdir(DIR* dirp)
   tebako_dirent* entry = NULL;
   sync_tebako_dstable::dstable.readdir(reinterpret_cast<uintptr_t>(dirp),
                                        entry);
-  return &entry->e;
+  return entry ? &entry->e : nullptr;
 }
 
 int tebako_scandir(const char* dirname,
