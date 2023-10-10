@@ -825,6 +825,8 @@ if(WITH_TESTS)
 
   find_library(_LIBEVENT "libevent.a" REQUIRED)
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
+  find_library(_LIBBROTLIENC "libbrotlienc.a" REQUIRED)
+  find_library(_LIBBROTLIDEC "libbrotlidec.a" REQUIRED)
 
 # Starting with MacOS BigSur  '/usr/lib' is replaced with a cache of system libraries
 # So we cannot just look for libz.a, it is not there anymore
@@ -850,9 +852,10 @@ if(WITH_TESTS)
 
 #  if (IS_MSYS)
 #    add_link_options(-static-libstdc++ -static)
-#  elseif (NOT IS_DARWIN)
+#  else
+  if (NOT IS_DARWIN)
     add_link_options(-static-libstdc++)
-#  endif()
+  endif(NOT IS_DARWIN)
 
   if (IS_MUSL)
     add_compile_definitions(__musl__)
@@ -968,10 +971,10 @@ endif(RB_W32)
     list(APPEND _LIBRARIES ${_LIBCRYPTO})
   endif(WITH_OPENSSL_BUILD)
 
-  list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
+  list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT} ${_LIBBROTLIENC} ${_LIBBROTLIDEC})
 
   if(IS_DARWIN)
-    list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA})
+    list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA} c++ c++abi)
   else(IS_DARWIN)
     list(APPEND _LIBRARIES ${_LIBIBERTY}   ${_LIBACL}
                            ${_LIBZ}        ${_LIBUNWIND}   ${_LIBLZMA}
