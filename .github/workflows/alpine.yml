@@ -81,7 +81,8 @@ jobs:
             lz4-dev openssl-dev zlib-dev gflags-dev jemalloc-dev   \
             libunwind-dev libdwarf-dev elfutils-dev fmt-dev        \
             libevent-static openssl-libs-static xz-dev             \
-            zlib-static libunwind-static acl-static tar
+            zlib-static libunwind-static acl-static tar brotli-dev \
+            brotli-static
 
       - name: Install clang
         if: ${{ matrix.env.CC == 'clang' }}
