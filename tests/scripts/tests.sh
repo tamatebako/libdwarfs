@@ -87,7 +87,7 @@ test_linkage() {
          assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
       elif [[ "$OSTYPE" == "darwin"* ]]; then
-         expected=("libc++.1.dylib" "libSystem.B.dylib" "wr-bin")
+         expected=("libc++.1.dylib" "libc++abi.dylib" "libSystem.B.dylib" "wr-bin")
          readarray -t actual < <(otool -L "$DIR_SRC/wr-bin")
          assertEquals "readarray -t actual < <(otool -L $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs "${expected[@]}"

@@ -256,6 +256,17 @@ if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
   set(WITH_DC_BUILD ON)
 endif()
 
+find_library(_LIBBROTLICOMMON "libbrotlicommon.a")
+find_library(_LIBBROTLIENC "libbrotlienc.a")
+find_library(_LIBBROTLIDEC "libbrotlidec.a")
+if(${_LIBBROTLICOMMON} STREQUAL "_LIBBROTLICOMMON-NOTFOUND" OR
+   ${_LIBBROTLIENC} STREQUAL "_LIBBROTLIENC-NOTFOUND" OR
+   ${_LIBBROTLIDEC} STREQUAL "_LIBBROTLIDEC-NOTFOUND")
+  message(STATUS "brotli static library was not found, building locally")
+  set(WITH_BROTLI_BUILD ON)
+endif()
+
+
 if(NOT WITH_LZ4_BUILD)
   find_library(_LIBLZ4 "liblz4.a" REQUIRED)
 endif(NOT WITH_LZ4_BUILD)
@@ -287,6 +298,10 @@ if(WITH_DC_BUILD)
   def_ext_prj_g(DC "v3.2.0")
   message(STATUS "double-conversion -  @${DC_TAG}  at  ${DC_SOURCE_DIR}")
 endif(WITH_DC_BUILD)
+if(WITH_BROTLI_BUILD)
+  def_ext_prj_g(BROTLI "v1.1.0")
+  message(STATUS "brotli     -  @${BROTLI_TAG}  at  ${BROTLI_SOURCE_DIR}")
+endif(WITH_BROTLI_BUILD)
 if(WITH_LZ4_BUILD)
   def_ext_prj_g(LZ4 "v1.9.4")
   message(STATUS "lz4        -  @${LZ4_TAG}  at  ${LZ4_SOURCE_DIR}")
@@ -468,6 +483,30 @@ if(WITH_DC_BUILD)
   )
   add_dependencies(${DWARFS_PRJ} ${DC_PRJ})
 endif(WITH_DC_BUILD)
+
+# ...................................................................
+# brotli
+
+if(WITH_BROTLI_BUILD)
+  set(__LIBBROTLICOMMON "${DEPS}/lib/libbrotlicommon.a")
+  set(__LIBBROTLIENC "${DEPS}/lib/libbrotlienc.a")
+  set(__LIBBROTLIDEC "${DEPS}/lib/libbrotlidec.a")
+  ExternalProject_Add(${BROTLI_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/google/brotli.git"
+    GIT_TAG ${BROTLI_TAG}
+    UPDATE_COMMAND ""
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+               -DCMAKE_BUILD_TYPE=Release
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DBUILD_SHARED_LIBS=OFF
+               -DBROTLI_BUNDLED_MODE=OFF
+    SOURCE_DIR ${BROTLI_SOURCE_DIR}
+    BINARY_DIR ${BROTLI_BINARY_DIR}
+    BUILD_BYPRODUCTS ${__LIBBROTLICOMMON} ${__LIBBROTLIENC} ${__LIBBROTLIDEC}
+  )
+  add_dependencies(${DWARFS_PRJ} ${BROTLI_PRJ})
+endif(WITH_BROTLI_BUILD)
 
 # ...................................................................
 # lz4
@@ -712,7 +751,7 @@ if(WITH_TESTS)
     FetchContent_Declare(
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
-      GIT_TAG        release-1.11.0
+      GIT_TAG        main
     )
 # maintain compiler/linker settings on Windows
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -825,8 +864,6 @@ if(WITH_TESTS)
 
   find_library(_LIBEVENT "libevent.a" REQUIRED)
   find_library(_LIBLZMA "liblzma.a" REQUIRED)
-  find_library(_LIBBROTLIENC "libbrotlienc.a" REQUIRED)
-  find_library(_LIBBROTLIDEC "libbrotlidec.a" REQUIRED)
 
 # Starting with MacOS BigSur  '/usr/lib' is replaced with a cache of system libraries
 # So we cannot just look for libz.a, it is not there anymore
@@ -954,6 +991,15 @@ endif(RB_W32)
     list(APPEND _LIBRARIES ${_LIBDC})
   endif(WITH_DC_BUILD)
 
+  if(WITH_BROTLI_BUILD)
+    add_dwarfs_library(_LIBBROTLIENC ${BROTLI_PRJ} wr-bin)
+    add_dwarfs_library(_LIBBROTLIDEC ${BROTLI_PRJ} wr-bin)
+    add_dwarfs_library(_LIBBROTLICOMMON ${BROTLI_PRJ} wr-bin)
+    target_link_libraries(wr-tests _LIBBROTLIENC _LIBBROTLIDEC _LIBBROTLICOMMON)
+  else(WITH_BROTLI_BUILD)
+    list(APPEND _LIBRARIES ${_LIBBROTLIENC} ${_LIBBROTLIDEC} ${_LIBBROTLICOMMON})
+  endif(WITH_BROTLI_BUILD)
+
   if(WITH_LZ4_BUILD)
     add_dwarfs_library(_LIBLZ4 ${LZ4_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBLZ4)
@@ -971,7 +1017,7 @@ endif(RB_W32)
     list(APPEND _LIBRARIES ${_LIBCRYPTO})
   endif(WITH_OPENSSL_BUILD)
 
-  list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT} ${_LIBBROTLIENC} ${_LIBBROTLIDEC})
+  list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
   if(IS_DARWIN)
     list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA} c++ c++abi)
@@ -1034,6 +1080,14 @@ endif(WITH_GFLAGS_BUILD)
 if(WITH_DC_BUILD)
   install(FILES ${__LIBDC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(WITH_DC_BUILD)
+
+if(WITH_BROTLI_BUILD)
+  install(FILES ${__LIBBROTLICOMMON} ${__LIBBROTLIENC} ${__LIBBROTLIDEC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif(WITH_BROTLI_BUILD)
+
+if(WITH_LZ4_BUILD)
+  install(FILES ${__LIBLZ4} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif(WITH_LZ4_BUILD)
 
 if(WITH_JEMALLOC_BUILD)
   install(FILES ${__LIBJEMALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
