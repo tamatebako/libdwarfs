@@ -187,15 +187,6 @@ test_install_script() {
    cmake --install  "$DIR_SRC" --prefix "$DIR_INSTALL"
    assertEquals "cmake --install failed" 0 "${PIPESTATUS[0]}"
 
-# We do not test fuse driver because we may operate in the environment
-# where fuse is not vailable at all
-#   assertTrue "[ -f "$DIR_INS_B"/dwarfs2 ]"
-
-# We do not test dwarfsck and dwarfsextract since v0.1.9 because it employ optimized
-# configuration and those two utilities are not built
-#   assertTrue ""$DIR_INS_B"/dwarfsck was not installed" "[ -f "$DIR_INS_B"/dwarfsck ]"
-#   assertTrue ""$DIR_INS_B"/dwarfsextract was not installed" "[ -f "$DIR_INS_B"/dwarfsextract ]"
-
    test_files_installed "$NM_MKDWARFS"                       \
                         "$DIR_INS_L/libdwarfs-wr.a"          \
                         "$DIR_INS_L/libdwarfs.a"             \
