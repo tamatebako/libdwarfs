@@ -30,10 +30,10 @@ name: coverity
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main, maxirmx-dwarfs-update ]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ "main" ]
+    branches: [ main ]
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
@@ -54,7 +54,10 @@ jobs:
         submodules: true
 
     - name: Setup environment
-      run: cat common.env ubuntu.env >> $GITHUB_ENV
+      run: |
+        cat common.env ubuntu.env >> $GITHUB_ENV
+        echo "CORES=$(nproc --all)" >> $GITHUB_ENV
+        echo "MAKEFLAGS=j$(nproc --all)" >> $GITHUB_ENV
 
     - name: Create deps folder
       run: mkdir ${{github.workspace}}/${{env.DEPS}}
@@ -67,13 +70,13 @@ jobs:
 
     - name: Install packages
       run: |
-        sudo apt-get -y update
         sudo apt-get -y install \
-        binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev \
-        libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev \
-        libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev \
-        libboost-context-dev libboost-filesystem-dev libboost-program-options-dev \
-        libboost-regex-dev libboost-system-dev libboost-thread-dev
+        binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev                \
+        libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev    \
+        libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libutfcpp-dev      \
+        libboost-filesystem-dev libboost-program-options-dev libboost-system-dev    \
+        libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev         \
+        libboost-regex-dev libboost-thread-dev libbrotli-dev
 
     - name: Configure
       run: cmake -B build -DWITH_TESTS=OFF -DWITH_ASAN=OFF -DWITH_COVERAGE=OFF -DTESTS_LOG_LEVEL=warn
@@ -88,7 +91,7 @@ jobs:
       run: |
         set -x
         export PATH="$PWD/cov-analysis-linux64/bin:$PATH"
-        cov-build --dir cov-int cmake --build build
+        cov-build --dir cov-int cmake --build build --parallel "$CORES"
 
     - name: Submit
       run: |
