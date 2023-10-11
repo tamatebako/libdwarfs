@@ -38,6 +38,7 @@ determine_version("${CMAKE_CURRENT_SOURCE_DIR}" LIBDWARFS_WR)
 
 project(libdwarfs-wr VERSION ${LIBDWARFS_WR_VERSION})
 
+option(PREFER_SYSTEM_GTEST "Use system Google test" OFF)
 option(WITH_TESTS "Find Google test, install INCBIN, build test applications" ON)
 # Visual Studio/Windows Subsystem for Linux (WSL) environment requires
 # source tree to be placed to native Windows partiotion
@@ -144,8 +145,6 @@ set(WITH_GFLAGS_BUILD OFF)
 set(WITH_DC_BUILD OFF)
 set(WITH_LZ4_BUILD OFF)
 set(WITH_RUBY_BUILD OFF)
-
-set(PREFER_SYSTEM_GTEST OFF)
 
 set(IS_MUSL OFF)
 set(IS_MSYS OFF)
@@ -744,7 +743,7 @@ if(WITH_TESTS)
     @ONLY
   )
 
-  if(NOT ${PREFER_SYSTEM_GTEST})
+  if(NOT PREFER_SYSTEM_GTEST)
     message(STATUS "Fetching googletest")
     include(FetchContent)
 
@@ -759,7 +758,7 @@ if(WITH_TESTS)
     set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 
     FetchContent_MakeAvailable(googletest)
-  endif(NOT ${PREFER_SYSTEM_GTEST})
+  endif(NOT PREFER_SYSTEM_GTEST)
 
   enable_testing()
   include(GoogleTest)
@@ -846,7 +845,6 @@ if(WITH_TESTS)
     add_library(${NAME} STATIC IMPORTED)
     set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
     add_dependencies(${NAME} ${PRJ})
-#    target_link_libraries(${APP_NM} -Wl,--whole-archive ${NAME} -Wl,--no-whole-archive)
     target_link_libraries(${APP_NM} "$<LINK_LIBRARY:WHOLE_ARCHIVE,_LIBDWARFS_COMPRESSION>")
   endfunction()
 
