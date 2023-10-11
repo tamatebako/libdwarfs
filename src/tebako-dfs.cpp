@@ -43,7 +43,8 @@ namespace stdfs = std::filesystem;
 namespace dwarfs {
 
 template <typename LoggerPolicy>
-void load_filesystem(dwarfs_userdata& userdata) {
+void load_filesystem(dwarfs_userdata& userdata)
+{
   LOG_PROXY(LoggerPolicy, userdata.lgr);
   auto ti = LOG_TIMED_INFO;
   auto& opts = userdata.opts;
@@ -65,7 +66,8 @@ void load_filesystem(dwarfs_userdata& userdata) {
       fsopts.image_offset = image_offset == "auto"
                                 ? filesystem_options::IMAGE_OFFSET_AUTO
                                 : folly::to<file_off_t>(image_offset);
-    } catch (...) {
+    }
+    catch (...) {
       DWARFS_THROW(runtime_error, "failed to parse offset: " + image_offset);
     }
   }
@@ -88,29 +90,12 @@ void load_filesystem(dwarfs_userdata& userdata) {
 #endif
 
   userdata.perfmon = nullptr;
-/*  performance_monitor::create(perfmon_enabled);
-
-  PERFMON_EXT_PROXY_SETUP(userdata, userdata.perfmon, "fuse")
-  PERFMON_EXT_TIMER_SETUP(userdata, op_init)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_lookup)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_getattr)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_access)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_readlink)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_open)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_read)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_readdir)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_statfs)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_getxattr)
-  PERFMON_EXT_TIMER_SETUP(userdata, op_listxattr)
-*/
-  userdata.fs =
-      filesystem_v2(userdata.lgr, std::make_shared<tebako::mfs>(userdata.data, userdata.size) /*std::make_shared<mmap>(opts.fsimage) */, fsopts,
-                    inode_offset, userdata.perfmon);
+  userdata.fs = filesystem_v2(
+      userdata.lgr, std::make_shared<tebako::mfs>(userdata.data, userdata.size),
+      fsopts, inode_offset, userdata.perfmon);
 
   ti << "file system initialized";
 }
-
-
 
 }  // namespace dwarfs
 

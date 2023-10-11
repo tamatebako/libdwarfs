@@ -96,6 +96,9 @@ jobs:
         if: ${{ matrix.env.ASAN == 'ON' }}
         run: apk --no-cache --upgrade add compiler-rt
 
+      - name: Declare directory safe
+        run: git config --global --add safe.directory "$(pwd)"
+
       - name: Checkout
         uses: actions/checkout@v3
         with:

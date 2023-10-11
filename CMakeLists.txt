@@ -153,9 +153,10 @@ set(IS_DARWIN OFF)
 if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
   set(IS_MUSL ON)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # Alpine 3.17++ lz4 library uses lto and I did not find tool's configuration that works
+  # Alpine 3.17++ lz4 & brotli libraries use lto and I did not find tool's configuration that works
   # (binutils-gold triggers issues with libstdc++)
     set(WITH_LZ4_BUILD ON)
+    set(WITH_BROTLI_BUILD ON)
   endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif("${OSTYPE_TXT}" MATCHES "^msys*")
   include_directories(${CMAKE_SOURCE_DIR}/tools/include)
@@ -214,7 +215,7 @@ set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pas
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "main")
+def_ext_prj_g(DWARFS "tebako-v0.4.1")
 
 if(WITH_TESTS)
   def_ext_prj_g(INCBIN "348e36b")
@@ -255,19 +256,24 @@ if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
   set(WITH_DC_BUILD ON)
 endif()
 
-find_library(_LIBBROTLICOMMON "libbrotlicommon.a")
-find_library(_LIBBROTLIENC "libbrotlienc.a")
-find_library(_LIBBROTLIDEC "libbrotlidec.a")
-if(${_LIBBROTLICOMMON} STREQUAL "_LIBBROTLICOMMON-NOTFOUND" OR
-   ${_LIBBROTLIENC} STREQUAL "_LIBBROTLIENC-NOTFOUND" OR
-   ${_LIBBROTLIDEC} STREQUAL "_LIBBROTLIDEC-NOTFOUND")
-  message(STATUS "brotli static library was not found, building locally")
-  set(WITH_BROTLI_BUILD ON)
-endif()
-
+if(NOT WITH_BROTLI_BUILD)
+  find_library(_LIBBROTLICOMMON "libbrotlicommon.a")
+  find_library(_LIBBROTLIENC "libbrotlienc.a")
+  find_library(_LIBBROTLIDEC "libbrotlidec.a")
+  if(${_LIBBROTLICOMMON} STREQUAL "_LIBBROTLICOMMON-NOTFOUND" OR
+     ${_LIBBROTLIENC} STREQUAL "_LIBBROTLIENC-NOTFOUND" OR
+     ${_LIBBROTLIDEC} STREQUAL "_LIBBROTLIDEC-NOTFOUND")
+    message(STATUS "brotli static library was not found, building locally")
+    set(WITH_BROTLI_BUILD ON)
+  endif()
+endif(NOT WITH_BROTLI_BUILD)
 
 if(NOT WITH_LZ4_BUILD)
-  find_library(_LIBLZ4 "liblz4.a" REQUIRED)
+  find_library(_LIBLZ4 "liblz4.a")
+  if(${_LIBLZ4} STREQUAL "_LIBLZ4-NOTFOUND")
+    message(STATUS "lz4 static library was not found, building locally")
+    set(WITH_LZ4_BUILD ON)
+  endif()
 endif(NOT WITH_LZ4_BUILD)
 
 if(WITH_JEMALLOC_BUILD)
@@ -392,7 +398,7 @@ endif(IS_MSYS)
 
 ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
-  GIT_REPOSITORY https://github.com/tamatebako/dwarfs-2.git
+  GIT_REPOSITORY https://github.com/tamatebako/dwarfs.git
   GIT_TAG ${DWARFS_TAG}
   UPDATE_COMMAND ""
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}

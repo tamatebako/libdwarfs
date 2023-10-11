@@ -82,7 +82,7 @@ jobs:
 
       - name: Setup environment
         run: |
-          cat common.env macos.env >> $GITHUB_ENV
+          cat common.env macos-x86_64.env >> $GITHUB_ENV
           echo "CORES=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
           echo "MAKEFLAGS=j$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
 

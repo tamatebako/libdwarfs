@@ -32,7 +32,6 @@
  */
 
 #pragma once
-#pragma warning (__cplusplus)
 
 #include <algorithm>
 #include <array>
