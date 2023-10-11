@@ -133,12 +133,12 @@ jobs:
           name: tests
           retention-days: 1
           path: |
-            ${{github.workspace}}/wr-bin
-            ${{github.workspace}}/wr-tests
+            ${{github.workspace}}/build/wr-bin
+            ${{github.workspace}}/build/wr-tests
 
   test-on-macos-12:
     needs: build
-    name: run tests on MacOS-12
+    name: run tests on MacOS-12/13
     runs-on: ${{ matrix.os }}
     env:
       TEBAKO_CROSS_TEST: ON
