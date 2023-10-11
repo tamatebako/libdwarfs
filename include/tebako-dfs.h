@@ -43,19 +43,6 @@ void tebako_init_cwd(dwarfs::logger& lgr, bool need_debug_policy);
 void tebako_drop_cwd(void);
 
 namespace dwarfs {
-/*struct options {
-  int enable_nlink{0};
-  int readonly{0};
-  int cache_image{0};
-  int cache_files{0};
-  size_t cachesize{0};
-  size_t workers{0};
-  mlock_mode lock_mode{mlock_mode::NONE};
-  double decompress_ratio{0.0};
-  logger::level_type debuglevel{logger::level_type::ERROR};
-  off_t image_offset{0};
-};
-*/
 
 struct options {
   std::filesystem::path progname;
@@ -101,18 +88,5 @@ struct dwarfs_userdata {
   filesystem_v2 fs;
 
   std::shared_ptr<performance_monitor> perfmon;
-  PERFMON_EXT_PROXY_DECL
-  PERFMON_EXT_TIMER_DECL(op_init)
-  PERFMON_EXT_TIMER_DECL(op_lookup)
-  PERFMON_EXT_TIMER_DECL(op_getattr)
-  PERFMON_EXT_TIMER_DECL(op_access)
-  PERFMON_EXT_TIMER_DECL(op_readlink)
-  PERFMON_EXT_TIMER_DECL(op_open)
-  PERFMON_EXT_TIMER_DECL(op_read)
-  PERFMON_EXT_TIMER_DECL(op_readdir)
-  PERFMON_EXT_TIMER_DECL(op_statfs)
-  PERFMON_EXT_TIMER_DECL(op_getxattr)
-  PERFMON_EXT_TIMER_DECL(op_listxattr)
-
 };
 }  // namespace dwarfs
