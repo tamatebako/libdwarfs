@@ -72,17 +72,12 @@ test_linkage() {
       echo "... Address sanitizer or coverage test is on ... skipping"
    else
       if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-         expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libgcc_s.so" "libc.so" "ld-linux-")
+         expected=("linux-vdso.so" "libpthread.so" "libdl.so" "libm.so" "libc.so" "ld-linux-")
          readarray -t actual < <(ldd "$DIR_SRC/wr-bin")
          assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
-# Used to be:
-# Run ldd to check that wr-bin has been linked statically
-#        result="$( ldd "$DIR_ROOT"/wr-bin 2>&1 )"
-#        assertEquals 1 "${PIPESTATUS[0]}"
-#        assertContains "$result" "not a dynamic executable"
       elif [[ "$OSTYPE" == "linux-musl"* ]]; then
-         expected=("libgcc_s.so" "libc.musl-" "ld-musl-")
+         expected=("libc.musl-" "ld-musl-")
          readarray -t actual < <(ldd "$DIR_SRC/wr-bin")
          assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs
