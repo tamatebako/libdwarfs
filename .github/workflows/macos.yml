@@ -128,7 +128,7 @@ jobs:
         run:  ${{ env.BREW_HOME }}/bin/bash ${{ github.workspace }}/tests/scripts/tests.sh
 
       - name: Upload tests
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: tests
           retention-days: 1
@@ -148,7 +148,7 @@ jobs:
         os: [ macos-12, macos-13 ]
     steps:
       - name: Download tests
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: tests
 

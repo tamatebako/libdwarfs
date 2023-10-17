@@ -215,7 +215,7 @@ set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pas
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.4.1")
+def_ext_prj_g(DWARFS "tebako-v0.4.2")
 
 if(WITH_TESTS)
   def_ext_prj_g(INCBIN "348e36b")
@@ -896,6 +896,7 @@ if(WITH_TESTS)
 #  else
   if (NOT IS_DARWIN)
     add_link_options(-static-libstdc++)
+    add_link_options(-static-libgcc)
   endif(NOT IS_DARWIN)
 
   if (IS_MUSL)
@@ -1026,8 +1027,10 @@ endif(RB_W32)
   if(IS_DARWIN)
     list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA} c++ c++abi)
   else(IS_DARWIN)
-    list(APPEND _LIBRARIES ${_LIBIBERTY}   ${_LIBACL}
-                           ${_LIBZ}        ${_LIBUNWIND}   ${_LIBLZMA}
+  # libgcc_eh shall precede libunwind to aboid duplicate symbols during linking
+  # liblzma shall follow libunwind because it is libunwind dependency
+    list(APPEND _LIBRARIES ${_LIBIBERTY}  ${_LIBACL}    ${_LIBZ}
+                           gcc_eh         ${_LIBUNWIND} ${_LIBLZMA}
     )
     if(NOT RB_W32)
       list(APPEND _LIBRARIES pthread)
