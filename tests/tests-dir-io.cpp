@@ -28,21 +28,44 @@
  */
 
 #include "tests.h"
+#include <tebako-common.h>
 
-/*
- *  Unit tests for 'tebako_open', 'tebako_close', 'tebako_read'
- * 'tebako_lseek' and underlying file descriptor implementation
- */
+#if defined(RB_W32)
+typedef struct direct* pdirent;
+static pdirent tebako_readdir_adjusted(DIR* dirp)
+{
+  return tebako_readdir(dirp, NULL);
+}
+#else
+typedef struct dirent* pdirent;
+static pdirent tebako_readdir_adjusted(DIR* dirp)
+{
+  return tebako_readdir(dirp);
+}
+#endif
 
 namespace {
 class DirIOTests : public testing::Test {
  protected:
+#ifdef _WIN32
+  static void invalidParameterHandler(const wchar_t* p1,
+                                      const wchar_t* p2,
+                                      const wchar_t* p3,
+                                      unsigned int p4,
+                                      uintptr_t p5)
+  {
+    // Just return to pass execution to standard library
+    // otherwise exception will be thrown by MSVC runtime
+    return;
+  }
+#endif
+
   static void SetUpTestSuite()
   {
-#ifdef RB_W32
-    do_rb_w32_init();
+#ifdef _WIN32
+    _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level, NULL /* cachesize*/,
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
             NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
             NULL /* image_offset */
     );
@@ -54,6 +77,8 @@ class DirIOTests : public testing::Test {
   }
 };
 
+// No dir io tests without opendir
+#if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
 TEST_F(DirIOTests, tebako_opendir_no_dir)
 {
   DIR* dirp = tebako_opendir(TEBAKIZE_PATH("no_directory"));
@@ -99,6 +124,7 @@ TEST_F(DirIOTests, tebako_fdopendir_dirfd_closedir)
 }
 #endif
 
+#if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
 TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)
 {
   DIR* dirp = tebako_opendir(TEBAKIZE_PATH("directory-with-90-files"));
@@ -114,20 +140,18 @@ TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)
     tebako_seekdir(dirp, pos);
     EXPECT_EQ(pos, tebako_telldir(dirp));
 
-    struct dirent* entry = tebako_readdir(dirp);
+    pdirent entry = tebako_readdir_adjusted(dirp);
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = "file-";
       fname += std::to_string(pos + start_fnum - 2 /* for '.' and '..' */);
       fname += ".txt";
       EXPECT_TRUE(fname == entry->d_name);
-#ifndef _WIN32
       EXPECT_TRUE(entry->d_type == DT_REG);
-#endif
       EXPECT_EQ(++pos, tebako_telldir(dirp));
     }
 
-    entry = tebako_readdir(dirp);
+    entry = tebako_readdir_adjusted(dirp);
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = "file-";
@@ -137,8 +161,8 @@ TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)
       EXPECT_EQ(++pos, tebako_telldir(dirp));
     }
 
-    entry =
-        tebako_readdir(dirp);  // Expecting dirent buffer reload at this point
+    entry = tebako_readdir_adjusted(
+        dirp);  // Expecting dirent buffer reload at this point
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = "file-";
@@ -152,7 +176,7 @@ TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)
     tebako_seekdir(dirp, pos);
     EXPECT_EQ(pos, tebako_telldir(dirp));
 
-    entry = tebako_readdir(dirp);
+    entry = tebako_readdir_adjusted(dirp);
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = "file-";
@@ -162,54 +186,40 @@ TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)
       EXPECT_EQ(++pos, tebako_telldir(dirp));
     }
 
-    entry = tebako_readdir(dirp);  // Expecting read beyond dir size
+    entry = tebako_readdir_adjusted(dirp);  // Expecting read beyond dir size
     EXPECT_TRUE(entry == NULL);
 
     tebako_seekdir(dirp, 0);
     EXPECT_EQ(0, tebako_telldir(dirp));
-    entry =
-        tebako_readdir(dirp);  // Expecting dirent buffer reload at this point
+    entry = tebako_readdir_adjusted(
+        dirp);  // Expecting dirent buffer reload at this point
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = ".";
       EXPECT_TRUE(fname == entry->d_name);
-#ifndef _WIN32
       EXPECT_TRUE(entry->d_type == DT_DIR);
-#endif
       EXPECT_EQ(1, tebako_telldir(dirp));
     }
-
     EXPECT_EQ(0, tebako_closedir(dirp));
   }
 }
+#endif
 
+#if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
 TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir_pass_through)
 {
-  const char* const shell_name =
-#if __MACH__
-      "zsh";
-#elif defined(_WIN32)
-      "bash.exe";
-#else
-      "bash";
-#endif
-
-  const char* const shell_folder =
-#ifndef _WIN32
-      "/bin";
-#else
-      __MSYS_BIN__;
-#endif
+  const char* const shell_name = __SHELL__;
+  const char* const shell_folder = __BIN__;
 
   DIR* dirp = tebako_opendir(shell_folder);
   EXPECT_TRUE(dirp != NULL);
   if (dirp != NULL) {
     long loc = -1;
     errno = 0;
-    struct dirent* entry = tebako_readdir(dirp);
+    pdirent entry = tebako_readdir_adjusted(dirp);
     while (entry != NULL) {
-      long l = telldir(dirp);
-      entry = tebako_readdir(dirp);
+      long l = TO_RB_W32(telldir)(dirp);
+      entry = tebako_readdir_adjusted(dirp);
       if (entry != NULL && strcmp(entry->d_name, shell_name) == 0) {
         loc = l;
       }
@@ -219,13 +229,14 @@ TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir_pass_through)
 
     if (loc != -1) {
       tebako_seekdir(dirp, loc);
-      entry = tebako_readdir(dirp);
+      entry = tebako_readdir_adjusted(dirp);
       EXPECT_TRUE(strcmp(entry->d_name, shell_name) == 0);
     }
 
     EXPECT_EQ(0, tebako_closedir(dirp));
   }
 }
+#endif
 
 #ifdef TEBAKO_HAS_SCANDIR
 TEST_F(DirIOTests, tebako_scandir)
@@ -323,7 +334,7 @@ TEST_F(DirIOTests, tebako_dir_io_null_ptr)
   EXPECT_EQ(EBADF, errno);
 
   errno = 0;
-  EXPECT_EQ(NULL, tebako_readdir(NULL));
+  EXPECT_EQ(NULL, tebako_readdir_adjusted(NULL));
   EXPECT_EQ(EBADF, errno);
 
 #ifdef TEBAKO_HAS_SCANDIR
@@ -348,45 +359,38 @@ TEST_F(DirIOTests, tebako_opendir_readdir_closedir_dot_dot)
   if (dirp != NULL) {
     std::string fname;
     std::string fname_alt;
-    struct dirent* entry = tebako_readdir(dirp);
+    pdirent entry = tebako_readdir_adjusted(dirp);
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = ".";
       EXPECT_TRUE(fname == entry->d_name);
-#ifndef _WIN32
       EXPECT_TRUE(entry->d_type == DT_DIR);
-#endif
     }
-    entry = tebako_readdir(dirp);
+    entry = tebako_readdir_adjusted(dirp);
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = "..";
       EXPECT_TRUE(fname == entry->d_name);
-#ifndef _WIN32
       EXPECT_TRUE(entry->d_type == DT_DIR);
-#endif
     }
     fname = "test-file-at-level-2.txt";
     fname_alt = "level-3";
-    entry = tebako_readdir(dirp);
+    entry = tebako_readdir_adjusted(dirp);
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       EXPECT_TRUE((fname == entry->d_name) || (fname_alt == entry->d_name));
-#ifndef _WIN32
       EXPECT_TRUE(entry->d_type ==
                   (entry->d_name == fname_alt ? DT_DIR : DT_REG));
-#endif
     }
-    entry = tebako_readdir(dirp);
+    entry = tebako_readdir_adjusted(dirp);
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       EXPECT_TRUE((fname == entry->d_name) || (fname_alt == entry->d_name));
-#ifndef _WIN32
       EXPECT_TRUE(entry->d_type ==
                   (entry->d_name == fname_alt ? DT_DIR : DT_REG));
-#endif
     }
     EXPECT_EQ(0, tebako_closedir(dirp));
   }
 }
+#endif
 }  // namespace

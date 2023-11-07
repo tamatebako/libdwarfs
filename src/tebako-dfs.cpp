@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -32,7 +32,6 @@
 #include <tebako-common.h>
 #include <tebako-dirent.h>
 #include <tebako-dfs.h>
-#include <tebako-io-rb-w32.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
@@ -107,7 +106,7 @@ using namespace dwarfs;
 static folly::Synchronized<dwarfs_userdata*> usd{NULL};
 
 // Drop previously loaded dwarFS image
-extern "C" void drop_fs(void)
+void drop_fs(void)
 {
   auto locked = usd.wlock();
   if (*locked) {
@@ -115,21 +114,23 @@ extern "C" void drop_fs(void)
   }
   *locked = NULL;
 
+#if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
   sync_tebako_dstable::dstable.close_all();
+#endif
   sync_tebako_fdtable::fdtable.close_all();
   tebako_drop_cwd();
 }
 
 // Loads dwarFS image
 // ["C" wrapper for load_filesystem]
-extern "C" int load_fs(const void* data,
-                       const unsigned int size,
-                       const char* debuglevel,
-                       const char* cachesize,
-                       const char* workers,
-                       const char* mlock,
-                       const char* decompress_ratio,
-                       const char* image_offset)
+int load_fs(const void* data,
+            const unsigned int size,
+            const char* debuglevel,
+            const char* cachesize,
+            const char* workers,
+            const char* mlock,
+            const char* decompress_ratio,
+            const char* image_offset)
 {
   std::set_terminate([]() {
     std::cout << "Unhandled exception" << std::endl;
@@ -286,9 +287,13 @@ int safe_dwarfs_call(Functor&& fn,
 static int dwarfs_access_inner(int amode, struct stat* st)
 {
   int ret = DWARFS_IO_CONTINUE;
-  if ((!(st->st_mode & S_IRUSR) && (amode & R_OK)) ||
-      (!(st->st_mode & S_IWUSR) && (amode & W_OK)) ||
+// WIN32 ?????????
+#ifdef _WIN32
+  if (amode & W_OK) {
+#else
+  if ((!(st->st_mode & S_IRUSR) && (amode & R_OK)) || (amode & W_OK) ||
       (!(st->st_mode & S_IXUSR) && (amode & X_OK))) {
+#endif
     ret = DWARFS_IO_ERROR;
     TEBAKO_SET_LAST_ERROR(EACCES);
   }
@@ -309,7 +314,7 @@ int dwarfs_access(const char* path,
   return ret;
 }
 
-#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32)
+#if defined(TEBAKO_HAS_LSTAT) || defined(_WIN32)
 int dwarfs_lstat(const char* path, struct stat* buf) noexcept
 {
   return safe_dwarfs_call(
@@ -317,7 +322,11 @@ int dwarfs_lstat(const char* path, struct stat* buf) noexcept
           [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int {
             dwarfs::file_stat dwarfs_file_stat;
             int ret = fs->getattr(inode, &dwarfs_file_stat);
-            copy_file_stat(buf, dwarfs_file_stat);
+#if defined(_WIN32)
+            copy_file_stat<false>(buf, dwarfs_file_stat);
+#else
+            copy_file_stat<true>(buf, dwarfs_file_stat);
+#endif
             return ret;
           }},
       __func__, path, buf);
@@ -331,7 +340,11 @@ int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept
           [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int {
             dwarfs::file_stat dwarfs_file_stat;
             int ret = fs->getattr(inode, &dwarfs_file_stat);
-            copy_file_stat(buf, dwarfs_file_stat);
+#if defined(_WIN32)
+            copy_file_stat<false>(buf, dwarfs_file_stat);
+#else
+            copy_file_stat<true>(buf, dwarfs_file_stat);
+#endif
             return ret;
           }},
       __func__, path, buf);
@@ -409,7 +422,11 @@ static int internal_getattr_relative(uint32_t inode,
     if (pi) {
       dwarfs::file_stat dwarfs_file_stat;
       ret = p->fs.getattr(*pi, &dwarfs_file_stat);
-      copy_file_stat(buf, dwarfs_file_stat);
+#if defined(_WIN32)
+      copy_file_stat<false>(buf, dwarfs_file_stat);
+#else
+      copy_file_stat<true>(buf, dwarfs_file_stat);
+#endif
     }
     else {
       ret = ENOENT;
@@ -432,7 +449,11 @@ int dwarfs_inode_relative_stat(uint32_t inode,
             if (pi) {
               dwarfs::file_stat dwarfs_file_stat;
               ret = fs->getattr(*pi, &dwarfs_file_stat);
-              copy_file_stat(buf, dwarfs_file_stat);
+#if defined(_WIN32)
+              copy_file_stat<false>(buf, dwarfs_file_stat);
+#else
+              copy_file_stat<true>(buf, dwarfs_file_stat);
+#endif
             }
             return ret;
           }},
@@ -483,7 +504,11 @@ int dwarfs_inode_access(uint32_t inode,
               struct stat st;
               dwarfs::file_stat dwarfs_file_stat;
               ret = fs->getattr(*pi, &dwarfs_file_stat);
-              copy_file_stat(&st, dwarfs_file_stat);
+#if defined(_WIN32)
+              copy_file_stat<false>(&st, dwarfs_file_stat);
+#else
+              copy_file_stat<true>(&st, dwarfs_file_stat);
+#endif
               if (ret == DWARFS_IO_CONTINUE) {
                 ret = dwarfs_access_inner(amode, &st);
               }
@@ -539,9 +564,13 @@ static int internal_readdir(filesystem_v2* fs,
 
           dwarfs::file_stat dwarfs_file_stat;
           fs->getattr(entry, &dwarfs_file_stat);
-          copy_file_stat(&st, dwarfs_file_stat);
+#if defined(_WIN32)
+          copy_file_stat<false>(&st, dwarfs_file_stat);
+#else
+          copy_file_stat<true>(&st, dwarfs_file_stat);
+#endif
 
-#ifndef _WIN32
+#ifndef RB_W32
           cache[cache_size].e.d_ino = st.st_ino;
 #if __MACH__
           cache[cache_size].e.d_seekoff = cache_start + cache_size;
@@ -554,7 +583,7 @@ static int internal_readdir(filesystem_v2* fs,
           cache[cache_size]._e.d_name[TEBAKO_PATH_LENGTH] = '\0';
           cache[cache_size].e.d_reclen = sizeof(cache[0]);
 #else
-#ifdef RB_W32
+#ifdef _WIN32
           cache[cache_size].e.d_altname = 0;
           cache[cache_size].e.d_altlen = 0;
           cache[cache_size].e.d_name = cache[cache_size].d_name;

@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2022-2023 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -35,7 +35,7 @@ extern "C" {
 #endif  // __cplusplus
 char* rb_w32_ugetcwd(char*, int);
 int rb_w32_uchdir(const char*);
-int rb_w32_umkdir(const char*, int);
+int rb_w32_umkdir(const char*);
 int rb_w32_access(const char*, int);
 
 int rb_w32_uopen(const char*, int, ...);

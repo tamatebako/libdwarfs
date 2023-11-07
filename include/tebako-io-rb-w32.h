@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2022-2023 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -31,12 +31,14 @@
 
 #ifdef RB_W32
 #if !defined(RUBY_WIN32_DIR_H)
+
 #define RB_W32_DIR_DEFINED
 /* This is Ruby replacement for dirent */
 #define DT_UNKNOWN 0
 #define DT_DIR (S_IFDIR >> 12)
 #define DT_REG (S_IFREG >> 12)
 #define DT_LNK 10
+
 struct direct {
   long d_namlen;
   ino_t d_ino;
@@ -45,6 +47,7 @@ struct direct {
   short d_altlen;
   uint8_t d_type;
 };
+
 typedef struct {
   WCHAR* start;
   WCHAR* curr;
@@ -54,9 +57,7 @@ typedef struct {
   struct direct dirstr;
   char* bits; /* used for d_isdir and d_isrep */
 } DIR;
-#endif  // RUBY_WIN32_DIR_H
 
-#if !defined(RUBY_WIN32_H)
 struct stati128 {
   _dev_t st_dev;
   unsigned __int64 st_ino;

@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -241,4 +241,13 @@ const char* to_tebako_path(tebako_path_t t_path, const char* path)
   catch (...) {
   }
   return p_path;
+}
+
+bool is_valid_system_file_descriptor(int fd)
+{
+#ifdef _WIN32
+  return _get_osfhandle(fd) != -1 || errno != EBADF;
+#else
+  return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
+#endif
 }

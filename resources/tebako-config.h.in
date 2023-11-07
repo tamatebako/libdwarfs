@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2022 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -38,6 +38,12 @@
 #cmakedefine TEBAKO_HAS_LSTAT 1
 #cmakedefine TEBAKO_HAS_FSTATAT 1
 
+#cmakedefine TEBAKO_HAS_OPENDIR 1
+#cmakedefine TEBAKO_HAS_CLOSEDIR 1
+#cmakedefine TEBAKO_HAS_READDIR 1
+#cmakedefine TEBAKO_HAS_SEEKDIR 1
+#cmakedefine TEBAKO_HAS_TELLDIR 1
+
 #cmakedefine TEBAKO_HAS_DIRFD 1
 #cmakedefine TEBAKO_HAS_FDOPENDIR 1
 #cmakedefine TEBAKO_HAS_SCANDIR 1
@@ -52,3 +58,9 @@
 
 #cmakedefine TEBAKO_HAS_POSIX_MKDIR 1
 #cmakedefine TEBAKO_HAS_WINDOWS_MKDIR 1
+
+#cmakedefine RB_W32 1
+
+#if defined(_WIN32) && !defined(RB_W32)
+#error "Only Ruby style Dir IO can be used on Windows. Please check why RB_W32 is not defined by build script."
+#endif

@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tebako
 #
@@ -23,18 +23,33 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required (VERSION 3.20)
+cmake_minimum_required (VERSION 3.24)
 
 # For project( ... VERSION ... )
 cmake_policy(SET CMP0048 NEW)
-
+# For CMAKE_MSVC_RUNTIME_LIBRARY
+cmake_policy(SET CMP0091 NEW)
 # DOWNLOAD_EXTRACT_TIMESTAMP option default = true
-if(${CMAKE_VERSION} VERSION_GREATER "3.23.10")
-  cmake_policy(SET CMP0135 NEW)
-endif()
+cmake_policy(SET CMP0135 NEW)
 
 include(tools/cmake-scripts/version.cmake)
 determine_version("${CMAKE_CURRENT_SOURCE_DIR}" LIBDWARFS_WR)
+
+# Various locations for external projects
+set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
+set(DEPS_INCLUDE_DIR ${DEPS}/include)
+set(DEPS_LIB_DIR ${DEPS}/lib)
+set(DEPS_BIN_DIR ${DEPS}/bin)
+set(DEPS_SBIN_DIR ${DEPS}/sbin)
+
+if(MSVC)
+  if(NOT VCPKG_INSTALLED_DIR)
+    set(VCPKG_INSTALLED_DIR "${DEPS}/vcpkg-installed")
+  endif(NOT VCPKG_INSTALLED_DIR)
+  if(NOT VCPKG_TARGET_TRIPLET)
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static")
+  endif(NOT VCPKG_TARGET_TRIPLET)
+endif(MSVC)
 
 project(libdwarfs-wr VERSION ${LIBDWARFS_WR_VERSION})
 
@@ -53,27 +68,20 @@ option(USE_TEMP_FS "Place test data to WSL native partition" OFF)
 include(ExternalProject)
 include(GNUInstallDirs)
 include(CheckSymbolExists)
-include(CheckCSourceCompiles)
+include(CheckCXXSourceCompiles)
 
-# This is the default that will be overwritten for MacOS and MSys
+# This is the default that will be overwritten for MacOS
 set(GNU_BASH "bash")
 
-# May be overwritten on MSys platform by setup-openssl.cmake
-set(WITH_OPENSSL_BUILD OFF)
-
 include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/macos-environment.cmake)
-include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/msys-environment.cmake)
 include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/def-external-project.cmake)
-
-# Various locations for external projects
-set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/deps CACHE STRING "Dependencies' folder'")
-set(DEPS_INCLUDE_DIR ${DEPS}/include)
-set(DEPS_LIB_DIR ${DEPS}/lib)
-set(DEPS_BIN_DIR ${DEPS}/bin)
-set(DEPS_SBIN_DIR ${DEPS}/sbin)
 
 include_directories(${DEPS_INCLUDE_DIR})
 link_directories(${DEPS_LIB_DIR})
+if(MSVC)
+  include_directories(${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include)
+  link_directories(${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib)
+endif(MSVC)
 
 # log level
 if (NOT TESTS_LOG_LEVEL)
@@ -115,27 +123,15 @@ if (WITH_TESTS)
     set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs)
     message(STATUS "Building mkdwarfs at ${MKDWARFS}")
   endif(MKDWARFS)
+else(WITH_TESTS)
+  set(TEBAKO_BUILD_SCOPE LIB)
+  message(STATUS "Not build or using mkdwarfs")
 endif(WITH_TESTS)
 
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "Build type was not specified. Defaulted to release")
   set(CMAKE_BUILD_TYPE Release)
 endif()
-
-execute_process(
-  COMMAND "${GNU_BASH}"
-          "-c"
-          "echo \$OSTYPE"
-  RESULT_VARIABLE OSTYPE_RES
-  OUTPUT_VARIABLE OSTYPE_TXT
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  ERROR_STRIP_TRAILING_WHITESPACE
-)
-if(OSTYPE_RES EQUAL 0)
-  message(STATUS "OSTYPE: '${OSTYPE_TXT}'")
-else(OSTYPE_RES EQUAL 0)
-  message(FATAL_ERROR "Failed to detect OSTYPE: ${OSTYPE_TXT}")
-endif(OSTYPE_RES EQUAL 0)
 
 # Reasonable defaults
 set(USE_JEMALLOC ON)
@@ -144,41 +140,83 @@ set(WITH_GLOG_BUILD OFF)
 set(WITH_GFLAGS_BUILD OFF)
 set(WITH_DC_BUILD OFF)
 set(WITH_LZ4_BUILD OFF)
-set(WITH_RUBY_BUILD OFF)
 
 set(IS_MUSL OFF)
-set(IS_MSYS OFF)
+set(IS_WINDOWS OFF)
 set(IS_DARWIN OFF)
 
-if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
-  set(IS_MUSL ON)
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # Alpine 3.17++ lz4 & brotli libraries use lto and I did not find tool's configuration that works
-  # (binutils-gold triggers issues with libstdc++)
-    set(WITH_LZ4_BUILD ON)
-    set(WITH_BROTLI_BUILD ON)
-  endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-elseif("${OSTYPE_TXT}" MATCHES "^msys*")
-  include_directories(${CMAKE_SOURCE_DIR}/tools/include)
-  add_compile_definitions(FOLLY_ASSUME_NO_JEMALLOC)
+if(MSVC)
+  set(IS_WINDOWS ON)
+  set(OSTYPE_TXT "windows")
+  set(OSTYPE_RES  0)
   set(USE_JEMALLOC OFF)
-  set(PREFER_SYSTEM_GTEST ON)
+  set(VCPKG_PARAMS -GNinja -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET} -DVCPKG_INSTALLED_DIR=${VCPKG_INSTALLED_DIR})
   set(WITH_LINK_TESTS OFF)
-  set(IS_MSYS ON)
-elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
-  message(STATUS "jemalloc homebrew library is not good enough, building locally")
-  set(IS_DARWIN ON)
-  set(WITH_JEMALLOC_BUILD ON)
-endif()
+  set(LIBEMPTY_NAME "empty.dll")
+  add_compile_options(/Zc:__cplusplus /utf-8 /wd4267 /wd4244 /wd5219)
+  # Apply /MT or /MTd  (multithread, static version of the run-time library)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+else(MSVC)
+  set(LIBEMPTY_NAME "libempty.so")
+  execute_process(
+    COMMAND "${GNU_BASH}"
+            "-c"
+            "echo \$OSTYPE"
+    RESULT_VARIABLE OSTYPE_RES
+    OUTPUT_VARIABLE OSTYPE_TXT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_STRIP_TRAILING_WHITESPACE
+  )
+  if("${OSTYPE_TXT}" MATCHES "^linux-musl.*")
+    set(IS_MUSL ON)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Alpine 3.17++ lz4 & brotli libraries use lto and I did not find tool's configuration that works
+    # (binutils-gold triggers issues with libstdc++)
+      set(WITH_LZ4_BUILD ON)
+      set(WITH_BROTLI_BUILD ON)
+    endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
+    message(STATUS "jemalloc homebrew library is not good enough, building locally")
+    set(IS_DARWIN ON)
+    set(WITH_JEMALLOC_BUILD ON)
+  endif()
+endif(MSVC)
 
-if(NOT IS_MSYS)
+# RB_W32
+# -----------------------------------------------------------------------------
+#  - windows (enforced)         will have IS_WINDOWS flag set
+#    actually it is defined by compiler only (i.e.: MSVC) and my need revision
+#    RB_W32 setting calls for Ruby style simulation of IO
+#   (enable it by default when running on Windows)
+#
+#    RB_W32 means use of Ruby Linux-like Dir IO functions
+#    Possible other methods may be MinGW Dir IO (== posix), folly portability (== posix)
+#    These two most likely would work but are not tested
+if(NOT IS_WINDOWS)
   set(RB_W32 OFF)
-endif(NOT IS_MSYS)
+else(NOT IS_WINDOWS)
+  set(RB_W32 ON)
+endif(NOT IS_WINDOWS)
+# -----------------------------------------------------------------------------
+#  - "darwin.*"                 will have IS_MUSL flag set
+# -----------------------------------------------------------------------------
+#  - "linux-musl.*"             will have IS_DARWIN flag set
+# -----------------------------------------------------------------------------
+#  - ... everything else ...    will be be treated as linux-gnu but in reality
+#                               only Ubuntu is supported/tested
+
+if(OSTYPE_RES EQUAL 0)
+  message(STATUS "OSTYPE: '${OSTYPE_TXT}'")
+else(OSTYPE_RES EQUAL 0)
+  message(FATAL_ERROR "Failed to detect OSTYPE: ${OSTYPE_TXT}")
+endif(OSTYPE_RES EQUAL 0)
 
 message("Configuraion summary:")
 message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
-message(STATUS "Building for Ruby Win32: ${RB_W32}")
-message(STATUS "use jemalloc: ${USE_JEMALLOC}")
+if (IS_WINDOWS)
+  message(STATUS "Building for Ruby Win32: ${RB_W32}")
+endif(IS_WINDOWS)
+message(STATUS "Use jemalloc: ${USE_JEMALLOC}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
@@ -189,6 +227,9 @@ if(WITH_TESTS)
   message(STATUS "    with link tests: ${WITH_LINK_TESTS}")
   message(STATUS "    using temporary test directory: ${USE_TEMP_FS}")
 endif(WITH_TESTS)
+if(VCPKG_PARAMS)
+  message(STATUS "Using vcpkg with: ${VCPKG_PARAMS}")
+endif(VCPKG_PARAMS)
 
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_LINK_STATIC       ON)
@@ -215,124 +256,116 @@ set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pas
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.4.4")
+def_ext_prj_g(DWARFS "tebako-0.4.5")
 
 if(WITH_TESTS)
   def_ext_prj_g(INCBIN "348e36b")
-  if(RB_W32)
-    message(STATUS "Building Ruby to support unit tests")
-    set(WITH_RUBY_BUILD ON)
-    def_ext_prj_t(RUBY "2.7.7" "e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90")
-
-    string(SUBSTRING ${RUBY_VER} 0 3 RUBY_VER_BASE)
-
-    if(${RUBY_VER} VERSION_LESS "3.0.0")
-      include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl.cmake)
-    endif()
-  endif(RB_W32)
 endif(WITH_TESTS)
 
-find_library(_LIBGLOG "libglog.a")
-if(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
-  message(STATUS "glog static library was not found, building locally")
-  set(WITH_GLOG_BUILD ON)
-  if(IS_DARWIN)
-    message(STATUS "building gflags locally as well because os MacOS specifics")
-    set(WITH_GFLAGS_BUILD ON)
-  endif(IS_DARWIN)
-endif()
-
-if (NOT WITH_GFLAGS_BUILD)
-  find_library(_LIBGFLAGS "libgflags.a")
-  if(${_LIBGFLAGS} STREQUAL "_LIBGFLAGS-NOTFOUND")
-    message(STATUS "gflags static library was not found, building locally")
-    set(WITH_GFLAGS_BUILD ON)
+if(NOT IS_WINDOWS)
+  find_library(_LIBGLOG "libglog.a")
+  if(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
+    message(STATUS "glog static library was not found, building locally")
+    set(WITH_GLOG_BUILD ON)
+    if(IS_DARWIN)
+      message(STATUS "building gflags locally as well because os MacOS specifics")
+      set(WITH_GFLAGS_BUILD ON)
+    endif(IS_DARWIN)
   endif()
-endif()
 
-find_library(_LIBDC "libdouble-conversion.a")
-if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
-  message(STATUS "double-conversion static library was not found, building locally")
-  set(WITH_DC_BUILD ON)
-endif()
-
-if(NOT WITH_BROTLI_BUILD)
-  find_library(_LIBBROTLICOMMON "libbrotlicommon.a")
-  find_library(_LIBBROTLIENC "libbrotlienc.a")
-  find_library(_LIBBROTLIDEC "libbrotlidec.a")
-  if(${_LIBBROTLICOMMON} STREQUAL "_LIBBROTLICOMMON-NOTFOUND" OR
-     ${_LIBBROTLIENC} STREQUAL "_LIBBROTLIENC-NOTFOUND" OR
-     ${_LIBBROTLIDEC} STREQUAL "_LIBBROTLIDEC-NOTFOUND")
-    message(STATUS "brotli static library was not found, building locally")
-    set(WITH_BROTLI_BUILD ON)
+  if (NOT WITH_GFLAGS_BUILD)
+    find_library(_LIBGFLAGS "libgflags.a")
+    if(${_LIBGFLAGS} STREQUAL "_LIBGFLAGS-NOTFOUND")
+      message(STATUS "gflags static library was not found, building locally")
+      set(WITH_GFLAGS_BUILD ON)
+    endif()
   endif()
-endif(NOT WITH_BROTLI_BUILD)
 
-if(NOT WITH_LZ4_BUILD)
-  find_library(_LIBLZ4 "liblz4.a")
-  if(${_LIBLZ4} STREQUAL "_LIBLZ4-NOTFOUND")
-    message(STATUS "lz4 static library was not found, building locally")
-    set(WITH_LZ4_BUILD ON)
+  find_library(_LIBDC "libdouble-conversion.a")
+  if(${_LIBDC} STREQUAL "_LIBDC-NOTFOUND")
+    message(STATUS "double-conversion static library was not found, building locally")
+    set(WITH_DC_BUILD ON)
   endif()
-endif(NOT WITH_LZ4_BUILD)
 
-if(WITH_JEMALLOC_BUILD)
-  def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
-elseif(WITH_JEMALLOC_BUILD)
-  find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
-endif(WITH_JEMALLOC_BUILD)
+  if(NOT WITH_BROTLI_BUILD)
+    find_library(_LIBBROTLICOMMON "libbrotlicommon.a")
+    find_library(_LIBBROTLIENC "libbrotlienc.a")
+    find_library(_LIBBROTLIDEC "libbrotlidec.a")
+    if(${_LIBBROTLICOMMON} STREQUAL "_LIBBROTLICOMMON-NOTFOUND" OR
+      ${_LIBBROTLIENC} STREQUAL "_LIBBROTLIENC-NOTFOUND" OR
+      ${_LIBBROTLIDEC} STREQUAL "_LIBBROTLIDEC-NOTFOUND")
+      message(STATUS "brotli static library was not found, building locally")
+      set(WITH_BROTLI_BUILD ON)
+    endif()
+  endif(NOT WITH_BROTLI_BUILD)
 
-if(WITH_OPENSSL_BUILD)
-  def_ext_prj_g(OPENSSL "1.1.1s")
-endif(WITH_OPENSSL_BUILD)
+  if(NOT WITH_LZ4_BUILD)
+    find_library(_LIBLZ4 "liblz4.a")
+    if(${_LIBLZ4} STREQUAL "_LIBLZ4-NOTFOUND")
+      message(STATUS "lz4 static library was not found, building locally")
+      set(WITH_LZ4_BUILD ON)
+    endif()
+  endif(NOT WITH_LZ4_BUILD)
+  if(WITH_JEMALLOC_BUILD)
+    def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
+  elseif(WITH_JEMALLOC_BUILD)
+    find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
+  endif(WITH_JEMALLOC_BUILD)
+
+else(NOT IS_WINDOWS)
+  set(WITH_DLFCN_WIN32_BUILD ON)
+endif(NOT IS_WINDOWS)
 
 message("Collecting packages:")
-message(STATUS "dwarfs     -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
+message(STATUS "dwarfs      -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
 if(WITH_TESTS)
-  message(STATUS "incbin     -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
+  message(STATUS "incbin      -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
 endif(WITH_TESTS)
 if(WITH_GLOG_BUILD)
   def_ext_prj_g(GLOG "v0.6.0")
-  message(STATUS "glog       -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
+  message(STATUS "glog        -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
 endif(WITH_GLOG_BUILD)
 if(WITH_GFLAGS_BUILD)
   def_ext_prj_g(GFLAGS "v2.2.2")
-  message(STATUS "gflags     -  @${GFLAGS_TAG}  at  ${GFLAGS_SOURCE_DIR}")
+  message(STATUS "gflags      -  @${GFLAGS_TAG}  at  ${GFLAGS_SOURCE_DIR}")
 endif(WITH_GFLAGS_BUILD)
 if(WITH_DC_BUILD)
   def_ext_prj_g(DC "v3.2.0")
-  message(STATUS "double-conversion -  @${DC_TAG}  at  ${DC_SOURCE_DIR}")
+  message(STATUS "double-conversion  -  @${DC_TAG}  at  ${DC_SOURCE_DIR}")
 endif(WITH_DC_BUILD)
 if(WITH_BROTLI_BUILD)
   def_ext_prj_g(BROTLI "v1.1.0")
-  message(STATUS "brotli     -  @${BROTLI_TAG}  at  ${BROTLI_SOURCE_DIR}")
+  message(STATUS "brotli      -  @${BROTLI_TAG}  at  ${BROTLI_SOURCE_DIR}")
 endif(WITH_BROTLI_BUILD)
 if(WITH_LZ4_BUILD)
   def_ext_prj_g(LZ4 "v1.9.4")
-  message(STATUS "lz4        -  @${LZ4_TAG}  at  ${LZ4_SOURCE_DIR}")
+  message(STATUS "lz4         -  @${LZ4_TAG}  at  ${LZ4_SOURCE_DIR}")
 endif(WITH_LZ4_BUILD)
 if(WITH_JEMALLOC_BUILD)
-  message(STATUS "jemalloc   -  v${JEMALLOC_VER}  at  ${JEMALLOC_SOURCE_DIR}")
+  message(STATUS "jemalloc    -  v${JEMALLOC_VER}  at  ${JEMALLOC_SOURCE_DIR}")
 endif(WITH_JEMALLOC_BUILD)
-if(WITH_RUBY_BUILD)
-  message(STATUS "Ruby       -  v${RUBY_VER}  at  ${RUBY_SOURCE_DIR}")
-endif(WITH_RUBY_BUILD)
-if(WITH_OPENSSL_BUILD)
-  message(STATUS "OpenSSL    -  @${OPENSSL_TAG}  at  ${OPENSSL_SOURCE_DIR}")
-endif(WITH_OPENSSL_BUILD)
+if(WITH_DLFCN_WIN32_BUILD)
+  def_ext_prj_g(DLFCN_WIN32 "v1.4.1")
+  message(STATUS "dlfcn-win32 -  @${DLFCN_WIN32_TAG}  at  ${DLFCN_WIN32_SOURCE_DIR}")
+endif(WITH_DLFCN_WIN32_BUILD)
 
 # ...................................................................
 # incbin
 
 if(WITH_TESTS)
+  set(INCBIN_BUILD_COMMAND ${CMAKE_COMMAND} -E true)
+  if(IS_WINDOWS)
+    set(INCBIN_BUILD_COMMAND ${CMAKE_C_COMPILER} ${INCBIN_SOURCE_DIR}/incbin.c -nologo -link -out:${DEPS}/bin/incbin.exe)
+  endif(IS_WINDOWS)
   ExternalProject_Add(${INCBIN_PRJ}
     PREFIX ${DEPS}
     GIT_REPOSITORY https://github.com/graphitemaster/incbin.git
     GIT_TAG ${INCBIN_TAG}
     UPDATE_COMMAND ""
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS}/bin
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS}/include
+    BUILD_COMMAND ${INCBIN_BUILD_COMMAND}
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${INCBIN_SOURCE_DIR}/incbin.h ${DEPS}/include/incbin.h
   )
 
 # ...................................................................
@@ -375,26 +408,24 @@ endif(WITH_TESTS)
 # These forward-declarations and BUILD_BYPRODICTS are required to support 'Ninja'
 # Otherwise add_dependencies would be enough for 'Unix makefiles' generator
 
-set(__LIBDWARFS "${DWARFS_BINARY_DIR}/libdwarfs.a")
-set(__LIBDWARFS_COMPRESSION "${DWARFS_BINARY_DIR}/libdwarfs_compression.a")
-set(__LIBFOLLY "${DWARFS_BINARY_DIR}/folly/libfolly.a")
-set(__LIBFSST "${DWARFS_BINARY_DIR}/libfsst.a")
-set(__LIBT_METADATA "${DWARFS_BINARY_DIR}/libmetadata_thrift.a")
-set(__LIBT_LIGHT "${DWARFS_BINARY_DIR}/libthrift_light.a")
-set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
-set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
+set(__LIBDWARFS "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}dwarfs${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(__LIBDWARFS_COMPRESSION "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}dwarfs_compression${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(__LIBFOLLY "${DWARFS_BINARY_DIR}/folly/${CMAKE_STATIC_LIBRARY_PREFIX}folly${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(__LIBFSST "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}fsst${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(__LIBT_METADATA "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}metadata_thrift${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(__LIBT_LIGHT "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}thrift_light${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-  set(__LIBFMT "${DWARFS_BINARY_DIR}/_deps/fmt-build/libfmtd.a")
-else()
-  set(__LIBFMT "${DWARFS_BINARY_DIR}/_deps/fmt-build/libfmt.a")
-endif()
-
-if(IS_MSYS)
-  set(__LIBARCHIVE "${DEPS}/lib/libarchive_static.a")
-else(IS_MSYS)
+if(NOT IS_WINDOWS)
+  set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
+  set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
   set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
-endif(IS_MSYS)
+
+  if(CMAKE_BUILD_TYPE STREQUAL Debug)
+    set(__LIBFMT "${DWARFS_BINARY_DIR}/_deps/fmt-build/libfmtd.a")
+  else()
+    set(__LIBFMT "${DWARFS_BINARY_DIR}/_deps/fmt-build/libfmt.a")
+  endif()
+endif(NOT IS_WINDOWS)
 
 ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
@@ -402,8 +433,10 @@ ExternalProject_Add(${DWARFS_PRJ}
   GIT_TAG ${DWARFS_TAG}
   UPDATE_COMMAND ""
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+             ${VCPKG_PARAMS}
              -DWITH_TESTS=OFF
              -DTEBAKO_BUILD_SCOPE=${TEBAKO_BUILD_SCOPE}
+             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
              -DDEPS=${DEPS}
              -DCMAKE_PREFIX_PATH=${DEPS}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -558,66 +591,25 @@ if(WITH_JEMALLOC_BUILD)
   )
 endif(WITH_JEMALLOC_BUILD)
 
-
 # ...................................................................
-# OpenSSL
-if(WITH_OPENSSL_BUILD)
-  message(STATUS "Building OpenSSL since Ruby 2.x requires 1.1.x")
-  def_ext_prj_g(OPENSSL "OpenSSL_1_1_1s")
-
-  set(__LIBSSL "${DEPS}/lib/libssl.a")
-  set(__LIBCRYPTO "${DEPS}/lib/libcrypto.a")
-
-  ExternalProject_Add(${OPENSSL_PRJ}
+# dlfcn-win32
+if(WITH_DLFCN_WIN32_BUILD)
+  ExternalProject_Add(${DLFCN_WIN32_PRJ}
     PREFIX ${DEPS}
-    GIT_REPOSITORY "https://github.com/openssl/openssl.git"
-    GIT_TAG ${OPENSSL_TAG}
+    GIT_REPOSITORY "https://github.com/dlfcn-win32/dlfcn-win32"
+    GIT_TAG ${DLFCN_WIN32_TAG}
     UPDATE_COMMAND ""
-    SOURCE_DIR ${OPENSSL_SOURCE_DIR}
-    BINARY_DIR ${OPENSSL_BINARY_DIR}
-    CONFIGURE_COMMAND   ${GNU_BASH} -c "${OPENSSL_SOURCE_DIR}/config          \
-                                                        --openssldir=${DEPS}  \
-                                                        --prefix=${DEPS}"
-    BUILD_BYPRODUCTS ${__LIBSSL} ${__LIBCRYPTO}
+    SOURCE_DIR ${DLFCN_WIN32_SOURCE_DIR}
+    BINARY_DIR ${DLFCN_WIN32_BINARY_DIR}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+               -DCMAKE_BUILD_TYPE=Release
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DBUILD_SHARED_LIBS=OFF
+               -DBUILD_TESTS=OFF
+    BUILD_BYPRODUCTS ${__LIBDL}
   )
-  add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
-endif(WITH_OPENSSL_BUILD)
-
-# ...................................................................
-# Ruby
-# Notes:
-# -- we build ruby for certain MSys tests only, so MSys configuration
-#    is hardcoded (GNUmakefile and probably more)
-# -- starting from Ruby 2.7.7 only in-source build works
-
-if(WITH_RUBY_BUILD)
-  set(__LIBRUBY "${RUBY_SOURCE_DIR}/libx64-msvcrt-ruby270-static.a")
-
-  ExternalProject_Add(${RUBY_PRJ}
-    PREFIX ${DEPS}
-    URL https://cache.ruby-lang.org/pub/ruby/${RUBY_VER_BASE}/ruby-${RUBY_VER}.tar.gz
-    URL_HASH SHA256=${RUBY_HASH}
-    DOWNLOAD_NO_PROGRESS true
-    BUILD_IN_SOURCE true
-    SOURCE_DIR ${RUBY_SOURCE_DIR}
-    CONFIGURE_COMMAND ${GNU_BASH} -c "${RUBY_SOURCE_DIR}/configure                            \
-                                                        --enable-bundled-libyaml              \
-                                                        --without-gmp                         \
-                                                        --disable-dtrace                      \
-                                                        --enable-debug-env                    \
-                                                        --disable-install-doc                 \
-                                                        --with-static-linked-ext              \
-                                                        --with-out-ext=syslog,pty,dbm,gdbm    \
-                                                        --prefix=${DEPS}                      \
-                                                        --with-openssl-dir=${DEPS}"
-    BUILD_COMMAND    ${GNU_BASH} -c "make -f GNUmakefile"
-    INSTALL_COMMAND  ${GNU_BASH} -c "make -f GNUmakefile install"
-    BUILD_BYPRODUCTS ${__LIBRUBY}
-  )
-  if(WITH_OPENSSL_BUILD)
-    add_dependencies(${RUBY_PRJ} ${OPENSSL_PRJ})
-  endif(WITH_OPENSSL_BUILD)
-endif(WITH_RUBY_BUILD)
+  add_dependencies(${DWARFS_PRJ} ${DLFCN_WIN32_PRJ})
+endif(WITH_DLFCN_WIN32_BUILD)
 
 # ...................................................................
 # Library
@@ -628,17 +620,17 @@ configure_file(
    @ONLY
 )
 
-check_symbol_exists(O_DIRECTORY "fcntl.h" TEBAKO_HAS_O_DIRECTORY)
-check_symbol_exists(O_NOFOLLOW "fcntl.h" TEBAKO_HAS_O_NOFOLLOW)
-check_symbol_exists(O_BINARY "fcntl.h" TEBAKO_HAS_O_BINARY)
-
-check_symbol_exists(S_ISLNK "sys/stat.h" TEBAKO_HAS_S_ISLNK)
-
 check_symbol_exists(getattrlist "unistd.h" TEBAKO_HAS_GETATTRLIST)
 check_symbol_exists(fgetattrlist "unistd.h" TEBAKO_HAS_FGETATTRLIST)
 
 check_symbol_exists(lstat "sys/stat.h" TEBAKO_HAS_LSTAT)
 check_symbol_exists(fstatat "sys/stat.h" TEBAKO_HAS_FSTATAT)
+
+check_symbol_exists(opendir "dirent.h" TEBAKO_HAS_OPENDIR)
+check_symbol_exists(closedir "dirent.h" TEBAKO_HAS_CLOSEDIR)
+check_symbol_exists(readdir "dirent.h" TEBAKO_HAS_READDIR)
+check_symbol_exists(seekdir "dirent.h" TEBAKO_HAS_SEEKDIR)
+check_symbol_exists(telldir "dirent.h" TEBAKO_HAS_TELLDIR)
 
 check_symbol_exists(dirfd "dirent.h" TEBAKO_HAS_DIRFD)
 check_symbol_exists(fdopendir "dirent.h" TEBAKO_HAS_FDOPENDIR)
@@ -649,15 +641,15 @@ check_symbol_exists(readv "sys/uio.h" TEBAKO_HAS_READV)
 
 check_symbol_exists(pread "unistd.h" TEBAKO_HAS_PREAD)
 
-check_c_source_compiles(
+check_cxx_source_compiles(
     "#include <sys/stat.h>
      int main() {
       return mkdir(\"tmp\", 0700);
      }"
     TEBAKO_HAS_POSIX_MKDIR)
 
-check_c_source_compiles(
-    "#include <sys/stat.h>
+check_cxx_source_compiles(
+    "#include <direct.h>
      int main() {
       return mkdir(\"tmp\");
      }"
@@ -667,20 +659,33 @@ if(NOT TEBAKO_HAS_POSIX_MKDIR AND NOT TEBAKO_HAS_WINDOWS_MKDIR)
   message(FATAL_ERROR "Configuration script did not find neither Posix nor Windows mkdir")
 endif(NOT TEBAKO_HAS_POSIX_MKDIR AND NOT TEBAKO_HAS_WINDOWS_MKDIR)
 
-
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-config.h.in
   ${CMAKE_CURRENT_SOURCE_DIR}/include/tebako-config.h
 )
 
-set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  add_compile_options(-fdiagnostics-color=always -static-libgcc)
 
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+  # For gcc, -O3 is *much* worse than -O2
+  # Update: This is still true for gcc-12
+  set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
+  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  add_compile_options(-fcolor-diagnostics)
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "13.0.0")
+    # for some reason, clang-10 binaries crash upon throwing exceptions
+    # [maxirmx] This is true for clang-12 Release build, but no crash for RelWithDebugInfo
+    add_compile_options(-fno-omit-frame-pointer)
+  endif(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "13.0.0")
+elseif(IS_WINDOWS)
+    add_compile_options(/Zc:__cplusplus /utf-8 /wd4267 /wd4244 /wd5219)
+    # Apply /MT or /MTd  (multithread, static version of the run-time library)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${INCBIN_SOURCE_DIR}
+                    ${DEPS}/include
                     ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift
                     ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include ${BREW_PREFIX}/include
                     ${DWARFS_BINARY_DIR}/_deps/fmt-src/include
@@ -691,7 +696,7 @@ add_library(dwarfs-wr STATIC
     "src/dir-ctl.cpp"
     "src/dir-io.cpp"
     "src/file-io.cpp"
-    "src/dl.cpp"
+    "src/dl-ctl.cpp"
     "src/tebako-io-helpers.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
@@ -713,10 +718,10 @@ add_library(dwarfs-wr STATIC
 
 if(RB_W32)
   target_sources(dwarfs-wr PUBLIC
-    "include/tebako-io-rb-w32.h"
+    ""
+    "include/tebako-io.h"
     "include/tebako-io-rb-w32-inner.h"
   )
-  add_compile_definitions(RB_W32)
 endif(RB_W32)
 
 add_dependencies(dwarfs-wr ${DWARFS_PRJ})
@@ -742,6 +747,31 @@ endif(WITH_JEMALLOC_BUILD)
 # Tests
 
 if(WITH_TESTS)
+
+  add_library(empty MODULE tests/empty/empty.c)
+  set_target_properties(empty PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  set_target_properties(empty PROPERTIES C_VISIBILITY_PRESET hidden)
+
+  if(WIN32)
+    if(DEFINED ENV{TEMP})
+      file(TO_CMAKE_PATH "$ENV{TEMP}" TESTS_TMP_DIR)
+    elseif(DEFINED ENV{TMP})
+      file(TO_CMAKE_PATH "$ENV{TMP}" TESTS_TMP_DIR)
+    else()
+      message(FATAL_ERROR "Environment variable TEMP or TMP is not defined")
+    endif()
+    file(TO_CMAKE_PATH "$ENV{PROGRAMFILES}" TESTS_USR_DIR)
+    find_program(SHELL_PATH cmd)
+  else(WIN32)
+    # Cannot use env. variables on MacOS because temp folder is unique on each run and
+    # it breaks cross-tests on different Os version
+    file(TO_CMAKE_PATH "/tmp" TESTS_TMP_DIR)
+    file(TO_CMAKE_PATH "/usr" TESTS_USR_DIR)
+    find_program(SHELL_PATH sh)
+  endif(WIN32)
+
+  get_filename_component(TESTS_BIN_DIR "${SHELL_PATH}" DIRECTORY)
+  get_filename_component(TESTS_BIN_NAKED_DIR "${TESTS_BIN_DIR}" NAME)
 
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/tebako-test-config.h.in
@@ -772,13 +802,9 @@ if(WITH_TESTS)
 # Packaged filesystem
 # links for testing are created here to avoid interoperatibility problems Linux/Windows
 
-  add_library(empty MODULE tests/empty/empty.c)
-  set_target_properties(empty PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  set_target_properties(empty PROPERTIES C_VISIBILITY_PRESET hidden)
-
   add_custom_target(PACKAGED_FILESYSTEM_STEP_1 ALL
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
-    COMMAND ${GNU_BASH} -c "cp ${CMAKE_CURRENT_BINARY_DIR}/*empty.* ${DATA_TEST_DIR}/directory-1"
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${LIBEMPTY_NAME} ${DATA_TEST_DIR}/directory-1
   )
 
   add_dependencies(PACKAGED_FILESYSTEM_STEP_1 empty)
@@ -799,14 +825,14 @@ if(WITH_TESTS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem ${DATA_TEST_DIR}
         COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
-        COMMAND ${MKDWARFS} --force -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     else(USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
-        COMMAND ${MKDWARFS} --force -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -816,15 +842,13 @@ if(WITH_TESTS)
   else(WITH_LINK_TESTS)
     if (USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
-        COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
-        COMMAND ${MKDWARFS} --force -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     else(USE_TEMP_FS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
-        COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
-        COMMAND ${MKDWARFS} --force -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
+        COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/directory-1/*empty.*
         BYPRODUCTS ${DATA_BIN_FILE}
       )
@@ -840,6 +864,14 @@ if(WITH_TESTS)
     @ONLY
   )
 
+  if(IS_WINDOWS)
+    add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs0.c
+      COMMAND ${DEPS}/bin/incbin.exe ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp -o ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs0.c
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp ${DATA_BIN_FILE} ${INCBIN_PRJ}
+    )
+  endif(IS_WINDOWS)
+
   function(ADD_DWARFS_LIBRARY NAME PRJ APP_NM)
     add_library(${NAME} STATIC IMPORTED)
     set_target_properties(${NAME} PROPERTIES IMPORTED_LOCATION ${_${NAME}})
@@ -854,7 +886,6 @@ if(WITH_TESTS)
     target_link_libraries(${APP_NM} "$<LINK_LIBRARY:WHOLE_ARCHIVE,_LIBDWARFS_COMPRESSION>")
   endfunction()
 
-
 # ...................................................................
 # System libraries
 # Each library name given to the NAMES option is first considered
@@ -864,23 +895,53 @@ if(WITH_TESTS)
 # used to locate static libraries on UNIX-like systems.
 #
 
-  find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options system)
+  find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread system)
 
-  find_library(_LIBEVENT "libevent.a" REQUIRED)
-  find_library(_LIBLZMA "liblzma.a" REQUIRED)
+  if(IS_WINDOWS)
+# For Windwos native build these libraries are installed with vcpkg
+    find_library(_LIBGLOG "glog" REQUIRED)
+    if(CMAKE_BUILD_TYPE STREQUAL Release)
+      find_library(_LIBGFLAGS "gflags_static" REQUIRED)
+    else(CMAKE_BUILD_TYPE STREQUAL Release)
+      find_library(_LIBGFLAGS "gflags_static_debug" REQUIRED)
+    endif(CMAKE_BUILD_TYPE STREQUAL Release)
+    find_library(_LIBDC "double-conversion" REQUIRED)
+    find_library(_LIBBROTLICOMMON "brotlicommon")
+    find_library(_LIBBROTLIENC "brotlienc")
+    find_library(_LIBBROTLIDEC "brotlidec")
+    find_library(_LIBLZ4 "lz4")
+    find_library(_LIBEVENT event REQUIRED)
+    find_library(_LIBLZMA lzma REQUIRED)
+    find_library(_LIBZ zlib REQUIRED)
+    find_library(_LIBSSL libssl REQUIRED)
+    find_library(_LIBCRYPTO libcrypto REQUIRED)
+
+# __XXXXX - since we are simulating that these libraries were build
+# by DWARFS project
+    find_library(__LIBZSTD zstd REQUIRED)
+    find_library(__LIBARCHIVE archive REQUIRED)
+    find_library(__LIBXXHASH xxhash REQUIRED)
+    if(CMAKE_BUILD_TYPE STREQUAL Release)
+      find_library(__LIBFMT fmt REQUIRED)
+    else(CMAKE_BUILD_TYPE STREQUAL Release)
+      find_library(__LIBFMT fmtd REQUIRED)
+    endif(CMAKE_BUILD_TYPE STREQUAL Release)
+    set(_LIBEH "")
+else(IS_WINDOWS)
+    set(_LIBEH "gcc_eh")
+    find_library(_LIBEVENT "libevent.a" REQUIRED)
+    find_library(_LIBLZMA "liblzma.a" REQUIRED)
 
 # Starting with MacOS BigSur  '/usr/lib' is replaced with a cache of system libraries
 # So we cannot just look for libz.a, it is not there anymore
 # brew version is keg-only so it cannot be located without a hint
 
-  find_library(_LIBZ "libz.a" REQUIRED HINTS ${DEPS}/lib ${CMAKE_PREFIX_PATH}/opt/zlib/lib)
+    find_library(_LIBZ "libz.a" REQUIRED HINTS ${DEPS}/lib ${CMAKE_PREFIX_PATH}/opt/zlib/lib)
 
-  find_library(_LIBSSL "libssl.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
-  find_library(_LIBCRYPTO "libcrypto.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
+    find_library(_LIBSSL "libssl.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
+    find_library(_LIBCRYPTO "libcrypto.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
 
-  if(NOT IS_MSYS)
     find_library(_LIBACL "libacl.a")
-  endif()
 
 #  find_library(_LIBPTHREAD "pthread")
 #  find_library(_LIBDL "dl")
@@ -888,20 +949,18 @@ if(WITH_TESTS)
 #  find_library(_LIBM "libm.a")
 #  find_library(_LIBRT "librt.a")
 
-  find_library(_LIBUNWIND "libunwind.a")
-  find_library(_LIBIBERTY "libiberty.a")
+    find_library(_LIBUNWIND "libunwind.a")
+    find_library(_LIBIBERTY "libiberty.a")
 
-#  if (IS_MSYS)
-#    add_link_options(-static-libstdc++ -static)
-#  else
-  if (NOT IS_DARWIN)
-    add_link_options(-static-libstdc++)
-    add_link_options(-static-libgcc)
-  endif(NOT IS_DARWIN)
+    if (NOT IS_DARWIN)
+      add_link_options(-static-libstdc++)
+      add_link_options(-static-libgcc)
+    endif(NOT IS_DARWIN)
 
-  if (IS_MUSL)
-    add_compile_definitions(__musl__)
-  endif(IS_MUSL)
+    if (IS_MUSL)
+      add_compile_definitions(__musl__)
+    endif(IS_MUSL)
+  endif(IS_WINDOWS)
 
   add_executable(wr-bin
     "include/tebako-pch.h"
@@ -916,26 +975,27 @@ if(WITH_TESTS)
 # ...................................................................
 # Google test
 
+  file(GLOB TEST_FILES LIST_DIRECTORIES false CONFIGURE_DEPENDS tests/tests-*.cpp)
+
   add_executable(wr-tests
     "include/tebako-pch.h"
     "include/tebako-io.h"
-    "tests/tests-fs-load.cpp"
-    "tests/tests-file-ctl.cpp"
-    "tests/tests-file-io.cpp"
-    "tests/tests-dir-ctl.cpp"
-    "tests/tests-ln.cpp"
-    "tests/tests-dl.cpp"
+    ${TEST_FILES}
     "tests/tebako-fs.cpp"
     "tests/tebako-fs.h"
     "tests/tests.h"
   )
 
+  add_dependencies(wr-tests PACKAGED_FILESYSTEM_STEP_3)
+
+if(IS_WINDOWS)
+  target_sources(wr-bin PUBLIC  "tests/tebako-fs0.c" )
+  target_sources(wr-tests PUBLIC "tests/tebako-fs0.c")
+endif(IS_WINDOWS)
+
 if(RB_W32)
-  target_sources(wr-bin PUBLIC "tests/tests-init-rb-w32.c" "tests/tests-init-rb-w32.h")
-  target_sources(wr-tests PUBLIC "tests/tests-dir-io-rb-w32.cpp")
-  target_sources(wr-tests PUBLIC "tests/tests-init-rb-w32.c" "tests/tests-init-rb-w32.h")
-else(RB_W32)
-  target_sources(wr-tests PUBLIC "tests/tests-dir-io.cpp")
+  target_sources(wr-bin PUBLIC  "tests/rb_w32-tebako-tests-mocks.c")
+  target_sources(wr-tests PUBLIC  "tests/rb_w32-tebako-tests-mocks.c")
 endif(RB_W32)
 
 # ...................................................................
@@ -946,7 +1006,7 @@ endif(RB_W32)
 
   target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
   target_link_libraries(wr-tests dwarfs-wr ${GTEST_LDFLAGS})
-  gtest_add_tests(TARGET wr-tests)
+  gtest_add_tests(TARGET wr-tests SOURCES ${TEST_FILES})
 
   add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM_STEP_3)
   add_dependencies(wr-tests ${INCBIN_PRJ} PACKAGED_FILESYSTEM_STEP_3 wr-bin)
@@ -959,17 +1019,14 @@ endif(RB_W32)
 # libmetadata_thrift libthrift_light
   add_dwarfs_library(_LIBDWARFS ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library_w(_LIBDWARFS_COMPRESSION ${DWARFS_PRJ} wr-bin)
-  add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBFSST ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBFOLLY ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBT_METADATA ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBT_LIGHT ${DWARFS_PRJ} wr-bin)
+  add_dwarfs_library(_LIBARCHIVE ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBXXHASH ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBZSTD ${DWARFS_PRJ} wr-bin)
   add_dwarfs_library(_LIBFMT ${DWARFS_PRJ} wr-bin)
-
-# ...................................................................
-#  libarchive
 
   target_link_libraries(wr-tests _LIBDWARFS "$<LINK_LIBRARY:WHOLE_ARCHIVE,_LIBDWARFS_COMPRESSION>"
                         _LIBARCHIVE _LIBFSST   _LIBFOLLY _LIBT_METADATA
@@ -1012,16 +1069,8 @@ endif(RB_W32)
     list(APPEND _LIBRARIES ${_LIBLZ4})
   endif(WITH_LZ4_BUILD)
 
-  if(WITH_OPENSSL_BUILD)
-    add_dwarfs_library(_LIBSSL ${OPENSSL_PRJ} wr-bin)
-    target_link_libraries(wr-tests _LIBSSL)
-    add_dwarfs_library(_LIBCRYPTO ${OPENSSL_PRJ} wr-bin)
-    target_link_libraries(wr-tests _LIBCRYPTO)
-  else(WITH_OPENSSL_BUILD)
-    list(APPEND _LIBRARIES ${_LIBSSL})
-    list(APPEND _LIBRARIES ${_LIBCRYPTO})
-  endif(WITH_OPENSSL_BUILD)
-
+  list(APPEND _LIBRARIES ${_LIBSSL})
+  list(APPEND _LIBRARIES ${_LIBCRYPTO})
   list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
   if(IS_DARWIN)
@@ -1030,14 +1079,15 @@ endif(RB_W32)
   # libgcc_eh shall precede libunwind to aboid duplicate symbols during linking
   # liblzma shall follow libunwind because it is libunwind dependency
     list(APPEND _LIBRARIES ${_LIBIBERTY}  ${_LIBACL}    ${_LIBZ}
-                           gcc_eh         ${_LIBUNWIND} ${_LIBLZMA}
+                           ${_LIBEH}      ${_LIBUNWIND} ${_LIBLZMA}
     )
-    if(NOT RB_W32)
+    if(NOT IS_WINDOWS)
       list(APPEND _LIBRARIES pthread)
-    endif(NOT RB_W32)
+    endif(NOT IS_WINDOWS)
     list(APPEND _LIBRARIES dl)
   endif(IS_DARWIN)
 
+  # target_link_options(wr-bin PUBLIC -static-libgcc -static-libstdc++)
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
 
@@ -1049,16 +1099,10 @@ endif(RB_W32)
     target_link_libraries(wr-tests ${_LIBJEMALLOC})
   endif(WITH_JEMALLOC_BUILD)
 
-  if(WITH_RUBY_BUILD)
-    add_dwarfs_library(_LIBRUBY ${RUBY_PRJ} wr-bin)
-    target_link_libraries(wr-bin imagehlp iphlpapi)
-    target_link_libraries(wr-tests ${__LIBRUBY} imagehlp iphlpapi)
-  endif(WITH_RUBY_BUILD)
-
-  if(IS_MSYS)
-    target_link_libraries(wr-bin shlwapi wsock32 ws2_32)
-    target_link_libraries(wr-tests shlwapi wsock32 ws2_32)
-  endif(IS_MSYS)
+  if(IS_WINDOWS)
+    target_link_libraries(wr-bin crypt32 shlwapi wsock32 ws2_32)
+    target_link_libraries(wr-tests crypt32 shlwapi wsock32 ws2_32)
+  endif(IS_WINDOWS)
 
 endif(WITH_TESTS)
 
@@ -1070,11 +1114,14 @@ install(TARGETS
 install(FILES
         ${__LIBDWARFS}  ${__LIBFSST}   ${__LIBFOLLY} ${__LIBT_METADATA}
         ${__LIBT_LIGHT} ${__LIBXXHASH} ${__LIBZSTD}  ${__LIBARCHIVE}
-        ${__LIBFMT}     ${__LIBDWARFS_COMPRESSION}
+        ${__LIBDWARFS_COMPRESSION}
         DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-install(DIRECTORY ${DWARFS_BINARY_DIR}/_deps/fmt-src/include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+if(NOT IS_WINDOWS)
+  install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(DIRECTORY ${DWARFS_BINARY_DIR}/_deps/fmt-src/include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif(NOT IS_WINDOWS)
 
 if(WITH_GLOG_BUILD)
   install(FILES ${__LIBGLOG} DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -1105,18 +1152,18 @@ install(FILES
         "include/tebako-config.h"
         "include/tebako-defines.h"
         "include/tebako-io.h"
-        "include/tebako-io-rb-w32.h"
+        "include/tebako-io.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 
-if(IS_MSYS)
+if(IS_WINDOWS)
   install(FILES
           ${DEPS_BIN_DIR}/mkdwarfs.exe
           DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
-else(IS_MSYS)
+else(IS_WINDOWS)
   install(FILES
           ${DEPS_BIN_DIR}/mkdwarfs
           DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
-endif(IS_MSYS)
+endif(IS_WINDOWS)

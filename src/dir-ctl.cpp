@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -30,9 +30,9 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
+#include <tebako-dirent.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
-#include <tebako-io-rb-w32.h>
 #include <tebako-io-rb-w32-inner.h>
 
 char* tebako_getcwd(char* buf, size_t size)
@@ -122,7 +122,7 @@ int tebako_chdir(const char* path)
   return ret;
 }
 
-#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+#if defined(TEBAKO_HAS_POSIX_MKDIR)
 int tebako_mkdir(const char* path, mode_t mode)
 {
 #else
@@ -139,7 +139,7 @@ int tebako_mkdir(const char* path)
       TEBAKO_SET_LAST_ERROR(EROFS);
     }
     else {
-#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+#if defined(TEBAKO_HAS_POSIX_MKDIR)
       ret = TO_RB_W32_U(mkdir)(path, mode);
 #else
       ret = ::mkdir(path);

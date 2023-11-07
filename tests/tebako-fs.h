@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako
  *
@@ -33,4 +33,12 @@
 
 INCBIN_EXTERN(fs);
 
-extern const char* tests_log_level;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const char* tests_log_level(void);
+
+#ifdef __cplusplus
+}
+#endif

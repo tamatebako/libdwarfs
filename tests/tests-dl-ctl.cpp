@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -36,12 +36,25 @@
 namespace {
 class DlTests : public testing::Test {
  protected:
+#ifdef _WIN32
+  static void invalidParameterHandler(const wchar_t* p1,
+                                      const wchar_t* p2,
+                                      const wchar_t* p3,
+                                      unsigned int p4,
+                                      uintptr_t p5)
+  {
+    // Just return to pass execution to standard library
+    // otherwise exception will be thrown by MSVC runtime
+    return;
+  }
+#endif
+
   static void SetUpTestSuite()
   {
-#ifdef RB_W32
-    do_rb_w32_init();
+#ifdef _WIN32
+    _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level, NULL /* cachesize*/,
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
             NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
             NULL /* image_offset */
     );
@@ -80,9 +93,8 @@ TEST_F(DlTests, tebako_dlopen_no_file_pass_through)
 TEST_F(DlTests, tebako_dlopen_absolute_path)
 {
   void* handle;
-  handle =
-      tebako_dlopen(TEBAKIZE_PATH(__WITH_LIB_EXT__("directory-1/libempty")),
-                    RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__),
+                         RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
     EXPECT_EQ(0, dlclose(handle));
@@ -93,9 +105,8 @@ TEST_F(DlTests, tebako_dlopen_absolute_path)
 TEST_F(DlTests, tebako_dlopen_absolute_path_win)
 {
   void* handle;
-  handle =
-      tebako_dlopen(TEBAKIZE_PATH(__WITH_LIB_EXT__("directory-1\\libempty")),
-                    RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen(TEBAKIZE_PATH("directory-1\\" __LIBEMPTY__),
+                         RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
     EXPECT_EQ(0, dlclose(handle));
@@ -107,7 +118,7 @@ TEST_F(DlTests, tebako_dlopen_relative_path)
 {
   EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-1")));
   void* handle;
-  handle = tebako_dlopen(__WITH_LIB_EXT__("libempty"), RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen(__LIBEMPTY__, RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_TRUE(handle != NULL);
   if (handle != nullptr) {
     EXPECT_EQ(0, dlclose(handle));
@@ -118,7 +129,7 @@ TEST_F(DlTests, tebako_dlopen_relative_path_dot_dot)
 {
   EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-3/level-1/level-2///")));
   void* handle;
-  handle = tebako_dlopen(__WITH_LIB_EXT__("../../../directory-1/libempty"),
+  handle = tebako_dlopen("../../../directory-1/" __LIBEMPTY__,
                          RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
@@ -132,7 +143,7 @@ TEST_F(DlTests, tebako_dlopen_relative_path_dot_dot_win)
   EXPECT_EQ(0,
             tebako_chdir(TEBAKIZE_PATH("directory-3\\level-1\\level-2\\\\\\")));
   void* handle;
-  handle = tebako_dlopen(__WITH_LIB_EXT__("..\\..\\..\\directory-1\\libempty"),
+  handle = tebako_dlopen("..\\..\\..\\directory-1\\" __LIBEMPTY__,
                          RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
@@ -147,11 +158,11 @@ TEST_F(DlTests, tebako_dlopen_pass_through)
   double (*sqrt)(double);
   char* error;
 #if __MACH__
-  handle = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY | RTLD_GLOBAL);
 #elif __musl__
-  handle = dlopen("/usr/lib/libc.so", RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen("/usr/lib/libc.so", RTLD_LAZY | RTLD_GLOBAL);
 #elif defined(_WIN32)
-  handle = dlopen(__AT_BIN__("msys-2.0.dll"), RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen(__AT_BIN__("msvcrt.dll"), RTLD_LAZY | RTLD_GLOBAL);
 #else
   handle = dlopen(LIBM_SO, RTLD_LAZY | RTLD_GLOBAL);
 #endif

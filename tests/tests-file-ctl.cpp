@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -32,12 +32,25 @@
 namespace {
 class FileCtlTests : public testing::Test {
  protected:
+#ifdef _WIN32
+  static void invalidParameterHandler(const wchar_t* p1,
+                                      const wchar_t* p2,
+                                      const wchar_t* p3,
+                                      unsigned int p4,
+                                      uintptr_t p5)
+  {
+    // Just return to pass execution to standard library
+    // otherwise exception will be thrown by MSVC runtime
+    return;
+  }
+#endif
+
   static void SetUpTestSuite()
   {
-#ifdef RB_W32
-    do_rb_w32_init();
+#ifdef _WIN32
+    _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level, NULL /* cachesize*/,
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
             NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
             NULL /* image_offset */
     );
@@ -49,7 +62,7 @@ class FileCtlTests : public testing::Test {
   }
 };
 
-static const char* const bash_file = __WITH_EXE_EXT__(__AT_BIN__("bash"));
+static const char* const shell_file = __AT_BIN__(__SHELL__);
 
 TEST_F(FileCtlTests, tebako_access_absolute_path)
 {
@@ -58,10 +71,14 @@ TEST_F(FileCtlTests, tebako_access_absolute_path)
   ret = tebako_access(TEBAKIZE_PATH("file.txt"), R_OK);
   EXPECT_EQ(0, ret);
   ret = tebako_access(TEBAKIZE_PATH("file.txt"), W_OK);
-  EXPECT_EQ(0, ret);
+  EXPECT_EQ(-1, ret);
   ret = tebako_access(TEBAKIZE_PATH("file.txt"), X_OK);
+#ifdef _WIN32
+  EXPECT_EQ(0, ret);
+#else
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(EACCES, errno);
+#endif
 }
 
 TEST_F(FileCtlTests, tebako_access_absolute_path_no_file)
@@ -93,8 +110,12 @@ TEST_F(FileCtlTests, tebako_access_relative_path)
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(EACCES, errno);
   ret = tebako_access("file-in-directory-2.txt", X_OK);
+#ifdef _WIN32
+  EXPECT_EQ(0, ret);
+#else
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(EACCES, errno);
+#endif
 }
 
 TEST_F(FileCtlTests, tebako_access_relative_path_no_file)
@@ -108,7 +129,7 @@ TEST_F(FileCtlTests, tebako_access_relative_path_no_file)
 
 TEST_F(FileCtlTests, tebako_access_absolute_path_pass_through)
 {
-  int ret = tebako_access(bash_file, F_OK);
+  int ret = tebako_access(shell_file, F_OK);
   EXPECT_EQ(0, ret);
 }
 
@@ -116,7 +137,7 @@ TEST_F(FileCtlTests, tebako_access_relative_path_pass_through)
 {
   int ret = tebako_chdir(__BIN__ "/../");
   EXPECT_EQ(0, ret);
-  ret = tebako_access("bin", R_OK | X_OK);
+  ret = tebako_access(__BIN_NAKED__, R_OK | X_OK);
   EXPECT_EQ(0, ret);
 }
 
@@ -176,7 +197,7 @@ TEST_F(FileCtlTests, tebako_stat_relative_path_no_file)
 TEST_F(FileCtlTests, tebako_stat_absolute_path_pass_through)
 {
   struct STAT_TYPE st;
-  int ret = tebako_stat(bash_file, &st);
+  int ret = tebako_stat(shell_file, &st);
   EXPECT_EQ(0, ret);
 }
 
@@ -185,7 +206,7 @@ TEST_F(FileCtlTests, tebako_stat_relative_path_pass_through)
   struct STAT_TYPE st;
   int ret = tebako_chdir(__BIN__);
   EXPECT_EQ(0, ret);
-  ret = tebako_stat(__WITH_EXE_EXT__("sh"), &st);
+  ret = tebako_stat(__SHELL__, &st);
   EXPECT_EQ(0, ret);
 }
 
@@ -194,87 +215,97 @@ TEST_F(FileCtlTests, tebako_open_fstat_close_absolute_path)
   int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
                        O_RDONLY);
   EXPECT_LT(0, fh);
-
-  struct STAT_TYPE st;
-  int ret = tebako_fstat(fh, &st);
-  EXPECT_EQ(0, ret);
-
-  ret = tebako_close(fh);
-  EXPECT_EQ(0, ret);
+  if (fh > 0) {
+    struct STAT_TYPE st;
+    int ret = tebako_fstat(fh, &st);
+    EXPECT_EQ(0, ret);
+    ret = tebako_close(fh);
+    EXPECT_EQ(0, ret);
+  }
 }
 
 TEST_F(FileCtlTests, tebako_open_fstat_close_relative_path)
 {
-  struct STAT_TYPE buf;
   int ret = tebako_chdir(TEBAKIZE_PATH(""));
   EXPECT_EQ(0, ret);
   int fh = tebako_open(2, "directory-1/file-in-directory-1.txt", O_RDONLY);
   EXPECT_LT(0, fh);
-  ret = tebako_fstat(fh, &buf);
-  EXPECT_EQ(0, ret);
-  ret = tebako_close(fh);
-  EXPECT_EQ(0, ret);
+  if (fh > 0) {
+    struct STAT_TYPE buf;
+    ret = tebako_fstat(fh, &buf);
+    EXPECT_EQ(0, ret);
+    ret = tebako_close(fh);
+    EXPECT_EQ(0, ret);
+  }
 }
 
 TEST_F(FileCtlTests, tebako_open_fstat_close_absolute_path_pass_through)
 {
-  int fh = tebako_open(2, bash_file, O_RDONLY);
+  int fh = tebako_open(2, shell_file, O_RDONLY);
   EXPECT_LT(0, fh);
-
-  struct STAT_TYPE st;
-  int ret = tebako_fstat(fh, &st);
-  EXPECT_EQ(0, ret);
-
-  ret = tebako_close(fh);
-  EXPECT_EQ(0, ret);
+  if (fh > 0) {
+    struct STAT_TYPE st;
+    int ret = tebako_fstat(fh, &st);
+    EXPECT_EQ(0, ret);
+    ret = tebako_close(fh);
+    EXPECT_EQ(0, ret);
+  }
 }
 
 TEST_F(FileCtlTests, tebako_open_fstat_close_relative_path_pass_through)
 {
-  struct STAT_TYPE st;
   int ret = tebako_chdir(__BIN__ "/..");
   EXPECT_EQ(0, ret);
-  int fh = tebako_open(2, __WITH_EXE_EXT__("bin/bash"), O_RDONLY);
+  int fh = tebako_open(2, __BIN_NAKED__ __S__ __SHELL__, O_RDONLY);
   EXPECT_LT(0, fh);
-  ret = tebako_fstat(fh, &st);
-  EXPECT_EQ(0, ret);
-  ret = tebako_close(fh);
-  EXPECT_EQ(0, ret);
+  if (fh > 0) {
+    struct STAT_TYPE st;
+    ret = tebako_fstat(fh, &st);
+    EXPECT_EQ(0, ret);
+    ret = tebako_close(fh);
+    EXPECT_EQ(0, ret);
+  }
 }
 
 #ifdef TEBAKO_HAS_FSTATAT
 TEST_F(FileCtlTests, tebako_fstatat_relative_path)
 {
-  struct STAT_TYPE buf;
   int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
   EXPECT_LT(0, fd);
-  int ret = tebako_fstatat(fd, "file-in-directory-1.txt", &buf, 0);
-  EXPECT_EQ(0, ret);
-  ret = tebako_close(fd);
-  EXPECT_EQ(0, ret);
+  if (fd > 0) {
+    struct STAT_TYPE st;
+    int ret = tebako_fstatat(fd, "file-in-directory-1.txt", &st, 0);
+    EXPECT_EQ(0, ret);
+    ret = tebako_close(fd);
+    EXPECT_EQ(0, ret);
+  }
 }
 
 TEST_F(FileCtlTests, tebako_fstatat_absolute_path)
 {
-  struct STAT_TYPE buf;
   int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
   EXPECT_LT(0, fd);
-  int ret = tebako_fstatat(
-      fd, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), &buf, 0);
-  EXPECT_EQ(0, ret);
-  ret = tebako_close(fd);
-  EXPECT_EQ(0, ret);
+  if (fd > 0) {
+    struct STAT_TYPE st;
+    int ret = tebako_fstatat(
+        fd, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), &st, 0);
+    EXPECT_EQ(0, ret);
+    ret = tebako_close(fd);
+    EXPECT_EQ(0, ret);
+  }
 }
 
 TEST_F(FileCtlTests, tebako_fstatat_relative_path_pass_through)
 {
-  struct STAT_TYPE buf;
   int fd = tebako_open(2, "/bin", O_RDONLY | O_DIRECTORY);
   EXPECT_LT(0, fd);
-  int ret = tebako_fstatat(fd, "bash", &buf, 0);
-  EXPECT_EQ(0, ret);
-  ret = tebako_close(fd);
-  EXPECT_EQ(0, ret);
+  if (fd > 0) {
+    struct STAT_TYPE st;
+    int ret = tebako_fstatat(fd, "bash", &st, 0);
+    EXPECT_EQ(0, ret);
+    ret = tebako_close(fd);
+    EXPECT_EQ(0, ret);
+  }
 }
 
 TEST_F(FileCtlTests, tebako_fstatat_absolute_path_pass_through)
@@ -282,18 +313,21 @@ TEST_F(FileCtlTests, tebako_fstatat_absolute_path_pass_through)
   struct STAT_TYPE buf;
   int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
   EXPECT_LT(0, fd);
-  int ret = tebako_fstatat(fd, bash_file, &buf, 0);
-  EXPECT_EQ(0, ret);
-  ret = tebako_close(fd);
-  EXPECT_EQ(0, ret);
+  if (fd > 0) {
+    struct STAT_TYPE st;
+    int ret = tebako_fstatat(fd, shell_file, &st, 0);
+    EXPECT_EQ(0, ret);
+    ret = tebako_close(fd);
+    EXPECT_EQ(0, ret);
+  }
 }
 
 TEST_F(FileCtlTests, tebako_fstatat_at_fdcwd)
 {
-  struct STAT_TYPE buf;
+  struct STAT_TYPE st;
   int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));
   EXPECT_EQ(0, ret);
-  ret = tebako_fstatat(AT_FDCWD, "file-in-directory-2.txt", &buf, 0);
+  ret = tebako_fstatat(AT_FDCWD, "file-in-directory-2.txt", &st, 0);
   EXPECT_EQ(0, ret);
 }
 #endif
@@ -397,7 +431,7 @@ TEST_F(FileCtlTests, tebako_getattrlist_pass_through)
                      ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
 
   int ret =
-      tebako_getattrlist(bash_file, &attrList, &attrBuf, sizeof(attrBuf), 0);
+      tebako_getattrlist(shell_file, &attrList, &attrBuf, sizeof(attrBuf), 0);
   EXPECT_EQ(0, ret);
 }
 #endif
@@ -434,7 +468,7 @@ TEST_F(FileCtlTests, tebako_fgetattrlist_path_through)
   attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT |
                      ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
 
-  int fh = tebako_open(2, bash_file, O_RDONLY);
+  int fh = tebako_open(2, shell_file, O_RDONLY);
   EXPECT_LT(0, fh);
   int ret = tebako_fgetattrlist(fh, &attrList, &attrBuf, sizeof(attrBuf), 0);
   EXPECT_EQ(0, ret);
@@ -449,6 +483,6 @@ TEST_F(FileCtlTests, tebako_within_tebako_memfs)
   EXPECT_EQ(-1, within_tebako_memfs(TEBAKIZE_PATH("directory-1")));
   EXPECT_EQ(-1, within_tebako_memfs(
                     TEBAKIZE_PATH("directory-1/file-in-directory-1.txt")));
-  EXPECT_EQ(0, within_tebako_memfs(bash_file));
+  EXPECT_EQ(0, within_tebako_memfs(shell_file));
 }
 }  // namespace

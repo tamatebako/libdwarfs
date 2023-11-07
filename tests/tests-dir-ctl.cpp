@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -27,7 +27,6 @@
  *
  */
 
-#include <unistd.h>
 #include <filesystem>
 namespace fs = std::filesystem;
 #include "tests.h"
@@ -40,10 +39,23 @@ class DirCtlTests : public testing::Test {
 // #define -- for TEBAKIZE_PATH
 #define TMP_D_NAME "tebako-test-dir"
 
+#ifdef _WIN32
+  static void invalidParameterHandler(const wchar_t* p1,
+                                      const wchar_t* p2,
+                                      const wchar_t* p3,
+                                      unsigned int p4,
+                                      uintptr_t p5)
+  {
+    // Just return to pass execution to standard library
+    // otherwise exception will be thrown by MSVC runtime
+    return;
+  }
+#endif
+
   static void SetUpTestSuite()
   {
-#ifdef RB_W32
-    do_rb_w32_init();
+#ifdef _WIN32
+    _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
 
     auto p_tmp_dir = fs::temp_directory_path();
@@ -52,7 +64,7 @@ class DirCtlTests : public testing::Test {
     tmp_dir = p_tmp_dir.generic_string();
     tmp_name = p_tmp_name.generic_string();
 
-    load_fs(&gfsData[0], gfsSize, tests_log_level, NULL /* cachesize*/,
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
             NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
             NULL /* image_offset */
     );
@@ -137,15 +149,15 @@ TEST_F(DirCtlTests, tebako_chdir_absolute_path_pass_through)
 
 TEST_F(DirCtlTests, tebako_chdir_relative_path_pass_through)
 {
-  int ret = tebako_chdir(__MSYS_USR__ __S__);
+  int ret = tebako_chdir(__USR__ __S__);
   EXPECT_EQ(0, ret);
-  ret = tebako_chdir("bin");
+  ret = tebako_chdir(__USR_NEXT__);
   EXPECT_EQ(0, ret);
 }
 
 TEST_F(DirCtlTests, tebako_mkdir_absolute_path)
 {
-#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+#if defined(TEBAKO_HAS_POSIX_MKDIR)
   int ret = tebako_mkdir(TEBAKIZE_PATH(TMP_D_NAME), S_IRWXU);
 #else
   int ret = tebako_mkdir(TEBAKIZE_PATH(TMP_D_NAME));
@@ -158,7 +170,7 @@ TEST_F(DirCtlTests, tebako_mkdir_relative_path)
 {
   int ret = tebako_chdir(TEBAKIZE_PATH(""));
   EXPECT_EQ(0, ret);
-#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+#if defined(TEBAKO_HAS_POSIX_MKDIR)
   ret = tebako_mkdir(TMP_D_NAME, S_IRWXU);
 #else
   ret = tebako_mkdir(TMP_D_NAME);
@@ -169,13 +181,13 @@ TEST_F(DirCtlTests, tebako_mkdir_relative_path)
 
 TEST_F(DirCtlTests, tebako_mkdir_absolute_path_pass_through)
 {
-#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+#if defined(TEBAKO_HAS_POSIX_MKDIR)
   int ret = tebako_mkdir(tmp_name.c_str(), S_IRWXU);
 #else
   int ret = tebako_mkdir(tmp_name.c_str());
 #endif
   EXPECT_EQ(0, ret);
-  ret = rmdir(tmp_name.c_str());
+  ret = ::rmdir(tmp_name.c_str());
   EXPECT_EQ(0, ret);
 }
 
@@ -183,13 +195,13 @@ TEST_F(DirCtlTests, tebako_mkdir_relative_path_pass_through)
 {
   int ret = tebako_chdir(tmp_dir.c_str());
   EXPECT_EQ(0, ret);
-#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+#if defined(TEBAKO_HAS_POSIX_MKDIR)
   ret = tebako_mkdir(TMP_D_NAME, S_IRWXU);
 #else
   ret = tebako_mkdir(TMP_D_NAME);
 #endif
   EXPECT_EQ(0, ret);
-  ret = rmdir(tmp_name.c_str());
+  ret = ::rmdir(tmp_name.c_str());
   EXPECT_EQ(0, ret);
 }
 
@@ -200,7 +212,7 @@ TEST_F(DirCtlTests, tebako_dir_ctl_null_ptr)
   EXPECT_EQ(ENOENT, errno);
 
   errno = 0;
-#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+#if defined(TEBAKO_HAS_POSIX_MKDIR)
   EXPECT_EQ(-1, tebako_mkdir(NULL, S_IRWXU));
 #else
   EXPECT_EQ(-1, tebako_mkdir(NULL));

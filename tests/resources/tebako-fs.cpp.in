@@ -31,4 +31,14 @@
 
 INCBIN(fs, "@DATA_BIN_FILE@");
 
-const char * tests_log_level = "@TESTS_LOG_LEVEL@";
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const char * tests_log_level(void) {
+    return "@TESTS_LOG_LEVEL@";
+}
+
+#ifdef __cplusplus
+}
+#endif

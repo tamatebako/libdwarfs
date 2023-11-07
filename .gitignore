@@ -44,6 +44,7 @@ dwarfs-x86_64
 # Generated files
 tests/tebako-test-config.h
 tests/tebako-fs.cpp
+tests/tebako-fs0.c
 tests/shunit2
 include/version.h
 include/tebako-config.h
