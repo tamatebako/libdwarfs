@@ -1,0 +1,148 @@
+# Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
+# All rights reserved.
+# This file is a part of tamatebako
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+name: Windows
+
+on:
+  schedule:
+    - cron: "0 6 * * 0"
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.cirrus.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/windows.yml'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - '.cirrus.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/windows.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
+
+env:
+  VCPKG_DIR: C:/vcpkg
+  VCPKG_DEFAULT_BINARY_CACHE: ${{github.workspace}}\cache
+  CACHE_VER: 1
+
+jobs:
+  build:
+    name: ${{ matrix.os.version }} [VS Version ${{ matrix.os.vsversion }} with Ruby mocks ]
+    runs-on: ${{ matrix.os.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - { version: windows-2019, vsversion: 2019 }
+        #  - { version: windows-2022, vsversion: 2022 }
+        env:
+          - { CC: cl,  CXX: cl, ASAN: 'OFF', LOG_LEVEL: 'trace', BUILD_TYPE: 'Release' }
+
+    env: ${{ matrix.env }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set MSVC Dev Environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          vsversion: ${{ matrix.os.vsversion }}
+
+      - name: Configure build environment [1]
+        shell: bash
+        run: |
+          cat common.env >> $GITHUB_ENV
+          echo "CORES=$(nproc --all)" >> $GITHUB_ENV
+
+      - name: Configure build environment [2]
+        shell: cmd
+        run:  |
+          vcpkg version >> vcpkg.version
+          mkdir ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          mkdir ${{github.workspace}}\${{env.DEPS}}
+
+      - name: vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.version') }}
+
+      - name: Deps cache
+        uses: actions/cache@v4
+        with:
+          path: ${{github.workspace}}/${{env.DEPS}}
+          key:  ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
+
+      - name: Configure
+        # Due to folly issue VCPKG_INSTALLED_DIR has to be outside of the project tree
+        # Folly build works with Ninja but does not work with MSBuild
+        # Something like
+        # cmake -B build -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        #       -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_BUILD_TYPE=Release -DPREFER_SYSTEM_GTEST=ON -G Ninja .
+        run: cmake -B build -DWITH_TESTS=ON                         ^
+                            -DWITH_ASAN=${{ env.ASAN }}             ^
+                            -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}  ^
+                            -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_DIR}}/scripts/buildsystems/vcpkg.cmake  ^
+                            -DVCPKG_TARGET_TRIPLET=x64-windows-static                                    ^
+                            -DVCPKG_INSTALLED_DIR="${{ runner.workspace }}/vcpkg-install-dwarfs"         ^
+                            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}                                     ^
+                            -G Ninja .
+
+      - name: Run Build
+        shell: cmd
+        run: |
+          cmake --build build --parallel ${{ env.CORES }}
+
+      - name: Run unit tests
+        run: ctest --test-dir build --output-on-failure --parallel "$CORES"
+
+      - name: Checkout shell test framework
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
+        uses: actions/checkout@v4
+        with:
+          repository: kward/shunit2
+          path: tests/shunit2
+          fetch-depth: 1
+
+      - name: Run additional tests
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
+        shell: bash
+        run:  OSTYPE=win32 tests/scripts/tests.sh
+
+#      - name: Run additional tests
+#        shell: cmd
+#        run: |
+#          build\wr-bin.exe

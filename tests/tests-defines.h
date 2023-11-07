@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -34,6 +34,7 @@
  * They are copied because !!! the client code should not include
  * tebaco_common.h !!!
  */
+
 #ifdef _WIN32
 #define TEBAKO_MOUNT_POINT "A:\\__tebako_memfs__"
 #define TEBAKO_MOUNT_POINT_W L"A:\\__tebako_memfs__"
@@ -46,14 +47,37 @@
 #define TEBAKIZE_PATH(P) TEBAKO_MOUNT_POINT "/" P
 #endif
 
-#ifdef RB_W32
+#ifdef _WIN32
+
+#define F_OK 0
+#define W_OK 2
+#define R_OK 4
+#define X_OK F_OK
+
+#define S_IRUSR S_IREAD  /* read, user */
+#define S_IWUSR S_IWRITE /* write, user */
+#define S_IXUSR 0        /* execute, user */
+#define S_IRGRP 0        /* read, group */
+#define S_IWGRP 0        /* write, group */
+#define S_IXGRP 0        /* execute, group */
+#define S_IROTH 0        /* read, others */
+#define S_IWOTH 0        /* write, others */
+#define S_IXOTH 0        /* execute, others */
+#define S_IRWXU 0
+#define S_IRWXG 0
+#define S_IRWXO 0
+
+#ifndef PATH_MAX
+#define PATH_MAX _MAX_PATH
+#endif
+
 #define open rb_w32_uopen
 #define lseek(_f, _o, _w) rb_w32_lseek(_f, _o, _w)
 #define close(h) rb_w32_close(h)
 #define read(f, b, s) rb_w32_read(f, b, s)
 
 #define chdir(p) rb_w32_uchdir((p))
-#define mkdir(p, m) rb_w32_umkdir((p), (m))
+#define mkdir(p) rb_w32_umkdir((p))
 #define access(p, m) rb_w32_uaccess((p), (m))
 #define fstat(fd, st) rb_w32_fstati128(fd, st)
 #define stat(path, st) rb_w32_stati128(path, st)

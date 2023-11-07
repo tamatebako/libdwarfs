@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2022 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -29,26 +29,21 @@
 
 #pragma once
 
-#define __MSYS_BIN__  "@MSYS_BIN@"
-#define __MSYS_USR__  "@MSYS_USR@"
-#define __MSYS_TMP__  "@MSYS_TMP@"
-
-#ifndef _WIN32
-#  define __S__   "/"
-#  define __BIN__ "/bin"
-#  define __USR__ "/usr"
-#  define __TMP__ "/tmp"
-#  define __AT_BIN__(A) "/bin/" A
-#  define __AT_TMP__(A) "/tmp/" A
-#  define __WITH_LIB_EXT__(A)  A ".so"
-#  define __WITH_EXE_EXT__(A)  A
-#else
+#ifdef _WIN32
 #  define __S__   "\\"
-#  define __BIN__ __MSYS_BIN__
-#  define __USR__ __MSYS_USR__
-#  define __TMP__ __MSYS_TMP__
-#  define __AT_BIN__(A) __BIN__ "\\" A
-#  define __AT_TMP__(A) __TMP__ "\\" A
-#  define __WITH_LIB_EXT__(A)  A ".dll"
-#  define __WITH_EXE_EXT__(A)  A ".exe"
+#  define __SHELL__ "cmd.exe"
+#  define __USR_NEXT__ "Windows NT"
+#else
+#  define __S__   "/"
+#  define __SHELL__ "sh"
+#  define __USR_NEXT__ "bin"
 #endif
+
+#define __TMP__  "@TESTS_TMP_DIR@"
+#define __BIN__  "@TESTS_BIN_DIR@"
+#define __BIN_NAKED__  "@TESTS_BIN_NAKED_DIR@"
+#define __USR__ "@TESTS_USR_DIR@"
+#define __LIBEMPTY__ "@LIBEMPTY_NAME@"
+
+#define __AT_BIN__(A) __BIN__ __S__ A
+#define __AT_TMP__(A) __TMP__ __S__ A

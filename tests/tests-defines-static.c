@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -28,17 +28,21 @@
  */
 
 #include <tebako-pch.h>
-#include "tests-defines.h"
-#include <tebako-defines.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef RB_W32
-#include <tebako-io-rb-w32.h>
-#include "tests-init-rb-w32.h"
+// Cannot include tebako-common.h because it is C++ header
+#ifdef PATH_MAX
+#define TEBAKO_PATH_LENGTH ((size_t)PATH_MAX)
+#else
+#define TEBAKO_PATH_LENGTH ((size_t)2048)
 #endif
 
+#include <tebako-defines.h>
+#include "tests-defines.h"
+
 #include <tebako-io.h>
+
 #include "tebako-fs.h"
 #include "tebako-test-config.h"
 
@@ -54,11 +58,11 @@
 #define WITH_DIRIO_FD_C_TEST 1
 #endif
 
-#if defined(WITH_LINK_TESTS) && (defined(TEBAKO_HAS_LSTAT) || defined(RB_W32))
+#if defined(WITH_LINK_TESTS) && defined(TEBAKO_HAS_LSTAT)
 #define WITH_LINK_C_TESTS 1
 #endif
 
-#if defined(TEBAKO_HAS_SCANDIR) && !defined(RB_W32)
+#if defined(TEBAKO_HAS_SCANDIR)
 #define WITH_SCANDIR_C_TEST 1
 #endif
 
@@ -79,7 +83,12 @@ static int open_3_args_c_test(void);
 static int openat_c_test(int fh);
 #endif
 
+#if (defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && \
+     defined(TEBAKO_HAS_READDIR) && defined(TEBAKO_HAS_SEEKDIR) &&  \
+     defined(TEBAKO_HAS_TELLDIR)) ||                                \
+    defined(RB_W32)
 static int dirio_c_test(void);
+#endif
 
 #if defined(WITH_DIRIO_FD_C_TEST)
 static int dirio_fd_c_test(void);
@@ -97,20 +106,33 @@ static int link_c_tests(void);
 
 static int fstatat_c_test(void);
 
+#ifdef _WIN32
+static void invalidParameterHandler(const wchar_t* p1,
+                                    const wchar_t* p2,
+                                    const wchar_t* p3,
+                                    unsigned int p4,
+                                    uintptr_t p5)
+{
+  // Just return to pass execution to standard library
+  // otherwise exception will be thrown by MSVC runtime
+  return;
+}
+#endif
+
 int main(int argc, char** argv)
 {
-  char p[PATH_MAX];
+  char p[TEBAKO_PATH_LENGTH];
   char* r;
   int rOK = false;
   int fh;
   struct STAT_TYPE buf;
 
-#ifdef RB_W32
-  do_rb_w32_init();
+#ifdef _WIN32
+  _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
 
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level, NULL /* cachesize*/,
-                    NULL /* workers */, NULL /* mlock */,
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(),
+                    NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
                     NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
@@ -137,10 +159,10 @@ int main(int argc, char** argv)
     if (!rOK)
       printf("failing\n");
 
-#if defined(RB_W32) || !defined(_WIN32)
-    ret = mkdir(TEBAKIZE_PATH("directory-100"), S_IRWXU);
-#else
+#if defined(_WIN32)
     ret = mkdir(TEBAKIZE_PATH("directory-100"));
+#else
+    ret = mkdir(TEBAKIZE_PATH("directory-100"), S_IRWXU);
 #endif
 
     printf("A call to 'mkdir' returned %i (-1 expected)\n", ret);
@@ -191,9 +213,13 @@ int main(int argc, char** argv)
     if (!rOK)
       printf("failing\n");
 
+#if defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && \
+    defined(TEBAKO_HAS_READDIR) && defined(TEBAKO_HAS_SEEKDIR) &&  \
+    defined(TEBAKO_HAS_TELLDIR)
     rOK &= dirio_c_test();
     if (!rOK)
       printf("failing\n");
+#endif
 
 #if defined(WITH_DIRIO_FD_C_TEST)
     rOK &= dirio_fd_c_test();
@@ -354,17 +380,21 @@ static int open_3_args_c_test(void)
       ret);
   rOK &= (ret >= 0);
 
-  ret = close(ret);
-  printf("A call to 'close' returned %i (0 expected)\n", ret);
-  rOK &= (ret == 0);
+  if (rOK) {
+    ret = close(ret);
+    printf("A call to 'close' returned %i (0 expected)\n", ret);
+    rOK &= (ret == 0);
 
-  ret = unlink(__AT_TMP__("some-tebako-test-file.txt"));
-  printf("A call to 'unlink' returned %i (0 expected)\n", ret);
-  rOK &= (ret == 0);
-
+    ret = unlink(__AT_TMP__("some-tebako-test-file.txt"));
+    printf("A call to 'unlink' returned %i (0 expected)\n", ret);
+    rOK &= (ret == 0);
+  }
   return rOK;
 }
 
+#if defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && \
+    defined(TEBAKO_HAS_READDIR) && defined(TEBAKO_HAS_SEEKDIR) &&  \
+    defined(TEBAKO_HAS_TELLDIR)
 static int dirio_c_test(void)
 {
   int rOK = true;
@@ -384,7 +414,7 @@ static int dirio_c_test(void)
       pos);
   rOK &= (pos == 2L);
 
-#if defined(RB_W32)
+#if defined(_WIN32)
   struct direct* entry = readdir(dirp);
 #else
   struct dirent* entry = readdir(dirp);
@@ -410,6 +440,7 @@ static int dirio_c_test(void)
 
   return rOK;
 }
+#endif
 
 #if defined(WITH_DIRIO_FD_C_TEST)
 static int dirio_fd_c_test(void)
@@ -459,7 +490,7 @@ static int scandir_c_test(void)
 static int dlopen_c_test(void)
 {
   int rOK = true;
-  void* handle = dlopen(TEBAKIZE_PATH(__WITH_LIB_EXT__("directory-1/libempty")),
+  void* handle = dlopen(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__),
                         RTLD_LAZY | RTLD_GLOBAL);
   rOK &= (handle != NULL);
   printf("A call to 'dlopen' returned %p (not NULL expected)\n", handle);

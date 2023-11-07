@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -30,10 +30,10 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
-#include <tebako-io-rb-w32.h>
-#include <tebako-io-rb-w32-inner.h>
+#include <tebako-dirent.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-io-rb-w32-inner.h>
 #include <tebako-fd.h>
 
 int tebako_open(int nargs, const char* path, int flags, ...)
@@ -127,21 +127,34 @@ int tebako_openat(int nargs, int vfd, const char* path, int flags, ...)
 off_t tebako_lseek(int vfd, off_t offset, int whence)
 {
   off_t ret = sync_tebako_fdtable::fdtable.lseek(vfd, offset, whence);
-  return (ret == DWARFS_INVALID_FD) ? TO_RB_W32(lseek)(vfd, offset, whence)
-                                    : ret;
+  if (ret == DWARFS_INVALID_FD) {
+    ret = is_valid_system_file_descriptor(vfd)
+              ? TO_RB_W32(lseek)(vfd, offset, whence)
+              : DWARFS_IO_ERROR;
+  }
+  return ret;
 }
 
 ssize_t tebako_read(int vfd, void* buf, size_t nbyte)
 {
   ssize_t ret = sync_tebako_fdtable::fdtable.read(vfd, buf, nbyte);
-  return (ret == DWARFS_INVALID_FD) ? TO_RB_W32(read)(vfd, buf, nbyte) : ret;
+  if (ret == DWARFS_INVALID_FD) {
+    ret = is_valid_system_file_descriptor(vfd)
+              ? TO_RB_W32(read)(vfd, buf, nbyte)
+              : DWARFS_IO_ERROR;
+  }
+  return ret;
 }
 
 #ifdef TEBAKO_HAS_READV
 ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt)
 {
   ssize_t ret = sync_tebako_fdtable::fdtable.readv(vfd, iov, iovcnt);
-  return (ret == DWARFS_INVALID_FD) ? ::readv(vfd, iov, iovcnt) : ret;
+  if (ret == DWARFS_INVALID_FD) {
+    ret = is_valid_system_file_descriptor(vfd) ? ::readv(vfd, iov, iovcnt)
+                                               : DWARFS_IO_ERROR;
+  }
+  return ret;
 }
 #endif
 
@@ -149,14 +162,23 @@ ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt)
 ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset)
 {
   ssize_t ret = sync_tebako_fdtable::fdtable.pread(vfd, buf, nbyte, offset);
-  return (ret == DWARFS_INVALID_FD) ? ::pread(vfd, buf, nbyte, offset) : ret;
+  if (ret == DWARFS_INVALID_FD) {
+    ret = is_valid_system_file_descriptor(vfd)
+              ? ::pread(vfd, buf, nbyte, offset)
+              : DWARFS_IO_ERROR;
+  }
+  return ret;
 }
 #endif
 
 int tebako_close(int vfd)
 {
   int ret = sync_tebako_fdtable::fdtable.close(vfd);
-  return (ret == DWARFS_INVALID_FD) ? TO_RB_W32(close)(vfd) : ret;
+  if (ret == DWARFS_INVALID_FD) {
+    ret = is_valid_system_file_descriptor(vfd) ? TO_RB_W32(close)(vfd)
+                                               : DWARFS_IO_ERROR;
+  }
+  return ret;
 }
 
 int tebako_fstat(int vfd, struct STAT_TYPE* buf)
@@ -168,7 +190,11 @@ int tebako_fstat(int vfd, struct STAT_TYPE* buf)
 #else
   int ret = sync_tebako_fdtable::fdtable.fstat(vfd, buf);
 #endif
-  return (ret == DWARFS_INVALID_FD) ? TO_RB_W32_I128(fstat)(vfd, buf) : ret;
+  if (ret == DWARFS_INVALID_FD) {
+    ret = is_valid_system_file_descriptor(vfd) ? TO_RB_W32_I128(fstat)(vfd, buf)
+                                               : DWARFS_IO_ERROR;
+  }
+  return ret;
 }
 
 #ifdef TEBAKO_HAS_FSTATAT
@@ -185,7 +211,9 @@ int tebako_fstatat(int vfd, const char* path, struct stat* buf, int flag)
       ret = sync_tebako_fdtable::fdtable.fstatat(
           vfd, path, buf, (flag & AT_SYMLINK_NOFOLLOW) == 0);
       if (ret == DWARFS_INVALID_FD) {
-        ret = ::fstatat(vfd, path, buf, flag);
+        ret = is_valid_system_file_descriptor(vfd)
+                  ? ::fstatat(vfd, path, buf, flag)
+                  : DWARFS_IO_ERROR;
       }
     }
   }
@@ -207,7 +235,9 @@ int tebako_fgetattrlist(int vfd,
   struct stat stfd;
   int ret = sync_tebako_fdtable::fdtable.fstat(vfd, &stfd);
   if (ret == DWARFS_INVALID_FD) {
-    ret = ::fgetattrlist(vfd, attrList, attrBuf, attrBufSize, options);
+    ret = is_valid_system_file_descriptor(vfd)
+              ? ::fgetattrlist(vfd, attrList, attrBuf, attrBufSize, options)
+              : DWARFS_IO_ERROR;
   }
   else {
     ret = -1;

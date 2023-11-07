@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (dwarfs-wr)
  *
@@ -39,7 +39,7 @@ const int DWARFS_INVALID_FD = -2;
 // outside memfs
 const int DWARFS_S_LINK_OUTSIDE = -3;
 
-#ifdef RB_W32
+#ifdef _WIN32
 struct tebako_dirent;
 #else
 union tebako_dirent;

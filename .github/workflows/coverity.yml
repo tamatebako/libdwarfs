@@ -1,4 +1,4 @@
-# Copyright (c) 2023, [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2023-2024, [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tamatebako
 #
@@ -70,6 +70,7 @@ jobs:
 
     - name: Install packages
       run: |
+        sudo apt-get -y update
         sudo apt-get -y install \
         binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev                \
         libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev    \

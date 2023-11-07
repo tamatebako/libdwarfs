@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako
  *
@@ -44,9 +44,9 @@ class mfs : public dwarfs::mmif {
   void const* addr() const override;
   size_t size() const override;
 
-  std::error_code lock(off_t offset, size_t size) override;
-  std::error_code release(off_t offset, size_t size) override;
-  std::error_code release_until(off_t offset) override;
+  std::error_code lock(dwarfs::file_off_t offset, size_t size) override;
+  std::error_code release(dwarfs::file_off_t offset, size_t size) override;
+  std::error_code release_until(dwarfs::file_off_t offset) override;
 
   std::filesystem::path const& path() const override;
 

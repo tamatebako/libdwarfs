@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -36,12 +36,25 @@
 namespace {
 class FileIOTests : public testing::Test {
  protected:
+#ifdef _WIN32
+  static void invalidParameterHandler(const wchar_t* p1,
+                                      const wchar_t* p2,
+                                      const wchar_t* p3,
+                                      unsigned int p4,
+                                      uintptr_t p5)
+  {
+    // Just return to pass execution to standard library
+    // otherwise exception will be thrown by MSVC runtime
+    return;
+  }
+#endif
+
   static void SetUpTestSuite()
   {
-#ifdef RB_W32
-    do_rb_w32_init();
+#ifdef _WIN32
+    _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level, NULL /* cachesize*/,
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
             NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
             NULL /* image_offset */
     );
@@ -352,12 +365,7 @@ TEST_F(FileIOTests, tebako_openat_atcwd)
 
 TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path_pass_through)
 {
-  const char* const sh_file =
-#ifndef _WIN32
-      "/bin/sh";
-#else
-      __MSYS_BIN__ "/sh.exe";
-#endif
+  const char* const sh_file = __AT_BIN__(__SHELL__);
   int fh1 = tebako_open(2, sh_file, O_RDONLY);
   EXPECT_LT(0, fh1);
   int ret = tebako_lseek(fh1, 5, SEEK_SET);
@@ -394,18 +402,8 @@ TEST_F(FileIOTests, tebako_open_openat_close_interop)
 
 TEST_F(FileIOTests, tebako_open_close_relative_path_pass_through)
 {
-  const char* const sh_folder =
-#ifndef _WIN32
-      "/bin";
-#else
-      __MSYS_BIN__;
-#endif
-  const char* const sh_file =
-#ifndef _WIN32
-      "sh";
-#else
-      "sh.exe";
-#endif
+  const char* const sh_folder = __BIN__;
+  const char* const sh_file = __SHELL__;
   int ret = tebako_chdir(sh_folder);
   EXPECT_EQ(0, ret);
   ret = tebako_open(2, sh_file, O_RDONLY);

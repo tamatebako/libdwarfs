@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tebako
 #
@@ -46,7 +46,7 @@ check_shared_libs() {
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
-         if [[ "$OSTYPE" == "msys" ]]; then
+        if [[ "$OSTYPE" == "win32" ]]; then
             actual_i=${actual[i],,}
          else
             actual_i=${actual[i]}
@@ -67,7 +67,6 @@ check_shared_libs() {
 # ......................................................................
 # Run ldd to check that wr-bin has been linked to expected set of shared libraries
 test_linkage() {
-   echo "==> References to shared libraries test"
    if [[ "$ASAN" == "ON"* || "$COVERAGE" == "ON"* ]]; then
       echo "... Address sanitizer or coverage test is on ... skipping"
    else
@@ -89,22 +88,14 @@ test_linkage() {
       elif [[ "$OSTYPE" == "cygwin" ]]; then
          echo "... cygwin ... skipping"
       elif [[ "$OSTYPE" == "msys" ]]; then
-         if [[ "$RB_W32" == "ON" ]]; then
-            expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
-                      "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
-                      "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll"
-                      "imagehlp.dll" "shell32.dll" "iphlpapi.dll" "libgcc_s_seh-1.dll" "libwinpthread-1.dll")
-         else
-            expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
-                      "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
-                      "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll"
-                      "libgcc_s_seh-1.dll" "libwinpthread-1.dll")
-         fi
-         readarray -t actual < <(ldd "$DIR_SRC/wr-bin.exe")
-         assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin.exe) failed" 0 "${PIPESTATUS[0]}"
-         check_shared_libs
+         echo "... msys ... skipping"
       elif [[ "$OSTYPE" == "win32" ]]; then
-         echo "... win32 ... skipping"
+         # This test assumes MSys bash and Release build
+         # Just nothing ...
+         expected=( )
+         readarray -t actual < <(dumpbin -EXPORTS "$DIR_SRC/wr-bin" | grep "dll")
+         assertEquals "readarray -t actual < <(dumpbin -EXPORTS $DIR_SRC/wr-bin | grep 'dll') failed" 0 "${PIPESTATUS[0]}"
+         check_shared_libs "${expected[@]}"
       elif [[ "$OSTYPE" == "freebsd"* ]]; then
          echo "... freebsd ... skipping"
       else
@@ -117,25 +108,13 @@ test_linkage() {
 # Check "C" interface bindings in statically linked program
 # Check that tmp directory is cleaned upon shutdown
 test_C_bindings_and_temp_dir() {
-   echo "==> C bindings and temp dir handling combined test"
-
-# Skip if cross-compiling
-# (Based on the assumption that the only possible cross compile scenario is MacOs [x86_64 --> arm 64])
-   [ "${TARGET:-}" == "arm64" ] && startSkipping
-
    mkdir "$DIR_TESTS"/temp
    assertEquals "$DIR_TESTS/temp failed" 0 "${PIPESTATUS[0]}"
 
    ls /tmp > "$DIR_TESTS"/temp/before
    assertEquals "ls /tmp > $DIR_TESTS/temp/before failed" 0 "${PIPESTATUS[0]}"
 
-   if [[ "$OSTYPE" == "msys" ]]; then
-      WR_BIN="$DIR_SRC"/wr-bin.exe
-   else
-      WR_BIN="$DIR_SRC"/wr-bin
-   fi
-
-   "$WR_BIN"
+   "$DIR_SRC"/wr-bin
 
    assertEquals "$DIR_ROOT/wr-bin failed" 0 "${PIPESTATUS[0]}"
 
@@ -161,43 +140,49 @@ test_files_installed() {
 # ......................................................................
 # Check that libdwarfs_wr, dwarfs utilities and all dependencies are installed as expected
 test_install_script() {
-   echo "==> Install script test"
-
-# Skip if cross-compiling
-# (Based on the assumption that the only possible cross compile scenario is MacOs [x86_64 --> arm 64])
-   [ "${TARGET:-}" == "arm64" ] && startSkipping
-
    DIR_INSTALL="$DIR_ROOT"/install
    DIR_INS_B="$DIR_INSTALL"/bin
    DIR_INS_L="$DIR_INSTALL"/lib
    DIR_INS_I="$DIR_INSTALL"/include/tebako
 
-   local NM_MKDWARFS="$DIR_INS_B/mkdwarfs"
-   local NM_LIBARCHIVE="$DIR_INS_L/libarchive.a"
-   if [[ "$OSTYPE" == "msys" ]]; then
-      NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
-      NM_LIBARCHIVE="$DIR_INS_L/libarchive_static.a"
-   fi
-
    cmake --install  "$DIR_SRC" --prefix "$DIR_INSTALL"
    assertEquals "cmake --install failed" 0 "${PIPESTATUS[0]}"
 
-   test_files_installed "$NM_MKDWARFS"                       \
-                        "$DIR_INS_L/libdwarfs-wr.a"          \
-                        "$DIR_INS_L/libdwarfs.a"             \
-                        "$DIR_INS_L/libdwarfs_compression.a" \
-                        "$DIR_INS_L/libfsst.a"               \
-                        "$DIR_INS_L/libfolly.a"              \
-                        "$DIR_INS_L/libmetadata_thrift.a"    \
-                        "$DIR_INS_L/libthrift_light.a"       \
-                        "$DIR_INS_L/libxxhash.a"             \
-                        "$DIR_INS_L/libzstd.a"               \
-                        "$DIR_INS_L/libfmt.a"                \
-                        "$NM_LIBARCHIVE"                     \
-                        "$DIR_INS_I/tebako-config.h"         \
-                        "$DIR_INS_I/tebako-defines.h"        \
-                        "$DIR_INS_I/tebako-io.h"             \
-                        "$DIR_INS_I/tebako-io-rb-w32.h"
+   if [[ "$OSTYPE" == "win32" ]]; then
+      test_files_installed "$DIR_INS_B/mkdwarfs.exe"           \
+                           "$DIR_INS_L/dwarfs-wr.lib"          \
+                           "$DIR_INS_L/dwarfs.lib"             \
+                           "$DIR_INS_L/dwarfs_compression.lib" \
+                           "$DIR_INS_L/fsst.lib"               \
+                           "$DIR_INS_L/folly.lib"              \
+                           "$DIR_INS_L/metadata_thrift.lib"    \
+                           "$DIR_INS_L/thrift_light.lib"       \
+                           "$DIR_INS_L/xxhash.lib"             \
+                           "$DIR_INS_L/zstd.lib"               \
+                           "$DIR_INS_L/archive.lib"            \
+                           "$DIR_INS_I/tebako-config.h"        \
+                           "$DIR_INS_I/tebako-defines.h"       \
+                           "$DIR_INS_I/tebako-io.h"            \
+                           "$DIR_INS_I/tebako-io.h"
+   else
+      test_files_installed "$DIR_INS_B/mkdwarfs"                \
+                           "$DIR_INS_L/libdwarfs-wr.a"          \
+                           "$DIR_INS_L/libdwarfs.a"             \
+                           "$DIR_INS_L/libdwarfs_compression.a" \
+                           "$DIR_INS_L/libfsst.a"               \
+                           "$DIR_INS_L/libfolly.a"              \
+                           "$DIR_INS_L/libmetadata_thrift.a"    \
+                           "$DIR_INS_L/libthrift_light.a"       \
+                           "$DIR_INS_L/libxxhash.a"             \
+                           "$DIR_INS_L/libzstd.a"               \
+                           "$DIR_INS_L/libfmt.a"                \
+                           "$DIR_INS_L/libarchive.a"            \
+                           "$DIR_INS_I/tebako-config.h"         \
+                           "$DIR_INS_I/tebako-defines.h"        \
+                           "$DIR_INS_I/tebako-io.h"             \
+                           "$DIR_INS_I/tebako-io.h"
+   fi
+
 }
 
 # ......................................................................
@@ -210,7 +195,6 @@ DIR_TESTS="$( cd "$DIR0/.." && pwd)"
 
 ASAN="${ASAN:=OFF}"
 COVERAGE="${COVERAGE:=OFF}"
-RB_W32="${RB_W32:=OFF}"
 
 echo "Running libdwarfs additional tests"
 # shellcheck source=/dev/null

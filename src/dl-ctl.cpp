@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -30,15 +30,11 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
-#include <tebako-io-rb-w32.h>
+#include <tebako-dirent.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-io-rb-w32-inner.h>
 #include <tebako-fd.h>
-#include <tebako-io-rb-w32.h>
-
-#ifndef TEBAKO_HAS_O_BINARY
-#define O_BINARY 0x0
-#endif
 
 using namespace std;
 

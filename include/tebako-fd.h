@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (dwarfs-wr)
  *
@@ -29,7 +29,7 @@
 
 #pragma once
 
-#ifdef RB_W32
+#ifdef _WIN32
 struct tebako_dirent;
 #else
 union tebako_dirent;
@@ -58,6 +58,9 @@ struct tebako_fd {
 typedef std::map<int, std::shared_ptr<tebako_fd>> tebako_fdtable;
 
 class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
+ private:
+  int is_valid_file_descriptor(int fd);
+
  public:
   sync_tebako_fdtable(void)
       : folly::Synchronized<tebako_fdtable*>(new tebako_fdtable)

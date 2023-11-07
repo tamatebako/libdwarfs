@@ -1,6 +1,6 @@
 /**
  *
- *  Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ *  Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -30,10 +30,10 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
-#include <tebako-io-rb-w32.h>
-#include <tebako-io-rb-w32-inner.h>
+#include <tebako-dirent.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-io-rb-w32-inner.h>
 
 int tebako_access(const char* path, int amode)
 {
@@ -69,7 +69,7 @@ int tebako_lstat(const char* path, struct STAT_TYPE* buf)
     tebako_path_t t_path;
     const char* p_path = to_tebako_path(t_path, path);
     if (p_path) {
-#ifdef RB_W32
+#ifdef _WIN32
       struct stat _buf;
       ret = dwarfs_lstat(p_path, &_buf);
       buf << _buf;

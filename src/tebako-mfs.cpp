@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako
  *
@@ -39,7 +39,7 @@
 
 namespace tebako {
 
-std::error_code mfs::lock(off_t offset, size_t size)
+std::error_code mfs::lock(dwarfs::file_off_t offset, size_t size)
 {
   std::error_code ec;
   auto addr = reinterpret_cast<const uint8_t*>(addr_) + offset;
@@ -49,7 +49,7 @@ std::error_code mfs::lock(off_t offset, size_t size)
   return ec;
 }
 
-std::error_code mfs::release(off_t offset, size_t size)
+std::error_code mfs::release(dwarfs::file_off_t offset, size_t size)
 {
   std::error_code ec;
   auto misalign = offset % page_size_;
@@ -65,7 +65,7 @@ std::error_code mfs::release(off_t offset, size_t size)
   return ec;
 }
 
-std::error_code mfs::release_until(off_t offset)
+std::error_code mfs::release_until(dwarfs::file_off_t offset)
 {
   std::error_code ec;
 

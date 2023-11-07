@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -27,10 +27,6 @@
  *
  */
 
-/*
- * This a set of standard "C" headers used through libdwarfs-wr source files
- */
-
 #pragma once
 
 #include <tebako-config.h>
@@ -41,13 +37,21 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+// MSVC provides sys/stat.h and sys/types.h
+// but does not set any precompiler variables
+#if defined(_MSC_VER)
+#define _SYS_TYPES_H 1
+#define _SYS_STAT_H 1
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #include <fcntl.h>
 #include <stdarg.h>
-#if !defined(RB_W32)
-#include <dirent.h>
-#endif
+
+// dlfcn-win32 in case of MSVC compiler
 #include <dlfcn.h>
-#include <unistd.h>
 #include <errno.h>
 
 #if defined(TEBAKO_HAS_GETATTRLIST) || defined(TEBAKO_HAS_FGETATTRLIST)
@@ -57,7 +61,15 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
+#include <direct.h>
+#include <io.h>
+
+#ifndef NDEBUG
+#include <crtdbg.h>
+#endif
 #else
+#include <dirent.h>
+#include <unistd.h>
 #include <sys/param.h>
 #include <sys/uio.h>
 #include <ftw.h>

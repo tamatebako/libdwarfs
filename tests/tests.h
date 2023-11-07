@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -28,18 +28,20 @@
  */
 
 #pragma once
-
+#ifdef __cplusplus
 #include <gtest/gtest.h>
-#include "tebako-pch.h"
-
-#ifdef RB_W32
-#include <tebako-io-rb-w32.h>
-#include "tests-init-rb-w32.h"
-#else
-#include <dirent.h>
 #endif
 
-#include "tebako-io.h"
+#include <tebako-pch.h>
+#ifdef __cplusplus
+#include <tebako-pch-pp.h>
+#endif
+
+#include <tebako-common.h>
+#include <tebako-io-rb-w32.h>
+#include <tebako-io-rb-w32-inner.h>
+#include <tebako-io.h>
+
 #include "tebako-fs.h"
 #include "tests-defines.h"
 

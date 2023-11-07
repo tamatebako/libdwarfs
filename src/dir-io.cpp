@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -28,21 +28,18 @@
  */
 
 #include <tebako-pch.h>
-#ifndef RB_W32
-#include <dirent.h>
-#endif
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
 #include <tebako-dirent.h>
-#include <tebako-io-rb-w32.h>
-#include <tebako-io-rb-w32-inner.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-io-rb-w32-inner.h>
 #include <tebako-fd.h>
 #include <tebako-kdf.h>
 
 sync_tebako_kfdtable sync_tebako_kfdtable::kfdtable;
 
+#if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
 DIR* tebako_opendir(const char* dirname)
 {
   DIR* ret = NULL;
@@ -84,6 +81,7 @@ DIR* tebako_opendir(const char* dirname)
   }
   return ret;
 }
+#endif
 
 #ifdef TEBAKO_HAS_FDOPENDIR
 DIR* tebako_fdopendir(int vfd)
@@ -99,6 +97,7 @@ DIR* tebako_fdopendir(int vfd)
 }
 #endif
 
+#if defined(TEBAKO_HAS_CLOSEDIR) || defined(RB_W32)
 int tebako_closedir(DIR* dirp)
 {
   int ret = DWARFS_IO_ERROR;
@@ -110,7 +109,7 @@ int tebako_closedir(DIR* dirp)
       TEBAKO_SET_LAST_ERROR(EBADF);
     }
     else {
-#ifdef RB_W32
+#ifdef _WIN32
       ret = DWARFS_IO_CONTINUE;
 #else
       ret =
@@ -121,8 +120,10 @@ int tebako_closedir(DIR* dirp)
   }
   return ret;
 }
+#endif
 
-#ifdef RB_W32
+#if defined(TEBAKO_HAS_READDIR) || defined(RB_W32)
+#if defined(RB_W32)
 struct direct* tebako_readdir(DIR* dirp, void* enc)
 {
   struct direct* entry = NULL;
@@ -141,7 +142,7 @@ struct dirent* tebako_readdir(DIR* dirp)
       TEBAKO_SET_LAST_ERROR(EBADF);
     }
     else {
-#ifdef RB_W32
+#if defined(RB_W32)
       entry = TO_RB_W32(readdir)(dirp, enc);
 #else
       entry = TO_RB_W32(readdir)(dirp);
@@ -153,7 +154,9 @@ struct dirent* tebako_readdir(DIR* dirp)
   }
   return entry;
 }
+#endif
 
+#if defined(TEBAKO_HAS_TELLDIR) || defined(RB_W32)
 long tebako_telldir(DIR* dirp)
 {
   long ret = DWARFS_IO_ERROR;
@@ -170,7 +173,9 @@ long tebako_telldir(DIR* dirp)
   }
   return ret;
 }
+#endif
 
+#if defined(TEBAKO_HAS_SEEKDIR) || defined(RB_W32)
 void tebako_seekdir(DIR* dirp, long loc)
 {
   int ret = DWARFS_IO_ERROR;
@@ -185,6 +190,7 @@ void tebako_seekdir(DIR* dirp, long loc)
     }
   }
 }
+#endif
 
 #ifdef TEBAKO_HAS_DIRFD
 int tebako_dirfd(DIR* dirp)

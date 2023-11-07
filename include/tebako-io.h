@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2023 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -34,20 +34,39 @@
 
 #pragma once
 
-#ifndef TEBAKO_HAS_O_DIRECTORY
+#if !defined(O_BINARY)
+#define O_BINARY 0x0
+#endif
+
+#if !defined(O_DIRECTORY)
 #define O_DIRECTORY 0x0
 #endif
 
-#ifndef TEBAKO_HAS_O_NOFOLLOW
+#if !defined(O_NOFOLLOW)
 #define O_NOFOLLOW 0x0
 #endif
 
-#ifndef TEBAKO_HAS_S_ISLNK
+#if !defined(_S_IFLNK)
 #define _S_IFLNK 0xA000
-#ifndef RB_W32
+#ifdef _WIN32
 #define S_IFLNK _S_IFLNK
 #endif
+#endif
+
+#if !defined(S_ISLNK)
 #define S_ISLNK(mode) (((mode) & (_S_IFLNK)) == (_S_IFLNK) ? 1 : 0)
+#endif
+
+#if !defined(_S_ISTYPE)
+#define _S_ISTYPE(mode, mask) (((mode) & (_S_IFMT)) == (mask))
+#endif
+
+#if !defined(S_ISREG)
+#define S_ISREG(mode) _S_ISTYPE((mode), _S_IFREG)
+#endif
+
+#if !defined(S_ISDIR)
+#define S_ISDIR(mode) _S_ISTYPE((mode), _S_IFDIR)
 #endif
 
 #ifdef RB_W32
@@ -55,6 +74,8 @@
 #else
 #define STAT_TYPE stat
 #endif
+
+#include <tebako-io-rb-w32.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,6 +105,8 @@ int tebako_chdir(const char* path);
 
 int tebako_access(const char* path, int amode);
 int tebako_open(int nargs, const char* path, int flags, ...);
+off_t tebako_lseek(int vfd, off_t offset, int whence);
+
 #ifdef TEBAKO_HAS_OPENAT
 int tebako_openat(int nargs, int fd, const char* path, int flags, ...);
 #endif
@@ -111,8 +134,6 @@ ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
 ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
 #endif
 
-off_t tebako_lseek(int vfd, off_t offset, int whence);
-
 #ifdef TEBAKO_HAS_GETATTRLIST
 int tebako_getattrlist(const char* path,
                        struct attrlist* attrList,
@@ -133,7 +154,7 @@ int tebako_fgetattrlist(int fd,
 
 /* struct stat is defined only if sys/stat.h has been included */
 #if defined(_SYS_STAT_H) || defined(_SYS_STAT_H_) || defined(_INC_STAT)
-#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+#if defined(TEBAKO_HAS_POSIX_MKDIR)
 int tebako_mkdir(const char* path, mode_t mode);
 #else
 int tebako_mkdir(const char* path);
@@ -141,7 +162,7 @@ int tebako_mkdir(const char* path);
 
 int tebako_stat(const char* path, struct STAT_TYPE* buf);
 int tebako_fstat(int vfd, struct STAT_TYPE* buf);
-#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32)
+#if defined(TEBAKO_HAS_LSTAT)
 int tebako_lstat(const char* path, struct STAT_TYPE* buf);
 #endif
 #ifdef TEBAKO_HAS_FSTATAT
@@ -152,10 +173,20 @@ int tebako_fstatat(int fd, const char* path, struct stat* buf, int flag);
 int tebako_close(int vfd);
 ssize_t tebako_readlink(const char* path, char* buf, size_t bufsiz);
 
-/* DIR and struct dirent is defined only if dirent.h has been included */
+/* DIR and struct dirent is defined only if dirent.h has been included
+    In Ruby eenvironment
+        tebako_opendir
+        tebako_closedir
+        tebako_reeddir
+        tebako_telldir
+        tebako_seekdir
+    are used to shadow rb_w32_xxx counterparts and not API methods
+*/
 #if defined(_DIRENT_H) || defined(_DIRENT_H_) || defined(RUBY_WIN32_DIR_H) || \
     defined(RB_W32_DIR_DEFINED)
+
 DIR* tebako_opendir(const char* dirname);
+
 #ifdef TEBAKO_HAS_FDOPENDIR
 DIR* tebako_fdopendir(int fd);
 #endif
@@ -169,16 +200,19 @@ struct dirent* tebako_readdir(DIR* dirp);
 long tebako_telldir(DIR* dirp);
 void tebako_seekdir(DIR* dirp, long loc);
 int tebako_closedir(DIR* dirp);
+
 #ifdef TEBAKO_HAS_DIRFD
 int tebako_dirfd(DIR* dirp);
 #endif
+
 #ifdef TEBAKO_HAS_SCANDIR
 int tebako_scandir(const char* dir,
                    struct dirent*** namelist,
                    int (*sel)(const struct dirent*),
                    int (*compar)(const struct dirent**, const struct dirent**));
 #endif
-#endif
+
+#endif  // defined(_DIRENT_H) ...
 
 void* tebako_dlopen(const char* path, int flags);
 char* tebako_dlerror(void);
