@@ -215,7 +215,7 @@ set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pas
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.4.2")
+def_ext_prj_g(DWARFS "tebako-v0.4.4")
 
 if(WITH_TESTS)
   def_ext_prj_g(INCBIN "348e36b")

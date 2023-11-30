@@ -57,17 +57,21 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }} ]
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.env.os }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }} ]
+    runs-on: ${{ matrix.env.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-20.04 ]
         env:
-          - { CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'trace' }
-          - { CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'warn'  }
-          - { CC: clang-12,  CXX: clang++-12, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
-          - { CC: clang-12,  CXX: clang++-12, ASAN: 'ON',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+          - { os: ubuntu-20.04, CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'trace' }
+          - { os: ubuntu-20.04, CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'warn'  }
+          - { os: ubuntu-20.04, CC: clang-12,  CXX: clang++-12, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+          - { os: ubuntu-20.04, CC: clang-12,  CXX: clang++-12, ASAN: 'ON',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+# https://github.com/llvm/llvm-project/issues/56357
+# On Ubuntu 22  affects clang 14 (file entry.cpp)
+          - { os: ubuntu-22.04, CC: clang-15,  CXX: clang++-15, ASAN: 'OFF',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+          - { os: ubuntu-22.04, CC: gcc-11,    CXX: g++-11,     ASAN: 'OFF',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
@@ -89,7 +93,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key:  ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
+          key:  ${{ matrix.env.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
 # Already installed: bison flex pkg-config
 
