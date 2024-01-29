@@ -75,7 +75,7 @@ jobs:
     env: ${{ matrix.env }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
@@ -90,7 +90,7 @@ jobs:
         run: mkdir ${{github.workspace}}/${{env.DEPS}}
 
       - name: Process cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
           key:  ${{ matrix.env.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
@@ -118,7 +118,7 @@ jobs:
 
       - name: Checkout shell test framework
         if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: kward/shunit2
           path: ${{github.workspace}}/tests/shunit2
