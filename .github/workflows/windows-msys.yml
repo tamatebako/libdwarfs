@@ -109,7 +109,7 @@ jobs:
 # Otherwise folly library will be built in a manner that is not compatible with a static library that we build
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
@@ -120,7 +120,7 @@ jobs:
         run: mkdir ${{ env.DEPS }}
 
       - name: Process cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{env.DEPS}}
           key:  windows-msys-${{ env.sys }}-${{ env.RB_W32 }}-${{ env.RUBY_VER }}-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
@@ -135,7 +135,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       - name: Checkout shell test framework
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: kward/shunit2
           path: tests/shunit2
