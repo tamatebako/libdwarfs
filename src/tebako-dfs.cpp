@@ -393,7 +393,7 @@ int dwarfs_inode_readlink(uint32_t inode, std::string& lnk) noexcept
 }
 
 static int internal_getattr_relative(uint32_t inode,
-                                     stdfs::path p_path,
+                                     stdfs::path& p_path,
                                      struct stat* buf)
 {
   int ret = DWARFS_IO_ERROR;

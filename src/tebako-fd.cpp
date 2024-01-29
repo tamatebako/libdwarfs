@@ -156,9 +156,8 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
               }
               else if (S_ISLNK(fd->st.st_mode) && (flags & O_NOFOLLOW)) {
                 //    [O_NOFOLLOW] If the trailing component (i.e., basename) of
-                //    pathname is
-                //                 a symbolic link, then the open fails, with
-                //                 the error ELOOP.
+                //    pathname is a symbolic link, then the open fails, with
+                //    the error ELOOP.
                 TEBAKO_SET_LAST_ERROR(ELOOP);
               }
               else {
@@ -177,13 +176,13 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
                   else {
                     // construct a handle (mainly) for win32
                     *fd->handle = ret;
-                    (**wlock())[ret] = fd;
+                    (**wlock())[ret] = std::move(fd);
                   }
                 }
               }
             }
             else {
-              //	[ENOENT] O_CREAT is not set and a component of path does
+              // [ENOENT] O_CREAT is not set and a component of path does
               // not name an existing file, or O_CREAT is set and a component of
               // the path prefix of path does not name an existing file, or path
               // points to an empty string. 	[EROFS] The named file resides

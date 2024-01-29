@@ -311,6 +311,24 @@ TEST_F(FileIOTests, tebako_openat_not_relative_with_nofollow)
   EXPECT_EQ(0, tebako_close(fh2));
 }
 
+TEST_F(FileIOTests, tebako_openat_relative)
+{
+  int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY);
+  EXPECT_LT(0, fh1);
+  int fh2 = tebako_openat(3, fh1, "file-in-directory-1.txt", O_RDONLY);
+  EXPECT_LT(0, fh2);
+
+  char readbuf[64];
+  const char* pattern = "This is a file in the first directory";
+  const int num2read = strlen(pattern);
+  EXPECT_EQ(num2read,
+            tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
+  EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
+
+  EXPECT_EQ(0, tebako_close(fh1));
+  EXPECT_EQ(0, tebako_close(fh2));
+}
+
 TEST_F(FileIOTests, tebako_openat_atcwd)
 {
   int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY);
