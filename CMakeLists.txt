@@ -673,11 +673,11 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/tebako-config.h
 )
 
-set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g")
+set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -g -fPIE")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -g -fPIE")
 
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g -fPIE")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -fPIE")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${INCBIN_SOURCE_DIR}
@@ -943,9 +943,12 @@ endif(RB_W32)
 #  MUST be in this order otherwise link may fail
 
   target_link_libraries(wr-bin dwarfs-wr)
+  target_link_options(wr-bin PUBLIC -pie)
 
   target_compile_options(wr-tests PUBLIC ${GTEST_CFLAGS})
   target_link_libraries(wr-tests dwarfs-wr ${GTEST_LDFLAGS})
+  target_link_options(wr-tests PUBLIC -pie)
+
   gtest_add_tests(TARGET wr-tests)
 
   add_dependencies(wr-bin ${INCBIN_PRJ} PACKAGED_FILESYSTEM_STEP_3)
