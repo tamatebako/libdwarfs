@@ -153,7 +153,7 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
               }
               if (f_size == 0) {
                 ret = mapped;
-                (*p_dltable)[path] = mapped;
+                (*p_dltable)[path] = std::move(mapped);
               }
               else {
                 ::unlink(mapped.c_str());
