@@ -457,7 +457,7 @@ if(WITH_GFLAGS_BUILD)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DGFLAGS_BUILD_STATIC_LIBS:BOOL=ON
                -DGFLAGS_BUILD_SHARED_LIBS:BOOL=OFF
-               -DBUILD_gflags_nothreads_LIB:BOOL=OFF
+               -DBUILD_gflags_nothreads_LIB:BOOL=ON
                -DINSTALL_SHARED_LIBS:BOOL=OFF
                -DCMAKE_BUILD_TYPE=Release
                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}

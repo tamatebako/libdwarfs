@@ -52,7 +52,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 1
+  CACHE_VER: 2
   CODECOV_TOKEN: 3fd391a5-99c6-434f-a07c-22fdf282ae5b
 
 jobs:
@@ -102,7 +102,7 @@ jobs:
           sudo apt-get -y install \
           binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev                \
           libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev    \
-          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libutfcpp-dev      \
+          libunwind-dev libdwarf-dev libelf-dev libgflags-dev libutfcpp-dev           \
           libboost-filesystem-dev libboost-program-options-dev libboost-system-dev    \
           libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev         \
           libboost-regex-dev libboost-thread-dev libbrotli-dev
