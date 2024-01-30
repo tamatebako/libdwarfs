@@ -44,8 +44,7 @@ build_and_test_task_template: &BUILD_AND_TEST_TASK_TEMPLATE
 
 task:
   name: macos-arm64
-  only_if: $CIRRUS_BRANCH == 'main'
-#  || $CIRRUS_PR != '' || $CIRRUS_TAG != ''
+  only_if: $CIRRUS_BRANCH == 'main' || $CIRRUS_PR != '' || $CIRRUS_TAG != ''
   macos_instance:
     image: ghcr.io/cirruslabs/macos-monterey-base:latest
 
@@ -62,7 +61,7 @@ task:
 
   deps_cache:
     folder: $DEPS
-    reupload_on_changes: false
+    reupload_on_changes: true
     fingerprint_script:
       - echo $CIRRUS_OS
       - cat common.env
@@ -108,7 +107,7 @@ task:
 
   deps_cache:
     folder: $DEPS
-    reupload_on_changes: false
+    reupload_on_changes: true
     fingerprint_script:
       - echo $CIRRUS_OS
       - cat common.env
