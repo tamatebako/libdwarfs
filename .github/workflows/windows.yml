@@ -37,6 +37,9 @@ on:
       - '.cirrus.yml'
       - '.github/workflows/*.yml'
       - '!.github/workflows/windows.yml'
+
+    tags: [ v* ]
+
   pull_request:
     paths-ignore:
       - 'docs/**'
@@ -98,13 +101,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.version') }}
+          key: vcpkg-${{ matrix.os.version }}-${{ hashFiles('vcpkg.version') }}
 
       - name: Deps cache
         uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/${{env.DEPS}}
-          key:  ${{ matrix.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
+          key:  ${{ matrix.os.version }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
       - name: Configure
         # Due to folly issue VCPKG_INSTALLED_DIR has to be outside of the project tree
@@ -142,7 +145,37 @@ jobs:
         shell: bash
         run:  OSTYPE=win32 tests/scripts/tests.sh
 
-#      - name: Run additional tests
-#        shell: cmd
-#        run: |
-#          build\wr-bin.exe
+      - name: Pack
+        shell: powershell
+        run: |
+          $cmakePath = Split-Path (Get-Command cmake | Select-Object -ExpandProperty Definition) -Parent
+          & "$cmakePath\cpack.exe" --config build\CPackConfig.cmake
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libdwarfs-wr
+          path: '*.7z'
+          retention-days: 1
+
+  publish:
+    name: Publish artifacts
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    if: contains(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: libdwarfs-wr
+
+      - name: Print release info
+        run: |
+          echo "Release version: ${{ github.ref }}"
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: '*.7z'
+          prerelease: ${{ contains(github.ref, '.rc') && 'true' || 'false' }}

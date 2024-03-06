@@ -117,7 +117,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{env.DEPS}}
-          key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
+          key:  alpine-${{ env.ALPINE_VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
       - name: Configure
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}

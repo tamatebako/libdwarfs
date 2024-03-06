@@ -257,10 +257,7 @@ set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pas
 # External projects
 
 def_ext_prj_g(DWARFS "tebako-0.4.5")
-
-if(WITH_TESTS)
-  def_ext_prj_g(INCBIN "348e36b")
-endif(WITH_TESTS)
+def_ext_prj_g(INCBIN "348e36b")
 
 if(NOT IS_WINDOWS)
   find_library(_LIBGLOG "libglog.a")
@@ -318,9 +315,7 @@ endif(NOT IS_WINDOWS)
 
 message("Collecting packages:")
 message(STATUS "dwarfs      -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
-if(WITH_TESTS)
-  message(STATUS "incbin      -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
-endif(WITH_TESTS)
+message(STATUS "incbin      -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
 if(WITH_GLOG_BUILD)
   def_ext_prj_g(GLOG "v0.6.0")
   message(STATUS "glog        -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
@@ -353,21 +348,6 @@ endif(WITH_DLFCN_WIN32_BUILD)
 # incbin
 
 if(WITH_TESTS)
-  set(INCBIN_BUILD_COMMAND ${CMAKE_COMMAND} -E true)
-  if(IS_WINDOWS)
-    set(INCBIN_BUILD_COMMAND ${CMAKE_C_COMPILER} ${INCBIN_SOURCE_DIR}/incbin.c -nologo -link -out:${DEPS}/bin/incbin.exe)
-  endif(IS_WINDOWS)
-  ExternalProject_Add(${INCBIN_PRJ}
-    PREFIX ${DEPS}
-    GIT_REPOSITORY https://github.com/graphitemaster/incbin.git
-    GIT_TAG ${INCBIN_TAG}
-    UPDATE_COMMAND ""
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS}/bin
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS}/include
-    BUILD_COMMAND ${INCBIN_BUILD_COMMAND}
-    INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${INCBIN_SOURCE_DIR}/incbin.h ${DEPS}/include/incbin.h
-  )
-
 # ...................................................................
 # Filesystem locations
 
@@ -450,6 +430,25 @@ ExternalProject_Add(${DWARFS_PRJ}
   BUILD_BYPRODUCTS ${__LIBDWARFS}       ${__LIBDWARFS_COMPRESSION} ${__LIBFSST}   ${__LIBFOLLY}
                    ${__LIBT_METADATA}   ${__LIBT_LIGHT}            ${__LIBXXHASH} ${__LIBZSTD}
                    ${__LIBFMT}          ${__LIBARCHIVE}
+)
+
+# ...................................................................
+# incbin
+
+set(INCBIN_BUILD_COMMAND ${CMAKE_COMMAND} -E true)
+if(IS_WINDOWS)
+  set(INCBIN_BUILD_COMMAND ${CMAKE_C_COMPILER} ${INCBIN_SOURCE_DIR}/incbin.c -nologo -link -out:${DEPS_BIN_DIR}/incbin.exe)
+endif(IS_WINDOWS)
+
+ExternalProject_Add(${INCBIN_PRJ}
+  PREFIX ${DEPS}
+  GIT_REPOSITORY https://github.com/graphitemaster/incbin.git
+  GIT_TAG ${INCBIN_TAG}
+  UPDATE_COMMAND ""
+  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS}/bin
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS}/include
+  BUILD_COMMAND ${INCBIN_BUILD_COMMAND}
+  INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${INCBIN_SOURCE_DIR}/incbin.h ${DEPS}/include/incbin.h
 )
 
 # ...................................................................
@@ -793,6 +792,7 @@ if(WITH_TESTS)
 # explicitely disable unneeded gmock build
     set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
   endif(NOT PREFER_SYSTEM_GTEST)
 
@@ -1156,9 +1156,15 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 
+install(FILES
+        ${DEPS_INCLUDE_DIR}/incbin.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/incbin
+)
+
 if(IS_WINDOWS)
   install(FILES
           ${DEPS_BIN_DIR}/mkdwarfs.exe
+          ${DEPS_BIN_DIR}/incbin.exe
           DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 else(IS_WINDOWS)
@@ -1166,4 +1172,26 @@ else(IS_WINDOWS)
           ${DEPS_BIN_DIR}/mkdwarfs
           DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
+endif(IS_WINDOWS)
+
+if(IS_WINDOWS)
+#  include(InstallRequiredSystemLibraries)
+
+  string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+).*" "\\1;\\2;\\3" VERSION_COMPONENTS ${LIBDWARFS_WR_VERSION})
+
+  list(GET VERSION_COMPONENTS 0 VERSION_MAJOR)
+  list(GET VERSION_COMPONENTS 1 VERSION_MINOR)
+  list(GET VERSION_COMPONENTS 2 VERSION_PATCH)
+
+  set(CPACK_PACKAGE_NAME "libdwarfs-wr")
+  set(CPACK_PACKAGE_VENDOR "Ribose Inc.")
+  set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tamatebako libdwarfs wrapper package")
+  set(CPACK_PACKAGE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+  set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
+  set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
+  set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
+  set(CPACK_PACKAGE_INSTALL_DIRECTORY "libdwarfs ${CPACK_PACKAGE_VERSION}")
+
+  set(CPACK_GENERATOR "7Z")
+  include(CPack)
 endif(IS_WINDOWS)

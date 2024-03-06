@@ -75,7 +75,9 @@
 #define STAT_TYPE stat
 #endif
 
+#if !defined(RUBY_WIN32_DIR_H)
 #include <tebako-io-rb-w32.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
