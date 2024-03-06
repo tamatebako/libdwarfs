@@ -99,6 +99,7 @@ jobs:
 
       - name: Install packages
         run: |
+          sudo apt-get -y update
           sudo apt-get -y install \
           binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev                \
           libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev    \
