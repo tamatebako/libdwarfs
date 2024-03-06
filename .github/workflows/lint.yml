@@ -27,6 +27,8 @@ name: lint
 
 on:
   push:
+    branches:
+      - '*'
     paths-ignore:
       - 'docs/**'
       - '**.adoc'

@@ -35,11 +35,13 @@ install_manifest.txt
 # Build files
 out
 build
+_CPack_Packages
 
 # External dependencies
 deps
 dwarfs-arm64
 dwarfs-x86_64
+*.7z
 
 # Generated files
 tests/tebako-test-config.h
@@ -49,6 +51,10 @@ tests/shunit2
 include/version.h
 include/tebako-config.h
 tests/tebako-test-config.h
+
+test-w/tebako-fs.c
+test-w/tebako-fs0.c
+
 *.bin
 
 # VS files
