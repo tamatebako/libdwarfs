@@ -46,7 +46,7 @@ check_shared_libs() {
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
-        if [[ "$OSTYPE" == "win32" ]]; then
+        if [[ "$OSTYPE" == "win32" || "$OSTYPE" == "msys" ]]; then
             actual_i=${actual[i],,}
          else
             actual_i=${actual[i]}
@@ -88,7 +88,13 @@ test_linkage() {
       elif [[ "$OSTYPE" == "cygwin" ]]; then
          echo "... cygwin ... skipping"
       elif [[ "$OSTYPE" == "msys" ]]; then
-         echo "... msys ... skipping"
+         expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
+                   "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
+                   "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll"
+                   "shell32.dll" "crypt32.dll" "bcrypt.dll")
+         readarray -t actual < <(ldd "$DIR_SRC/wr-bin.exe")
+         assertEquals "readarray -t actual < <(ldd $DIR_SRC/wr-bin.exe) failed" 0 "${PIPESTATUS[0]}"
+         check_shared_libs
       elif [[ "$OSTYPE" == "win32" ]]; then
          # This test assumes MSys bash and Release build
          # Just nothing ...
@@ -148,8 +154,20 @@ test_install_script() {
    cmake --install  "$DIR_SRC" --prefix "$DIR_INSTALL"
    assertEquals "cmake --install failed" 0 "${PIPESTATUS[0]}"
 
+
+   if [[ "$OSTYPE" == "msys" ]]; then
+      NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
+      NM_LIBARCHIVE="$DIR_INS_L/libarchive_static.a"
+   elif [[ "$OSTYPE" == "win32" ]]; then
+      NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
+      NM_LIBARCHIVE="$DIR_INS_L/archive.lib"
+   else
+      NM_MKDWARFS="$DIR_INS_B/mkdwarfs"
+      NM_LIBARCHIVE="$DIR_INS_L/libarchive.a"
+   fi
+
    if [[ "$OSTYPE" == "win32" ]]; then
-      test_files_installed "$DIR_INS_B/mkdwarfs.exe"           \
+      test_files_installed "$NM_MKDWARFS"                      \
                            "$DIR_INS_L/dwarfs-wr.lib"          \
                            "$DIR_INS_L/dwarfs.lib"             \
                            "$DIR_INS_L/dwarfs_compression.lib" \
@@ -159,13 +177,13 @@ test_install_script() {
                            "$DIR_INS_L/thrift_light.lib"       \
                            "$DIR_INS_L/xxhash.lib"             \
                            "$DIR_INS_L/zstd.lib"               \
-                           "$DIR_INS_L/archive.lib"            \
+                           "$NM_MKDWARFS"                      \
                            "$DIR_INS_I/tebako-config.h"        \
                            "$DIR_INS_I/tebako-defines.h"       \
                            "$DIR_INS_I/tebako-io.h"            \
                            "$DIR_INS_I/tebako-io.h"
    else
-      test_files_installed "$DIR_INS_B/mkdwarfs"                \
+      test_files_installed "$NM_MKDWARFS"                       \
                            "$DIR_INS_L/libdwarfs-wr.a"          \
                            "$DIR_INS_L/libdwarfs.a"             \
                            "$DIR_INS_L/libdwarfs_compression.a" \
@@ -176,13 +194,12 @@ test_install_script() {
                            "$DIR_INS_L/libxxhash.a"             \
                            "$DIR_INS_L/libzstd.a"               \
                            "$DIR_INS_L/libfmt.a"                \
-                           "$DIR_INS_L/libarchive.a"            \
+                           "$NM_LIBARCHIVE"                     \
                            "$DIR_INS_I/tebako-config.h"         \
                            "$DIR_INS_I/tebako-defines.h"        \
                            "$DIR_INS_I/tebako-io.h"             \
                            "$DIR_INS_I/tebako-io.h"
    fi
-
 }
 
 # ......................................................................
