@@ -131,7 +131,12 @@ endif(WITH_TESTS)
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "Build type was not specified. Defaulted to release")
   set(CMAKE_BUILD_TYPE Release)
-endif()
+endif(NOT CMAKE_BUILD_TYPE)
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+# Mask folly symbolizer issue where it includes <dwarf.h> instead of <libdwarf/dwarf.h>
+file(WRITE ${DEPS_INCLUDE_DIR}/dwarf.h "#include <libdwarf/dwarf.h>")
+endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 
 # Reasonable defaults
 set(USE_JEMALLOC ON)
@@ -140,9 +145,11 @@ set(WITH_GLOG_BUILD OFF)
 set(WITH_GFLAGS_BUILD OFF)
 set(WITH_DC_BUILD OFF)
 set(WITH_LZ4_BUILD OFF)
+set(WITH_FMT_BUILD OFF)
 
 set(IS_MUSL OFF)
 set(IS_WINDOWS OFF)
+set(IS_MSYS OFF)
 set(IS_DARWIN OFF)
 
 if(MSVC)
@@ -153,10 +160,21 @@ if(MSVC)
   set(VCPKG_PARAMS -GNinja -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET} -DVCPKG_INSTALLED_DIR=${VCPKG_INSTALLED_DIR})
   set(WITH_LINK_TESTS OFF)
   set(LIBEMPTY_NAME "empty.dll")
+  set(MKDWARFS "${MKDWARFS}.exe")
   add_compile_options(/Zc:__cplusplus /utf-8 /wd4267 /wd4244 /wd5219)
   # Apply /MT or /MTd  (multithread, static version of the run-time library)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-else(MSVC)
+elseif(MINGW)
+  set(IS_MSYS ON)
+  set(OSTYPE_TXT "msys")
+  set(OSTYPE_RES  0)
+  set(USE_JEMALLOC OFF)
+  set(PREFER_SYSTEM_GTEST ON)
+  set(WITH_LINK_TESTS OFF)
+  set(LIBEMPTY_NAME "libempty.dll")
+  set(MKDWARFS "${MKDWARFS}.exe")
+  set(WITH_FMT_BUILD ON)
+else()
   set(LIBEMPTY_NAME "libempty.so")
   execute_process(
     COMMAND "${GNU_BASH}"
@@ -192,11 +210,11 @@ endif(MSVC)
 #    RB_W32 means use of Ruby Linux-like Dir IO functions
 #    Possible other methods may be MinGW Dir IO (== posix), folly portability (== posix)
 #    These two most likely would work but are not tested
-if(NOT IS_WINDOWS)
+if(NOT IS_WINDOWS AND NOT IS_MSYS)
   set(RB_W32 OFF)
-else(NOT IS_WINDOWS)
+else(NOT IS_WINDOWS AND NOT IS_MSYS)
   set(RB_W32 ON)
-endif(NOT IS_WINDOWS)
+endif(NOT IS_WINDOWS AND NOT IS_MSYS)
 # -----------------------------------------------------------------------------
 #  - "darwin.*"                 will have IS_MUSL flag set
 # -----------------------------------------------------------------------------
@@ -212,7 +230,7 @@ else(OSTYPE_RES EQUAL 0)
 endif(OSTYPE_RES EQUAL 0)
 
 message("Configuraion summary:")
-message(STATUS "Build scope: ${TEBAKO_BUILD_SCOPE}")
+message(STATUS "Tebako build scope: ${TEBAKO_BUILD_SCOPE}")
 if (IS_WINDOWS)
   message(STATUS "Building for Ruby Win32: ${RB_W32}")
 endif(IS_WINDOWS)
@@ -256,7 +274,7 @@ set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pas
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-0.4.5")
+def_ext_prj_g(DWARFS "tebako-v0.5.2")
 def_ext_prj_g(INCBIN "348e36b")
 
 if(NOT IS_WINDOWS)
@@ -316,6 +334,10 @@ endif(NOT IS_WINDOWS)
 message("Collecting packages:")
 message(STATUS "dwarfs      -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
 message(STATUS "incbin      -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
+if(WITH_FMT_BUILD)
+  def_ext_prj_g(FMT "10.1.1")
+  message(STATUS "fmt         -  @${FMT_TAG}  at  ${FMT_SOURCE_DIR}")
+endif(WITH_FMT_BUILD)
 if(WITH_GLOG_BUILD)
   def_ext_prj_g(GLOG "v0.6.0")
   message(STATUS "glog        -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
@@ -396,16 +418,25 @@ set(__LIBT_METADATA "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}metadata
 set(__LIBT_LIGHT "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}thrift_light${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
 if(NOT IS_WINDOWS)
+  if(IS_MSYS)
+    set(__LIBARCHIVE "${DEPS}/lib/libarchive_static.a")
+  else(IS_MSYS)
+    set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
+  endif(IS_MSYS)
+endif(NOT IS_WINDOWS)
+
+if(NOT IS_WINDOWS AND NOT IS_MSYS)
+  # Use system zstd and xxhash for MSys
   set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
   set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
-  set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
 
+  # Build fmt for MSys
   if(CMAKE_BUILD_TYPE STREQUAL Debug)
     set(__LIBFMT "${DWARFS_BINARY_DIR}/_deps/fmt-build/libfmtd.a")
   else()
     set(__LIBFMT "${DWARFS_BINARY_DIR}/_deps/fmt-build/libfmt.a")
   endif()
-endif(NOT IS_WINDOWS)
+endif(NOT IS_WINDOWS AND NOT IS_MSYS)
 
 ExternalProject_Add(${DWARFS_PRJ}
   PREFIX ${DEPS}
@@ -424,6 +455,7 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DFOLLY_NO_EXCEPTION_TRACER=ON
              -DDISABLE_CCACHE=ON
              -DWITH_MAN_PAGES=OFF
+#             -DNO_PATCH=ON
              -DNIXPKGS_DWARFS_VERSION_OVERRIDE=tebako-${LIBDWARFS_WR_VERSION}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
@@ -454,6 +486,26 @@ ExternalProject_Add(${INCBIN_PRJ}
 # ...................................................................
 # glog
 
+if(WITH_FMT_BUILD)
+  set(__LIBFMT "${DEPS}/lib/libfmt.a")
+  ExternalProject_Add(${FMT_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/fmtlib/fmt.git"
+    GIT_TAG ${FMT_TAG}
+    UPDATE_COMMAND ""
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
+               -DBUILD_SHARED_LIBS:BOOL=OFF
+               -DCMAKE_CXX_STANDARD=17
+               -DCMAKE_CXX_STANDARD_REQUIRED=ON
+               -DCMAKE_CXX_EXTENSIONS=OFF
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+    SOURCE_DIR ${FMT_SOURCE_DIR}
+    BINARY_DIR ${FMT_BINARY_DIR}
+    BUILD_BYPRODUCTS ${__LIBFMT}
+  )
+  add_dependencies(${DWARFS_PRJ} ${FMT_PRJ})
+endif(WITH_FMT_BUILD)
+
 if(WITH_GLOG_BUILD)
   set(__LIBGLOG "${DEPS}/lib/libglog.a")
   ExternalProject_Add(${GLOG_PRJ}
@@ -469,6 +521,7 @@ if(WITH_GLOG_BUILD)
                -DCMAKE_CXX_STANDARD_REQUIRED=ON
                -DCMAKE_CXX_EXTENSIONS=OFF
                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -DWITH_UNWIND=OFF
     SOURCE_DIR ${GLOG_SOURCE_DIR}
     BINARY_DIR ${GLOG_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBGLOG}
@@ -760,7 +813,7 @@ if(WITH_TESTS)
       message(FATAL_ERROR "Environment variable TEMP or TMP is not defined")
     endif()
     file(TO_CMAKE_PATH "$ENV{PROGRAMFILES}" TESTS_USR_DIR)
-    find_program(SHELL_PATH cmd)
+    find_program(SHELL_PATH cmd.exe)
   else(WIN32)
     # Cannot use env. variables on MacOS because temp folder is unique on each run and
     # it breaks cross-tests on different Os version
@@ -928,7 +981,19 @@ if(WITH_TESTS)
     endif(CMAKE_BUILD_TYPE STREQUAL Release)
     set(_LIBEH "")
 else(IS_WINDOWS)
-    set(_LIBEH "gcc_eh")
+    if (IS_MSYS)
+      find_library(__LIBXXHASH "libxxhash.a" REQUIRED)
+      if(CMAKE_BUILD_TYPE STREQUAL Release)
+        find_library(__LIBFMT "libfmt.a" REQUIRED)
+      else(CMAKE_BUILD_TYPE STREQUAL Release)
+        find_library(__LIBFMT "libfmtd.a" REQUIRED)
+      endif(CMAKE_BUILD_TYPE STREQUAL Release)
+      find_library(__LIBZSTD "libzstd.a" REQUIRED)
+      set(_LIBEH "")
+    else(IS_MSYS)
+      set(_LIBEH "gcc_eh")
+    endif(IS_MSYS)
+
     find_library(_LIBEVENT "libevent.a" REQUIRED)
     find_library(_LIBLZMA "liblzma.a" REQUIRED)
 
@@ -941,7 +1006,9 @@ else(IS_WINDOWS)
     find_library(_LIBSSL "libssl.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
     find_library(_LIBCRYPTO "libcrypto.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
 
-    find_library(_LIBACL "libacl.a")
+    if(NOT IS_MSYS)
+      find_library(_LIBACL "libacl.a")
+    endif()
 
 #  find_library(_LIBPTHREAD "pthread")
 #  find_library(_LIBDL "dl")
@@ -1081,13 +1148,19 @@ endif(RB_W32)
     list(APPEND _LIBRARIES ${_LIBIBERTY}  ${_LIBACL}    ${_LIBZ}
                            ${_LIBEH}      ${_LIBUNWIND} ${_LIBLZMA}
     )
-    if(NOT IS_WINDOWS)
+    if(IS_MSYS)
+      find_library(_LIBDL "libdl.a" REQUIRED)
+      list(APPEND _LIBRARIES ${_LIBDL})
+      target_link_options(wr-bin PUBLIC -static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive)
+      target_link_options(wr-tests PUBLIC -static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive)
+    elseif(NOT IS_WINDOWS)
       list(APPEND _LIBRARIES pthread)
-    endif(NOT IS_WINDOWS)
-    list(APPEND _LIBRARIES dl)
+      list(APPEND _LIBRARIES dl)
+    else()
+      list(APPEND _LIBRARIES dl)
+    endif(IS_MSYS)
   endif(IS_DARWIN)
 
-  # target_link_options(wr-bin PUBLIC -static-libgcc -static-libstdc++)
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
 
@@ -1099,10 +1172,10 @@ endif(RB_W32)
     target_link_libraries(wr-tests ${_LIBJEMALLOC})
   endif(WITH_JEMALLOC_BUILD)
 
-  if(IS_WINDOWS)
+  if(IS_WINDOWS OR IS_MSYS)
     target_link_libraries(wr-bin crypt32 shlwapi wsock32 ws2_32)
     target_link_libraries(wr-tests crypt32 shlwapi wsock32 ws2_32)
-  endif(IS_WINDOWS)
+  endif(IS_WINDOWS OR IS_MSYS)
 
 endif(WITH_TESTS)
 
@@ -1118,10 +1191,13 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-if(NOT IS_WINDOWS)
+if (IS_MSYS)
+  install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(DIRECTORY ${DEPS_INCLUDE_DIR}/fmt DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/fmt)
+elseif(NOT IS_WINDOWS)
   install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
   install(DIRECTORY ${DWARFS_BINARY_DIR}/_deps/fmt-src/include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-endif(NOT IS_WINDOWS)
+endif(IS_MSYS)
 
 if(WITH_GLOG_BUILD)
   install(FILES ${__LIBGLOG} DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -1163,18 +1239,17 @@ install(FILES
 
 if(IS_WINDOWS)
   install(FILES
-          ${DEPS_BIN_DIR}/mkdwarfs.exe
           ${DEPS_BIN_DIR}/incbin.exe
-          DESTINATION ${CMAKE_INSTALL_BINDIR}
-  )
-else(IS_WINDOWS)
-  install(FILES
-          ${DEPS_BIN_DIR}/mkdwarfs
           DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 endif(IS_WINDOWS)
 
-if(IS_WINDOWS)
+install(FILES
+        ${MKDWARFS}
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+if(IS_WINDOWS OR IS_MSYS)
 #  include(InstallRequiredSystemLibraries)
 
   string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+).*" "\\1;\\2;\\3" VERSION_COMPONENTS ${LIBDWARFS_WR_VERSION})
@@ -1194,4 +1269,4 @@ if(IS_WINDOWS)
 
   set(CPACK_GENERATOR "7Z")
   include(CPack)
-endif(IS_WINDOWS)
+endif(IS_WINDOWS OR IS_MSYS)

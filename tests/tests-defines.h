@@ -49,23 +49,69 @@
 
 #ifdef _WIN32
 
+#ifndef F_OK
 #define F_OK 0
-#define W_OK 2
-#define R_OK 4
-#define X_OK F_OK
+#endif
 
-#define S_IRUSR S_IREAD  /* read, user */
+#ifndef W_OK
+#define W_OK 2
+#endif
+
+#ifndef R_OK
+#define R_OK 4
+#endif
+
+#ifndef X_OK
+#define X_OK F_OK
+#endif
+
+#ifndef S_IRUSR
+#define S_IRUSR S_IREAD /* read, user */
+#endif
+
+#ifndef S_IWUSR
 #define S_IWUSR S_IWRITE /* write, user */
-#define S_IXUSR 0        /* execute, user */
-#define S_IRGRP 0        /* read, group */
-#define S_IWGRP 0        /* write, group */
-#define S_IXGRP 0        /* execute, group */
-#define S_IROTH 0        /* read, others */
-#define S_IWOTH 0        /* write, others */
-#define S_IXOTH 0        /* execute, others */
+#endif
+
+#ifndef S_IXUSR
+#define S_IXUSR 0 /* execute, user */
+#endif
+
+#ifndef S_IRGRP
+#define S_IRGRP 0 /* read, group */
+#endif
+
+#ifndef S_IWGRP
+#define S_IWGRP 0 /* write, group */
+#endif
+
+#ifndef S_IXGRP
+#define S_IXGRP 0 /* execute, group */
+#endif
+
+#ifndef S_IROTH
+#define S_IROTH 0 /* read, others */
+#endif
+
+#ifndef S_IWOTH
+#define S_IWOTH 0 /* write, others */
+#endif
+
+#ifndef S_IXOTH
+#define S_IXOTH 0 /* execute, others */
+#endif
+
+#ifndef S_IRWXU
 #define S_IRWXU 0
+#endif
+
+#ifndef S_IRWXG
 #define S_IRWXG 0
+#endif
+
+#ifndef S_IRWXO
 #define S_IRWXO 0
+#endif
 
 #ifndef PATH_MAX
 #define PATH_MAX _MAX_PATH

@@ -28,9 +28,14 @@
  */
 
 #include <tebako-pch.h>
+#include <time.h>
 #include <sys/timeb.h>
 #include <stdio.h>
 #include "tests-defines.h"
+
+#if defined(__MINGW32__) && !defined(min)
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 
 #include <tebako-io.h>
 #include <tebako-io-rb-w32-inner.h>
@@ -137,6 +142,11 @@ static int check_if_wdir(const WCHAR* wfile);
 char* rb_w32_wstr_to_mbstr(UINT cp, const WCHAR* wstr, int clen, long* plen);
 char* rb_w32_conv_from_wstr(const WCHAR* wstr, long* lenp, const void* enc);
 static void move_to_next_entry(DIR* dirp);
+static int w32_stati128(const char* path,
+                        struct stati128* st,
+                        UINT cp,
+                        BOOL lstat);
+static int wstati128(const WCHAR* path, struct stati128* st, BOOL lstat);
 
 typedef char lowio_text_mode;
 typedef char lowio_pipe_lookahead[3];
