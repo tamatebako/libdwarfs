@@ -43,6 +43,9 @@ on:
       - '.cirrus.yml'
       - '.github/workflows/*.yml'
       - '!.github/workflows/windows-msys.yml'
+
+    tags: [ v* ]
+
   pull_request:
     paths-ignore:
       - 'docs/**'
@@ -51,6 +54,7 @@ on:
       - '.cirrus.yml'
       - '.github/workflows/*.yml'
       - '!.github/workflows/windows-msys.yml'
+
   workflow_dispatch:
 
 concurrency:
@@ -140,3 +144,35 @@ jobs:
 
       - name: Run additional tests
         run:  tests/scripts/tests.sh
+
+      - name: Pack
+        run: cpack --config build/CPackConfig.cmake
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libdwarfs-wr
+          path: '*.7z'
+          retention-days: 1
+
+  publish:
+    name: Publish artifacts
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    if: contains(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: libdwarfs-wr
+
+      - name: Print release info
+        run: |
+          echo "Release version: ${{ github.ref }}"
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: '*.7z'
+          prerelease: ${{ contains(github.ref, '.rc') && 'true' || 'false' }}
