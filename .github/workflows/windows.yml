@@ -175,7 +175,7 @@ jobs:
           echo "Release version: ${{ github.ref }}"
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: '*.7z'
           prerelease: ${{ contains(github.ref, '.rc') && 'true' || 'false' }}
