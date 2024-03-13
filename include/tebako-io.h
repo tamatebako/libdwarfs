@@ -34,23 +34,12 @@
 
 #pragma once
 
-#if !defined(O_BINARY)
-#define O_BINARY 0x0
-#endif
-
-#if !defined(O_DIRECTORY)
-#define O_DIRECTORY 0x0
-#endif
-
-#if !defined(O_NOFOLLOW)
-#define O_NOFOLLOW 0x0
-#endif
-
 #if !defined(_S_IFLNK)
 #define _S_IFLNK 0xA000
-#ifdef _WIN32
-#define S_IFLNK _S_IFLNK
 #endif
+
+#if !defined(S_IFLNK)
+#define S_IFLNK _S_IFLNK
 #endif
 
 #if !defined(S_ISLNK)
@@ -75,7 +64,7 @@
 #define STAT_TYPE stat
 #endif
 
-#if !defined(RUBY_WIN32_DIR_H)
+#if !defined(RUBY_WIN32_DIR_H) && defined(RB_W32)
 #include <tebako-io-rb-w32.h>
 #endif
 
@@ -156,7 +145,7 @@ int tebako_fgetattrlist(int fd,
 
 /* struct stat is defined only if sys/stat.h has been included */
 #if defined(_SYS_STAT_H) || defined(_SYS_STAT_H_) || defined(_INC_STAT)
-#if defined(TEBAKO_HAS_POSIX_MKDIR)
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
 int tebako_mkdir(const char* path, mode_t mode);
 #else
 int tebako_mkdir(const char* path);
@@ -164,7 +153,7 @@ int tebako_mkdir(const char* path);
 
 int tebako_stat(const char* path, struct STAT_TYPE* buf);
 int tebako_fstat(int vfd, struct STAT_TYPE* buf);
-#if defined(TEBAKO_HAS_LSTAT)
+#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32)
 int tebako_lstat(const char* path, struct STAT_TYPE* buf);
 #endif
 #ifdef TEBAKO_HAS_FSTATAT

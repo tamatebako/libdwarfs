@@ -26,28 +26,28 @@
 name: Windows
 
 on:
-  schedule:
-    - cron: "0 6 * * 0"
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - 'docs/**'
-      - '**.adoc'
-      - '**.md'
-      - '.cirrus.yml'
-      - '.github/workflows/*.yml'
-      - '!.github/workflows/windows.yml'
-
-    tags: [ v* ]
-
-  pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.adoc'
-      - '**.md'
-      - '.cirrus.yml'
-      - '.github/workflows/*.yml'
-      - '!.github/workflows/windows.yml'
+#  schedule:
+#    - cron: "0 6 * * 0"
+#  push:
+#    branches: [ main ]
+#    paths-ignore:
+#      - 'docs/**'
+#      - '**.adoc'
+#      - '**.md'
+#      - '.cirrus.yml'
+#      - '.github/workflows/*.yml'
+#      - '!.github/workflows/windows.yml'
+#
+#    tags: [ v* ]
+#
+#  pull_request:
+#    paths-ignore:
+#      - 'docs/**'
+#      - '**.adoc'
+#      - '**.md'
+#      - '.cirrus.yml'
+#      - '.github/workflows/*.yml'
+#      - '!.github/workflows/windows.yml'
   workflow_dispatch:
 
 concurrency:
@@ -57,7 +57,7 @@ concurrency:
 env:
   VCPKG_DIR: C:/vcpkg
   VCPKG_DEFAULT_BINARY_CACHE: ${{github.workspace}}\cache
-  CACHE_VER: 1
+  CACHE_VER: 3
 
 jobs:
   build:

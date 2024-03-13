@@ -314,7 +314,7 @@ int dwarfs_access(const char* path,
   return ret;
 }
 
-#if defined(TEBAKO_HAS_LSTAT) || defined(_WIN32)
+#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32) || defined(_WIN32)
 int dwarfs_lstat(const char* path, struct stat* buf) noexcept
 {
   return safe_dwarfs_call(

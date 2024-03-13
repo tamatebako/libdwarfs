@@ -122,7 +122,7 @@ int tebako_chdir(const char* path)
   return ret;
 }
 
-#if defined(TEBAKO_HAS_POSIX_MKDIR)
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
 int tebako_mkdir(const char* path, mode_t mode)
 {
 #else
@@ -139,7 +139,7 @@ int tebako_mkdir(const char* path)
       TEBAKO_SET_LAST_ERROR(EROFS);
     }
     else {
-#if defined(TEBAKO_HAS_POSIX_MKDIR)
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
       ret = TO_RB_W32_U(mkdir)(path, mode);
 #else
       ret = ::mkdir(path);

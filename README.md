@@ -1,6 +1,7 @@
 ##  CI status
 
 [![Ubuntu](https://github.com/tamatebako/libdwarfs/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/ubuntu.yml)   [![MacOS](https://github.com/tamatebako/libdwarfs/actions/workflows/macos.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/macos.yml) [![Alpine](https://github.com/tamatebako/libdwarfs/actions/workflows/alpine.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/alpine.yml)
+[![Windows-MSys](https://github.com/tamatebako/libdwarfs/actions/workflows/windows-msys.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/windows-msys.yml)
 
 [![Build Status](https://api.cirrus-ci.com/github/tamatebako/libdwarfs.svg?task=macos-arm64)](https://cirrus-ci.com/github/tamatebako/libdwarfs)
 [![Build Status](https://api.cirrus-ci.com/github/tamatebako/libdwarfs.svg?task=ubuntu-aarch64)](https://cirrus-ci.com/github/tamatebako/libdwarfs)

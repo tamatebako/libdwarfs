@@ -52,7 +52,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 2
+  CACHE_VER: 5
   CODECOV_TOKEN: 3fd391a5-99c6-434f-a07c-22fdf282ae5b
 
 jobs:
@@ -69,8 +69,8 @@ jobs:
           - { os: ubuntu-20.04, CC: clang-12,  CXX: clang++-12, ASAN: 'ON',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
 # https://github.com/llvm/llvm-project/issues/56357
 # On Ubuntu 22  affects clang 14 (file entry.cpp)
-          - { os: ubuntu-22.04, CC: clang-15,  CXX: clang++-15, ASAN: 'OFF',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
-          - { os: ubuntu-22.04, CC: gcc-11,    CXX: g++-11,     ASAN: 'OFF',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+          - { os: ubuntu-22.04, CC: clang-15,  CXX: clang++-15, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+          - { os: ubuntu-22.04, CC: gcc-11,    CXX: g++-11,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
 
     env: ${{ matrix.env }}
     steps:
