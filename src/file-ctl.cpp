@@ -58,7 +58,7 @@ int tebako_access(const char* path, int amode)
   return ret;
 }
 
-#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32)
+#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32) || defined(RB_W32)
 int tebako_lstat(const char* path, struct STAT_TYPE* buf)
 {
   int ret = -1;

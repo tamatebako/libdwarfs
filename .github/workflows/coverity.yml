@@ -40,7 +40,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 1
+  CACHE_VER: 5
   COVERITY_TOKEN: "MmhAl7FrANiA8oF25A9hEg"
 
 jobs:

@@ -159,7 +159,7 @@ int main(int argc, char** argv)
     if (!rOK)
       printf("failing\n");
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(RB_W32)
     ret = mkdir(TEBAKIZE_PATH("directory-100"));
 #else
     ret = mkdir(TEBAKIZE_PATH("directory-100"), S_IRWXU);

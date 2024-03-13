@@ -1710,4 +1710,52 @@ void rb_w32_rewinddir(DIR* dirp)
   dirp->loc = 0;
 }
 
+/* License: Ruby's */
+static int wmkdir(const WCHAR* wpath, int mode)
+{
+  int ret = -1;
+
+  RUBY_CRITICAL do
+  {
+    if (CreateDirectoryW(wpath, NULL) == FALSE) {
+      errno = map_errno(GetLastError());
+      break;
+    }
+    if (_wchmod(wpath, mode) == -1) {
+      RemoveDirectoryW(wpath);
+      break;
+    }
+    ret = 0;
+  }
+  while (0)
+    ;
+  return ret;
+}
+
+/* License: Ruby's */
+int rb_w32_umkdir(const char* path, int mode)
+{
+  WCHAR* wpath;
+  int ret;
+
+  if (!(wpath = utf8_to_wstr(path, NULL)))
+    return -1;
+  ret = wmkdir(wpath, mode);
+  free(wpath);
+  return ret;
+}
+
+/* License: Ruby's */
+int rb_w32_mkdir(const char* path, int mode)
+{
+  WCHAR* wpath;
+  int ret;
+
+  if (!(wpath = filecp_to_wstr(path, NULL)))
+    return -1;
+  ret = wmkdir(wpath, mode);
+  free(wpath);
+  return ret;
+}
+
 #endif

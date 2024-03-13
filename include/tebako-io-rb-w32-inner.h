@@ -35,7 +35,7 @@ extern "C" {
 #endif  // __cplusplus
 char* rb_w32_ugetcwd(char*, int);
 int rb_w32_uchdir(const char*);
-int rb_w32_umkdir(const char*);
+int rb_w32_umkdir(const char*, int);
 int rb_w32_access(const char*, int);
 
 int rb_w32_uopen(const char*, int, ...);
