@@ -42,15 +42,15 @@ const int DWARFS_S_LINK_OUTSIDE = -3;
 // ... just to keep conditions like if (x & O_BINARY) ubiqiotous
 //     and avoid conditional compilation
 
-#ifndef TEBAKO_HASH_O_BINARY
+#ifndef O_BINARY
 #define O_BINARY 0x0
 #endif
 
-#ifndef TEBAKO_HASH_O_DIRECTORY
+#ifndef O_DIRECTORY
 #define O_DIRECTORY 0x0
 #endif
 
-#ifndef TEBAKO_HASH_O_NOFOLLOW
+#ifndef O_NOFOLLOW
 #define O_NOFOLLOW 0x0
 #endif
 
