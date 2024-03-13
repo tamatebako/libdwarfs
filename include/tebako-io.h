@@ -34,23 +34,10 @@
 
 #pragma once
 
-#if !defined(O_BINARY)
-#define O_BINARY 0x0
-#endif
-
-#if !defined(O_DIRECTORY)
-#define O_DIRECTORY 0x0
-#endif
-
-#if !defined(O_NOFOLLOW)
-#define O_NOFOLLOW 0x0
-#endif
-
+#ifdef _WIN32
 #if !defined(_S_IFLNK)
 #define _S_IFLNK 0xA000
-#ifdef _WIN32
 #define S_IFLNK _S_IFLNK
-#endif
 #endif
 
 #if !defined(S_ISLNK)
@@ -68,6 +55,7 @@
 #if !defined(S_ISDIR)
 #define S_ISDIR(mode) _S_ISTYPE((mode), _S_IFDIR)
 #endif
+#endif
 
 #ifdef RB_W32
 #define STAT_TYPE stati128
@@ -75,7 +63,7 @@
 #define STAT_TYPE stat
 #endif
 
-#if !defined(RUBY_WIN32_DIR_H)
+#if !defined(RUBY_WIN32_DIR_H) && defined(RB_W32)
 #include <tebako-io-rb-w32.h>
 #endif
 

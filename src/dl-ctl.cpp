@@ -131,7 +131,11 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
             *tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
           }
           else {
+#ifdef TEBAKO_HAS_O_BINARY
             int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT | O_BINARY,
+#else
+            int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT,
+#endif
                                 st.st_mode);
             if (fh_out < 0) {
               *tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);

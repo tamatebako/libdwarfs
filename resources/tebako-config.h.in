@@ -29,8 +29,6 @@
 
 #pragma once
 
-#cmakedefine TEBAKO_HAS_O_DIRECTORY 1
-#cmakedefine TEBAKO_HAS_O_NOFOLLOW 1
 #cmakedefine TEBAKO_HAS_O_BINARY 1
 
 #cmakedefine TEBAKO_HAS_S_ISLNK 1

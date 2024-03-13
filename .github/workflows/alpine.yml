@@ -53,7 +53,7 @@ concurrency:
 
 env:
   ALPINE_VER: 3.17
-  CACHE_VER: 1
+  CACHE_VER: 5
 
 jobs:
   build:

@@ -114,19 +114,14 @@ if (WITH_COVERAGE OR WITH_ASAN)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Forced for code coverage or sanitizers" FORCE)
 endif(WITH_COVERAGE OR WITH_ASAN)
 
-if (WITH_TESTS)
-  if(MKDWARFS)
-    set(TEBAKO_BUILD_SCOPE LIB)
-    message(STATUS "Using upstream mkdwarfs at ${MKDWARFS}")
-  else(MKDWARFS)
-    set(TEBAKO_BUILD_SCOPE MKD)
-    set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs)
-    message(STATUS "Building mkdwarfs at ${MKDWARFS}")
-  endif(MKDWARFS)
-else(WITH_TESTS)
+if(MKDWARFS)
   set(TEBAKO_BUILD_SCOPE LIB)
-  message(STATUS "Not build or using mkdwarfs")
-endif(WITH_TESTS)
+  message(STATUS "Using upstream mkdwarfs at ${MKDWARFS}")
+else(MKDWARFS)
+  set(TEBAKO_BUILD_SCOPE MKD)
+  set(MKDWARFS ${DEPS_BIN_DIR}/mkdwarfs)
+  message(STATUS "Building mkdwarfs at ${MKDWARFS}")
+endif(MKDWARFS)
 
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "Build type was not specified. Defaulted to release")
@@ -146,6 +141,7 @@ set(WITH_GFLAGS_BUILD OFF)
 set(WITH_DC_BUILD OFF)
 set(WITH_LZ4_BUILD OFF)
 set(WITH_FMT_BUILD OFF)
+set(WITH_ZSTD_BUILD OFF)
 
 set(IS_MUSL OFF)
 set(IS_WINDOWS OFF)
@@ -176,6 +172,7 @@ elseif(MINGW)
   set(WITH_FMT_BUILD ON)
 else()
   set(LIBEMPTY_NAME "libempty.so")
+  set(WITH_ZSTD_BUILD ON)
   execute_process(
     COMMAND "${GNU_BASH}"
             "-c"
@@ -274,7 +271,7 @@ set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pas
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.5.2")
+def_ext_prj_g(DWARFS "tebako-v0.5.3")
 def_ext_prj_g(INCBIN "348e36b")
 
 if(NOT IS_WINDOWS)
@@ -334,6 +331,10 @@ endif(NOT IS_WINDOWS)
 message("Collecting packages:")
 message(STATUS "dwarfs      -  @${DWARFS_TAG}   at  ${DWARFS_SOURCE_DIR}")
 message(STATUS "incbin      -  @${INCBIN_TAG}  at  ${INCBIN_SOURCE_DIR}")
+if(WITH_ZSTD_BUILD)
+  def_ext_prj_g(ZSTD "v1.5.5")
+  message(STATUS "zstd        -  @${ZSTD_TAG}  at  ${ZSTD_SOURCE_DIR}")
+endif(WITH_ZSTD_BUILD)
 if(WITH_FMT_BUILD)
   def_ext_prj_g(FMT "10.1.1")
   message(STATUS "fmt         -  @${FMT_TAG}  at  ${FMT_SOURCE_DIR}")
@@ -428,7 +429,6 @@ endif(NOT IS_WINDOWS)
 if(NOT IS_WINDOWS AND NOT IS_MSYS)
   # Use system zstd and xxhash for MSys
   set(__LIBXXHASH "${DWARFS_BINARY_DIR}/libxxhash.a")
-  set(__LIBZSTD "${DWARFS_BINARY_DIR}/zstd/build/cmake/lib/libzstd.a")
 
   # Build fmt for MSys
   if(CMAKE_BUILD_TYPE STREQUAL Debug)
@@ -455,7 +455,7 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DFOLLY_NO_EXCEPTION_TRACER=ON
              -DDISABLE_CCACHE=ON
              -DWITH_MAN_PAGES=OFF
-#             -DNO_PATCH=ON
+             -DPRESER_SYSTEM_ZSTD=ON
              -DNIXPKGS_DWARFS_VERSION_OVERRIDE=tebako-${LIBDWARFS_WR_VERSION}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
@@ -484,7 +484,33 @@ ExternalProject_Add(${INCBIN_PRJ}
 )
 
 # ...................................................................
-# glog
+# zstd
+
+if(WITH_ZSTD_BUILD)
+  set(__LIBZSTD "${DEPS}/lib/libzstd.a")
+  ExternalProject_Add(${ZSTD_PRJ}
+    PREFIX ${DEPS}
+    GIT_REPOSITORY "https://github.com/facebook/zstd.git"
+    GIT_TAG ${ZSTD_TAG}
+    UPDATE_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND}
+               -DCMAKE_INSTALL_PREFIX=${DEPS}
+               -DBUILD_SHARED_LIBS:BOOL=OFF
+               -DZSTD_BUILD_PROGRAMS:BOOL=OFF
+               -DBUILD_TESTING:BOOL=OFF
+               -DCMAKE_CXX_STANDARD=17
+               -DCMAKE_CXX_STANDARD_REQUIRED=ON
+               -DCMAKE_CXX_EXTENSIONS=OFF
+               -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+               -S${ZSTD_SOURCE_DIR}/build/cmake
+               -B${ZSTD_BINARY_DIR}
+    BUILD_BYPRODUCTS ${__LIBZSTD}
+  )
+  add_dependencies(${DWARFS_PRJ} ${ZSTD_PRJ})
+endif(WITH_ZSTD_BUILD)
+
+# ...................................................................
+# fmt
 
 if(WITH_FMT_BUILD)
   set(__LIBFMT "${DEPS}/lib/libfmt.a")
@@ -505,6 +531,9 @@ if(WITH_FMT_BUILD)
   )
   add_dependencies(${DWARFS_PRJ} ${FMT_PRJ})
 endif(WITH_FMT_BUILD)
+
+# ...................................................................
+# glog
 
 if(WITH_GLOG_BUILD)
   set(__LIBGLOG "${DEPS}/lib/libglog.a")
@@ -1227,7 +1256,6 @@ endif(WITH_JEMALLOC_BUILD)
 install(FILES
         "include/tebako-config.h"
         "include/tebako-defines.h"
-        "include/tebako-io.h"
         "include/tebako-io.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
