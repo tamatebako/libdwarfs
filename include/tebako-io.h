@@ -64,8 +64,8 @@
 #define STAT_TYPE stat
 #endif
 
-#if !defined(RUBY_WIN32_DIR_H) && defined(RB_W32)
-#include <tebako-io-rb-w32.h>
+#if defined(RB_W32)
+#include "tebako-io-rb-w32.h"
 #endif
 
 #ifdef __cplusplus

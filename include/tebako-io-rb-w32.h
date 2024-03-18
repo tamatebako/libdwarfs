@@ -29,10 +29,12 @@
 
 #pragma once
 
-#ifdef RB_W32
-#if !defined(RUBY_WIN32_DIR_H)
+#if defined(RB_W32) && !defined(TEBAKO_IO_RB_W32_H)
+#define TEBAKO_IO_RB_W32_H
 
+#if !defined(RUBY_WIN32_DIR_H) && !defined(RB_W32_DIR_DEFINED)
 #define RB_W32_DIR_DEFINED
+
 /* This is Ruby replacement for dirent */
 #define DT_UNKNOWN 0
 #define DT_DIR (S_IFDIR >> 12)
@@ -57,7 +59,9 @@ typedef struct {
   struct direct dirstr;
   char* bits; /* used for d_isdir and d_isrep */
 } DIR;
+#endif  // RUBY_WIN32_DIR_H, RB_W32_DIR_DEFINED
 
+#if !defined(RUBY_WIN32_H)
 struct stati128 {
   _dev_t st_dev;
   unsigned __int64 st_ino;
@@ -75,7 +79,6 @@ struct stati128 {
   __time64_t st_ctime;
   long st_ctimensec;
 };
-#endif
 
 #ifdef __cplusplus
 inline stati128* operator<<(stati128* o, struct stat i)
@@ -114,5 +117,6 @@ inline struct stat* operator<<(struct stat* o, stati128 i)
   return o;
 }
 #endif  // __cplusplus
+#endif  // RUBY_WIN32_H
 
-#endif  // RB_W32
+#endif  // RB_W32, TEBAKO_IO_RB_W32_H

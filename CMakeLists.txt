@@ -1263,6 +1263,13 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 
+if(RB_W32)
+  install(FILES
+          "include/tebako-io-rb-w32.h"
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
+  )
+endif(RB_W32)
+
 install(FILES
         ${DEPS_INCLUDE_DIR}/incbin.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/incbin
