@@ -158,6 +158,7 @@ test_install_script() {
    if [[ "$OSTYPE" == "msys" ]]; then
       NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
       NM_LIBARCHIVE="$DIR_INS_L/libarchive_static.a"
+      test_files_installed "$DIR_INS_I/tebako-io-rb-w32.h"
    elif [[ "$OSTYPE" == "win32" ]]; then
       NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
       NM_LIBARCHIVE="$DIR_INS_L/archive.lib"
@@ -180,7 +181,6 @@ test_install_script() {
                            "$NM_MKDWARFS"                      \
                            "$DIR_INS_I/tebako-config.h"        \
                            "$DIR_INS_I/tebako-defines.h"       \
-                           "$DIR_INS_I/tebako-io.h"            \
                            "$DIR_INS_I/tebako-io.h"
    else
       test_files_installed "$NM_MKDWARFS"                       \
@@ -197,7 +197,6 @@ test_install_script() {
                            "$NM_LIBARCHIVE"                     \
                            "$DIR_INS_I/tebako-config.h"         \
                            "$DIR_INS_I/tebako-defines.h"        \
-                           "$DIR_INS_I/tebako-io.h"             \
                            "$DIR_INS_I/tebako-io.h"
    fi
 }
