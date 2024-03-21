@@ -274,7 +274,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.5.3")
+def_ext_prj_g(DWARFS "tebako-v0.5.4")
 def_ext_prj_g(INCBIN "348e36b")
 
 if(NOT IS_WINDOWS)
@@ -302,7 +302,7 @@ if(NOT IS_WINDOWS)
     set(WITH_DC_BUILD ON)
   endif()
 
-  if(NOT WITH_BROTLI_BUILD)
+  if(NOT WITH_BROTLI_BUILD AND NOT IS_MSYS)
     find_library(_LIBBROTLICOMMON "libbrotlicommon.a")
     find_library(_LIBBROTLIENC "libbrotlienc.a")
     find_library(_LIBBROTLIDEC "libbrotlidec.a")
@@ -312,7 +312,7 @@ if(NOT IS_WINDOWS)
       message(STATUS "brotli static library was not found, building locally")
       set(WITH_BROTLI_BUILD ON)
     endif()
-  endif(NOT WITH_BROTLI_BUILD)
+  endif(NOT WITH_BROTLI_BUILD AND NOT IS_MSYS)
 
   if(NOT WITH_LZ4_BUILD)
     find_library(_LIBLZ4 "liblz4.a")
@@ -458,7 +458,6 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DFOLLY_NO_EXCEPTION_TRACER=ON
              -DDISABLE_CCACHE=ON
              -DWITH_MAN_PAGES=OFF
-             -DPRESER_SYSTEM_ZSTD=ON
              -DNIXPKGS_DWARFS_VERSION_OVERRIDE=tebako-${LIBDWARFS_WR_VERSION}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
@@ -1157,7 +1156,7 @@ endif(RB_W32)
     add_dwarfs_library(_LIBBROTLIDEC ${BROTLI_PRJ} wr-bin)
     add_dwarfs_library(_LIBBROTLICOMMON ${BROTLI_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBBROTLIENC _LIBBROTLIDEC _LIBBROTLICOMMON)
-  else(WITH_BROTLI_BUILD)
+    elseif(NOT IS_MSYS)
     list(APPEND _LIBRARIES ${_LIBBROTLIENC} ${_LIBBROTLIDEC} ${_LIBBROTLICOMMON})
   endif(WITH_BROTLI_BUILD)
 
