@@ -485,4 +485,12 @@ TEST_F(FileCtlTests, tebako_within_tebako_memfs)
                     TEBAKIZE_PATH("directory-1/file-in-directory-1.txt")));
   EXPECT_EQ(0, within_tebako_memfs(shell_file));
 }
+
+TEST_F(FileCtlTests, tebako_file_load_ok)
+{
+  EXPECT_EQ(-1, tebako_file_load_ok(
+                    TEBAKIZE_PATH("directory-1/file-in-directory-1.txt")));
+  EXPECT_EQ(0, within_tebako_memfs(shell_file));
+}
+
 }  // namespace
