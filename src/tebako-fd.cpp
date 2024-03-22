@@ -220,6 +220,17 @@ void sync_tebako_fdtable::close_all(void) noexcept
   (*wlock())->clear();
 }
 
+bool sync_tebako_fdtable::is_valid_file_descriptor(int vfd) noexcept
+{
+  int ret = false;
+  auto p_fdtable = *rlock();
+  auto p_fd = p_fdtable->find(vfd);
+  if (p_fd != p_fdtable->end()) {
+    ret = true;
+  }
+  return ret;
+}
+
 int sync_tebako_fdtable::fstat(int vfd, struct stat* st) noexcept
 {
   int ret = DWARFS_INVALID_FD;
