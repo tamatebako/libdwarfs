@@ -58,10 +58,8 @@ struct tebako_fd {
 typedef std::map<int, std::shared_ptr<tebako_fd>> tebako_fdtable;
 
 class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
- private:
-  int is_valid_file_descriptor(int fd);
 
- public:
+public:
   sync_tebako_fdtable(void)
       : folly::Synchronized<tebako_fdtable*>(new tebako_fdtable)
   {
@@ -86,6 +84,7 @@ class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
               const char* path,
               struct stat* buf,
               bool follow) noexcept;
+  bool is_valid_file_descriptor(int vfd) noexcept;
 
   static sync_tebako_fdtable fdtable;
 };

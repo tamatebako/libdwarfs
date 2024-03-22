@@ -432,4 +432,23 @@ TEST_F(FileIOTests, tebako_open_read_close_absolute_path_dot_dot)
   ret = tebako_close(fh);
   EXPECT_EQ(0, ret);
 }
+
+TEST_F(FileIOTests, is_tebako_file_descriptor)
+{
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
+                       O_RDONLY);
+  EXPECT_LT(0, fh);
+  EXPECT_TRUE(is_tebako_file_descriptor(fh));
+  int ret = tebako_close(fh);
+  EXPECT_EQ(0, ret);
+
+  const char* const sh_file = __AT_BIN__(__SHELL__);
+  fh = tebako_open(2, sh_file, O_RDONLY);
+  EXPECT_LT(0, fh);
+  EXPECT_FALSE(is_tebako_file_descriptor(fh));
+  ret = tebako_close(fh);
+  EXPECT_EQ(0, ret);
+
+}
+
 }  // namespace

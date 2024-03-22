@@ -162,7 +162,7 @@ int tebako_getattrlist(const char* path,
 }
 #endif
 
-extern "C" int within_tebako_memfs(const char* path)
+int within_tebako_memfs(const char* path)
 {
   return is_tebako_path(path) ? -1 : 0;
 }

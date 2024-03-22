@@ -209,6 +209,7 @@ void* tebako_dlopen(const char* path, int flags);
 char* tebako_dlerror(void);
 
 int within_tebako_memfs(const char* path);
+int is_tebako_file_descriptor(int fd);
 
 #ifdef _WIN32
 int is_tebako_path_w(const WCHAR* path);

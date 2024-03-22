@@ -246,3 +246,8 @@ int tebako_fgetattrlist(int vfd,
   return ret;
 }
 #endif
+
+int is_tebako_file_descriptor(int vfd)
+{
+  return sync_tebako_fdtable::fdtable.is_valid_file_descriptor(vfd) ? -1 : 0;
+}
