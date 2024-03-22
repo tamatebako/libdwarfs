@@ -58,8 +58,7 @@ struct tebako_fd {
 typedef std::map<int, std::shared_ptr<tebako_fd>> tebako_fdtable;
 
 class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
-
-public:
+ public:
   sync_tebako_fdtable(void)
       : folly::Synchronized<tebako_fdtable*>(new tebako_fdtable)
   {

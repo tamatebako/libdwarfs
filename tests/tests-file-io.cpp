@@ -448,7 +448,6 @@ TEST_F(FileIOTests, is_tebako_file_descriptor)
   EXPECT_FALSE(is_tebako_file_descriptor(fh));
   ret = tebako_close(fh);
   EXPECT_EQ(0, ret);
-
 }
 
 }  // namespace

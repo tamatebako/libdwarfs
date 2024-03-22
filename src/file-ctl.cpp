@@ -166,3 +166,18 @@ int within_tebako_memfs(const char* path)
 {
   return is_tebako_path(path) ? -1 : 0;
 }
+
+int tebako_file_load_ok(const char* path)
+{
+  int ret = 0;
+
+  if (within_tebako_memfs(path)) {
+    int fd = tebako_open(2, path, O_RDONLY);
+    if (fd != -1) {
+      struct STAT_TYPE st;
+      ret = (tebako_fstat(fd, &st) == 0) ? -1 : 0;
+      tebako_close(fd);
+    }
+  }
+  return ret;
+}
