@@ -380,3 +380,18 @@ int sync_tebako_fdtable::fstatat(int vfd,
   }
   return ret;
 }
+
+int sync_tebako_fdtable::flock(int fd, int operation) noexcept
+{
+  int ret = DWARFS_INVALID_FD;
+  auto p_fdtable = *sync_tebako_fdtable::fdtable.rlock();
+  auto p_fd = p_fdtable->find(fd);
+  if (p_fd != p_fdtable->end()) {
+    ret = DWARFS_IO_CONTINUE;
+    //  Tebako files are accessible by the package process only, so we do not
+    //  need to check anything We store the lock state in the file descriptor
+    //  structure for possible future implementation of fcntl
+    p_fd->second->lock = operation & ~(LOCK_NB | LOCK_UN);
+  }
+  return ret;
+}

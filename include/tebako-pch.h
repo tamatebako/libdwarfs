@@ -72,5 +72,6 @@ typedef SSIZE_T ssize_t;
 #include <unistd.h>
 #include <sys/param.h>
 #include <sys/uio.h>
+#include <sys/file.h>
 #include <ftw.h>
 #endif
