@@ -247,6 +247,16 @@ int tebako_fgetattrlist(int vfd,
 }
 #endif
 
+int tebako_flock(int vfd, int operation)
+{
+  int ret = sync_tebako_fdtable::fdtable.flock(vfd, operation);
+  if (ret == DWARFS_INVALID_FD) {
+    ret = is_valid_system_file_descriptor(vfd) ? ::flock(vfd, operation)
+                                               : DWARFS_IO_ERROR;
+  }
+  return ret;
+}
+
 int is_tebako_file_descriptor(int vfd)
 {
   return sync_tebako_fdtable::fdtable.is_valid_file_descriptor(vfd) ? -1 : 0;

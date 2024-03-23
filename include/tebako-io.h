@@ -34,38 +34,11 @@
 
 #pragma once
 
-#if !defined(_S_IFLNK)
-#define _S_IFLNK 0xA000
-#endif
-
-#if !defined(S_IFLNK)
-#define S_IFLNK _S_IFLNK
-#endif
-
-#if !defined(S_ISLNK)
-#define S_ISLNK(mode) (((mode) & (_S_IFLNK)) == (_S_IFLNK) ? 1 : 0)
-#endif
-
-#if !defined(_S_ISTYPE)
-#define _S_ISTYPE(mode, mask) (((mode) & (_S_IFMT)) == (mask))
-#endif
-
-#if !defined(S_ISREG)
-#define S_ISREG(mode) _S_ISTYPE((mode), _S_IFREG)
-#endif
-
-#if !defined(S_ISDIR)
-#define S_ISDIR(mode) _S_ISTYPE((mode), _S_IFDIR)
-#endif
-
-#ifdef RB_W32
+#if defined(RB_W32)
 #define STAT_TYPE stati128
+#include "tebako-io-rb-w32.h"
 #else
 #define STAT_TYPE stat
-#endif
-
-#if defined(RB_W32)
-#include "tebako-io-rb-w32.h"
 #endif
 
 #ifdef __cplusplus
@@ -207,6 +180,10 @@ int tebako_scandir(const char* dir,
 
 void* tebako_dlopen(const char* path, int flags);
 char* tebako_dlerror(void);
+
+#if defined(TEBAKO_HAS_DIRFD) || defined(RB_W32)
+int tebako_flock(int vfd, int operation);
+#endif
 
 int within_tebako_memfs(const char* path);
 int is_tebako_file_descriptor(int fd);

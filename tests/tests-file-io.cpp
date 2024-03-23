@@ -450,4 +450,36 @@ TEST_F(FileIOTests, is_tebako_file_descriptor)
   EXPECT_EQ(0, ret);
 }
 
+#if defined(TEBAKO_HAS_FLOCK) || defined(RB_W32)
+
+TEST_F(FileIOTests, tebako_flock_bad_file)
+{
+  int ret = tebako_flock(33, LOCK_EX | LOCK_NB);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(EBADF, errno);
+}
+
+TEST_F(FileIOTests, tebako_flock_pass_through)
+{
+  const char* const sh_file = __AT_BIN__(__SHELL__);
+  int fh = tebako_open(2, sh_file, O_RDONLY);
+  EXPECT_LT(0, fh);
+  int ret = tebako_flock(fh, LOCK_EX | LOCK_NB);
+  EXPECT_EQ(0, ret);
+  ret = tebako_close(fh);
+  EXPECT_EQ(0, ret);
+}
+
+TEST_F(FileIOTests, tebako_flock_absolute)
+{
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
+                       O_RDONLY);
+  EXPECT_LT(0, fh);
+  int ret = tebako_flock(fh, LOCK_EX | LOCK_NB);
+  EXPECT_EQ(0, ret);
+  ret = tebako_close(fh);
+  EXPECT_EQ(0, ret);
+}
+#endif
+
 }  // namespace

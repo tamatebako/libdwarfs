@@ -27,10 +27,48 @@
  *
  */
 
-#pragma once
-
 #if defined(RB_W32) && !defined(TEBAKO_IO_RB_W32_H)
 #define TEBAKO_IO_RB_W32_H
+
+#if !defined(_S_IFLNK)
+#define _S_IFLNK 0xA000
+#endif
+
+#if !defined(S_IFLNK)
+#define S_IFLNK _S_IFLNK
+#endif
+
+#if !defined(S_ISLNK)
+#define S_ISLNK(mode) (((mode) & (_S_IFLNK)) == (_S_IFLNK) ? 1 : 0)
+#endif
+
+#if !defined(_S_ISTYPE)
+#define _S_ISTYPE(mode, mask) (((mode) & (_S_IFMT)) == (mask))
+#endif
+
+#if !defined(S_ISREG)
+#define S_ISREG(mode) _S_ISTYPE((mode), _S_IFREG)
+#endif
+
+#if !defined(S_ISDIR)
+#define S_ISDIR(mode) _S_ISTYPE((mode), _S_IFDIR)
+#endif
+
+#ifndef LOCK_SH
+#define LOCK_SH 1
+#endif
+
+#ifndef LOCK_EX
+#define LOCK_EX 2
+#endif
+
+#ifndef LOCK_NB
+#define LOCK_NB 4
+#endif
+
+#ifndef LOCK_UN
+#define LOCK_UN 8
+#endif
 
 #if !defined(RUBY_WIN32_DIR_H) && !defined(RB_W32_DIR_DEFINED)
 #define RB_W32_DIR_DEFINED

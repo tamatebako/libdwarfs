@@ -1758,4 +1758,10 @@ int rb_w32_mkdir(const char* path, int mode)
   return ret;
 }
 
+// It does not matter for tebako
+int flock(int, int)
+{
+  return 0;
+}
+
 #endif

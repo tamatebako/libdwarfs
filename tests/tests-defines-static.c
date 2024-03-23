@@ -199,9 +199,18 @@ int main(int argc, char** argv)
       printf("failing\n");
 #endif
     ret = fstat(fh, &buf);
+    printf("A call to 'fstat' returned %i (0 expected)\n", ret);
     rOK &= (ret == 0);
     if (!rOK)
       printf("failing\n");
+
+#if defined(TEBAKO_HAS_FLOCK) || defined(RB_W32)
+    ret = flock(fh, LOCK_SH);
+    printf("A call to 'flock' returned %i (0 expected)\n", ret);
+    rOK &= (ret == 0);
+    if (!rOK)
+      printf("failing\n");
+#endif
 
     ret = close(fh);
     printf("A call to 'close' returned %i (0 expected)\n", ret);

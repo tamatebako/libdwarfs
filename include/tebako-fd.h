@@ -39,9 +39,10 @@ struct tebako_fd {
   struct stat st;
   uint64_t pos;
   std::string filename;
+  int lock;
   int* handle;
 
-  tebako_fd(const char* p) : filename(p), pos(0), handle(NULL)
+  tebako_fd(const char* p) : filename(p), pos(0), lock(0), handle(NULL)
   {
     memset(&st, 0, sizeof(st));
   }
@@ -83,6 +84,7 @@ class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
               const char* path,
               struct stat* buf,
               bool follow) noexcept;
+  int flock(int vfd, int operation) noexcept;
   bool is_valid_file_descriptor(int vfd) noexcept;
 
   static sync_tebako_fdtable fdtable;

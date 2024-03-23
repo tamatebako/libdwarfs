@@ -724,6 +724,9 @@ check_symbol_exists(readv "sys/uio.h" TEBAKO_HAS_READV)
 
 check_symbol_exists(pread "unistd.h" TEBAKO_HAS_PREAD)
 
+check_symbol_exists(flock "sys/file.h" TEBAKO_HAS_FLOCK)
+
+
 check_cxx_source_compiles(
     "#include <sys/stat.h>
      int main() {

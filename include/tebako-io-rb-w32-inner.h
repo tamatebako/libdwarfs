@@ -56,6 +56,8 @@ void rb_w32_rewinddir(DIR*);
 void rb_w32_closedir(DIR*);
 #endif
 
+int flock(int, int);
+
 #ifdef __cplusplus
 }
 #endif  // __cplusplus

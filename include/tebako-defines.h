@@ -118,3 +118,5 @@
 #define readv(...) tebako_readv(__VA_ARGS__)
 #define dlopen(...) tebako_dlopen(__VA_ARGS__)
 #define dlerror tebako_dlerror
+
+#define flock(...) tebako_flock(__VA_ARGS__)
