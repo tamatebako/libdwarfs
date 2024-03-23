@@ -180,6 +180,7 @@ int tebako_scandir(const char* dir,
 
 void* tebako_dlopen(const char* path, int flags);
 char* tebako_dlerror(void);
+char* tebako_dlmap2file(const char* path);
 
 #if defined(TEBAKO_HAS_DIRFD) || defined(RB_W32)
 int tebako_flock(int vfd, int operation);
