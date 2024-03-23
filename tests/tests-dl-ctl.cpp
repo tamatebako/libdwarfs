@@ -194,4 +194,63 @@ TEST_F(DlTests, tebako_dlopen_pass_through)
   //		EXPECT_EQ(0, dlclose(handle));        No close because of
   // RTLD_GLOBAL (?)
 }
+
+TEST_F(DlTests, tebako_dlmap2file_no_file)
+{
+  errno = 0;
+  char* dlmapped = tebako_dlmap2file(TEBAKIZE_PATH("no_file"));
+  EXPECT_EQ(dlmapped, nullptr);
+  char* r = tebako_dlerror();
+  std::string expected =
+      std::string(TEBAKIZE_PATH("no_file")) +
+      ": cannot open shared object file: No such file or directory";
+  std::replace(expected.begin(), expected.end(), '\\', '/');
+  EXPECT_EQ(expected, r);
+}
+
+TEST_F(DlTests, tebako_dlmap2file_absolute_path)
+{
+  char* dlmapped =
+      tebako_dlmap2file(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__));
+  EXPECT_NE(dlmapped, nullptr);
+  if (dlmapped != nullptr) {
+    void* handle = ::dlopen(dlmapped, RTLD_LAZY | RTLD_GLOBAL);
+    EXPECT_NE(handle, nullptr);
+    if (handle != nullptr) {
+      ::dlclose(handle);
+    }
+    free(dlmapped);
+  }
+}
+
+TEST_F(DlTests, tebako_dlmap2file_relative_path)
+{
+  EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-1")));
+  char* dlmapped = tebako_dlmap2file(__LIBEMPTY__);
+  EXPECT_NE(dlmapped, nullptr);
+  if (dlmapped != nullptr) {
+    void* handle = ::dlopen(dlmapped, RTLD_LAZY | RTLD_GLOBAL);
+    EXPECT_NE(handle, nullptr);
+    if (handle != nullptr) {
+      ::dlclose(handle);
+    }
+    free(dlmapped);
+  }
+}
+
+TEST_F(DlTests, tebako_dlmap2file_pass_through)
+{
+  char* dlmapped;
+#if __MACH__
+  dlmapped = tebako_dlmap2file("/usr/lib/libSystem.dylib");
+#elif __musl__
+  dlmapped = tebako_dlmap2file("/usr/lib/libc.so");
+#elif defined(_WIN32)
+  dlmapped = tebako_dlmap2file(__AT_BIN__("msvcrt.dll"));
+#else
+  dlmapped = tebako_dlmap2file(LIBM_SO);
+#endif
+  EXPECT_EQ(dlmapped, nullptr);
+}
+
 }  // namespace

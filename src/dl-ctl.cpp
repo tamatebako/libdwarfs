@@ -195,6 +195,22 @@ extern "C" void* tebako_dlopen(const char* path, int flags)
   return ret;
 }
 
+extern "C" char* tebako_dlmap2file(const char* path)
+{
+  char* ret = NULL;
+  if (path != NULL) {
+    tebako_path_t t_path;
+    const char* p_path = to_tebako_path(t_path, path);
+    if (p_path) {
+      string mapped_path = sync_tebako_dltable::dltable.map2file(p_path);
+      if (!mapped_path.empty()) {
+        ret = strdup(mapped_path.c_str());
+      }
+    }
+  }
+  return ret;
+}
+
 extern "C" char* tebako_dlerror(void)
 {
   string tebako_dlerror_text;
