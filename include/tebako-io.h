@@ -189,6 +189,7 @@ int tebako_flock(int vfd, int operation);
 int within_tebako_memfs(const char* path);
 int is_tebako_file_descriptor(int fd);
 int tebako_file_load_ok(const char* path);
+int is_tebako_cwd(void);
 
 #ifdef _WIN32
 int is_tebako_path_w(const WCHAR* path);

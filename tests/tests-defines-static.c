@@ -151,6 +151,12 @@ int main(int argc, char** argv)
     if (!rOK)
       printf("failing\n");
 
+    ret = is_tebako_cwd();
+    printf("A call to 'is_tebako_cwd' returned %i (not 0 expected)\n", ret);
+    rOK &= (ret != 0);
+    if (!rOK)
+      printf("failing\n");
+
     r = getcwd(NULL, 0);
     printf("A call to 'getcwd' returned %s ('%s' expected)\n", r,
            TEBAKIZE_PATH("directory-1"));

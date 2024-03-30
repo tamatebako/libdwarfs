@@ -94,7 +94,6 @@ typedef char tebako_path_t[TEBAKO_PATH_LENGTH + 1];
 
 const char* tebako_get_cwd(tebako_path_t cwd, bool win_separator = false);
 bool is_tebako_path(const char* path);
-bool is_tebako_cwd(void);
 bool is_valid_system_file_descriptor(int fd);
 const char* tebako_expand_path(tebako_path_t expanded_path, const char* path);
 char* tebako_path_assign(tebako_path_t out, const std::string& in);

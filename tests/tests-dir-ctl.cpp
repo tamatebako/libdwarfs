@@ -84,6 +84,8 @@ TEST_F(DirCtlTests, tebako_chdir_absolute_path_getcwd)
   EXPECT_EQ(0, ret);
   r = tebako_getcwd(p, PATH_MAX);
   EXPECT_STREQ(r, TEBAKIZE_PATH(""));
+  ret = is_tebako_cwd();
+  EXPECT_NE(0, ret);
 }
 
 TEST_F(DirCtlTests, tebako_chdir_absolute_path_no_directory_getcwd)
@@ -144,6 +146,8 @@ TEST_F(DirCtlTests, tebako_getcwd_buffer_no_size)
 TEST_F(DirCtlTests, tebako_chdir_absolute_path_pass_through)
 {
   int ret = tebako_chdir(__BIN__);
+  EXPECT_EQ(0, ret);
+  ret = is_tebako_cwd();
   EXPECT_EQ(0, ret);
 }
 

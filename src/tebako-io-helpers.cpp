@@ -201,10 +201,11 @@ bool is_tebako_path(const char* path)
 #endif
 
 //	Checks if the current cwd path is withing tebako memfs
-bool is_tebako_cwd(void)
+extern "C" int is_tebako_cwd(void)
 {
   auto locked = tebako_cwd.rlock();
-  return (*locked) ? (*locked)->is_in() : false;
+  bool res = (*locked) ? (*locked)->is_in() : false;
+  return res ? -1 : 0;
 }
 
 //  Expands a path withing tebako memfs
