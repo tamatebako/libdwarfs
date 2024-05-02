@@ -39,9 +39,6 @@ check_shared_libs() {
 # On linux-gnu libm is sometimes referenced, sometimes not
 # It depends on some other library so we have '-ge' below
 
-   echo "Expected $expected_size shared libraries --> " "${expected[@]}"
-   echo "Actiual $actual_size shared libraries --> " "${actual[@]}"
-
    assertTrue "The number of references to shared libraries ($actual_size) does not meet our expectations ($expected_size)" "[[ $expected_size -ge $actual_size ]]"
 
    for exp in "${expected[@]}"; do
