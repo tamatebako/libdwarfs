@@ -158,24 +158,24 @@ jobs:
           path: '*.7z'
           retention-days: 1
 
-  publish:
-    name: Publish artifacts
-    needs: [ build ]
-    runs-on: ubuntu-latest
-    if: contains(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: libdwarfs-wr
-
-      - name: Print release info
-        run: |
-          echo "Release version: ${{ github.ref }}"
-
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: '*.7z'
-          prerelease: ${{ contains(github.ref, '.rc') && 'true' || 'false' }}
+# publish:
+#   name: Publish artifacts
+#    needs: [ build ]
+#    runs-on: ubuntu-latest
+#    if: contains(github.ref, 'refs/tags/v')
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - uses: actions/download-artifact@v4
+#        with:
+#          name: libdwarfs-wr
+#
+#      - name: Print release info
+#        run: |
+#          echo "Release version: ${{ github.ref }}"
+#
+#      - name: Release
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          files: '*.7z'
+#          prerelease: ${{ contains(github.ref, '.rc') && 'true' || 'false' }}
