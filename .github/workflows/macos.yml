@@ -100,10 +100,10 @@ jobs:
           key: ${{ matrix.env.os }}-clang-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
       - name: Install packages
-# Already installed: openssl, libevent, libsodium, lz4, xz, zlib
+# Already installed: openssl, libevent, libsodium, lz4, xz
 # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
-          brew install \
+          brew install zlib \
           bison flex gnu-sed bash double-conversion boost jemalloc fmt glog pkg-config
 
       - name: Configure
