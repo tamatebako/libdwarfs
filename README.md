@@ -3,7 +3,6 @@
 [![Ubuntu](https://github.com/tamatebako/libdwarfs/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/ubuntu.yml)   [![MacOS](https://github.com/tamatebako/libdwarfs/actions/workflows/macos.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/macos.yml) [![Alpine](https://github.com/tamatebako/libdwarfs/actions/workflows/alpine.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/alpine.yml)
 [![Windows-MSys](https://github.com/tamatebako/libdwarfs/actions/workflows/windows-msys.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/windows-msys.yml)
 
-[![Build Status](https://api.cirrus-ci.com/github/tamatebako/libdwarfs.svg?task=macos-arm64)](https://cirrus-ci.com/github/tamatebako/libdwarfs)
 [![Build Status](https://api.cirrus-ci.com/github/tamatebako/libdwarfs.svg?task=ubuntu-aarch64)](https://cirrus-ci.com/github/tamatebako/libdwarfs)
 
 [![lint](https://github.com/tamatebako/libdwarfs/actions/workflows/lint.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/lint.yml) [![codecov](https://codecov.io/gh/tamatebako/libdwarfs/branch/main/graph/badge.svg?token=FMMPK27XU7)](https://codecov.io/gh/tamatebako/libdwarfs) [![coverity](https://scan.coverity.com/projects/27408/badge.svg)](https://scan.coverity.com/projects/tamatebako-libdwarfs) [![codeql](https://github.com/tamatebako/libdwarfs/actions/workflows/codeql.yml/badge.svg)](https://github.com/tamatebako/libdwarfs/actions/workflows/codeql.yml)

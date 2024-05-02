@@ -59,14 +59,14 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} [CC clang, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }} ]
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.env.os }} [CC clang, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }} ]
+    runs-on: ${{ matrix.env.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-12 ]
         env:
-          - { ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '13.1'  }
+          - { os: 'macos-12', arch: 'x86_64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '13.1'  }
+          - { os: 'macos-14', arch: 'arm64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '14.3.1'  }
     env: ${{ matrix.env }}
 
     steps:
@@ -82,7 +82,7 @@ jobs:
 
       - name: Setup environment
         run: |
-          cat common.env macos-x86_64.env >> $GITHUB_ENV
+          cat common.env macos-${{ matrix.env.arch }}.env >> $GITHUB_ENV
           echo "CORES=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
           echo "MAKEFLAGS=j$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
 
@@ -97,7 +97,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/${{ env.DEPS }}
-          key: ${{ matrix.os }}-clang-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
+          key: ${{ matrix.env.os }}-clang-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
       - name: Install packages
 # Already installed: openssl, libevent, libsodium, lz4, xz, zlib
@@ -136,7 +136,7 @@ jobs:
             ${{github.workspace}}/build/wr-bin
             ${{github.workspace}}/build/wr-tests
 
-  test-on-macos-12:
+  test-on-macos-11-and-13:
     needs: build
     name: run tests on MacOS-11/13
     runs-on: ${{ matrix.os }}
