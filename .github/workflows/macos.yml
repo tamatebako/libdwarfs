@@ -128,6 +128,7 @@ jobs:
         run:  ${{ env.BREW_HOME }}/bin/bash ${{ github.workspace }}/tests/scripts/tests.sh
 
       - name: Upload tests
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' && env.os == 'macos-12' }}
         uses: actions/upload-artifact@v4
         with:
           name: tests
