@@ -137,16 +137,17 @@ jobs:
             ${{github.workspace}}/build/wr-bin
             ${{github.workspace}}/build/wr-tests
 
-  test-on-macos-11-and-13:
+  test-on-macos-13-and-14:
+    # The run on MacOS 14 is the amd64 on arm64 test
     needs: build
-    name: run tests on MacOS-11/13
+    name: run tests on MacOS-13/14
     runs-on: ${{ matrix.os }}
     env:
       TEBAKO_CROSS_TEST: ON
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-11, macos-13 ]
+        os: [ macos-13, macos-14 ]
     steps:
       - name: Download tests
         uses: actions/download-artifact@v4
