@@ -104,7 +104,7 @@ jobs:
 # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
         run: |
           brew install zlib \
-          bison flex gnu-sed bash double-conversion boost jemalloc fmt glog pkg-config
+          bison flex gnu-sed bash double-conversion boost jemalloc fmt glog
 
       - name: Configure
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
