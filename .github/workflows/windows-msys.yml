@@ -40,6 +40,8 @@ on:
       - 'docs/**'
       - '**.adoc'
       - '**.md'
+      - 'macos-arm64.env'
+      - 'macos-x86_64.env'
       - '.cirrus.yml'
       - '.github/workflows/*.yml'
       - '!.github/workflows/windows-msys.yml'
@@ -52,6 +54,8 @@ on:
       - '**.adoc'
       - '**.md'
       - '.cirrus.yml'
+      - 'macos-arm64.env'
+      - 'macos-x86_64.env'
       - '.github/workflows/*.yml'
       - '!.github/workflows/windows-msys.yml'
 
