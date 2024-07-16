@@ -37,6 +37,10 @@ on:
       - .github/workflows/macos.yml
       - .github/workflows/macos-arm64.yml
       - .github/workflows/alpine.yml
+      - .github/workflows/windows.yml
+      - .github/workflows/windows-msys.yml
+      - 'macos-arm64.env'
+      - 'macos-x86_64.env'
   workflow_dispatch:
 
 jobs:

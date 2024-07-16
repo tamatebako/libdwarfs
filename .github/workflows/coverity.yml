@@ -31,8 +31,26 @@ name: coverity
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - 'macos-arm64.env'
+      - 'macos-x86_64.env'
+      - '.cirrus.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/coverity.yml'
   pull_request:
     # The branches below must be a subset of the branches above
+    paths-ignore:
+      - 'docs/**'
+      - '**.adoc'
+      - '**.md'
+      - 'macos-arm64.env'
+      - 'macos-x86_64.env'
+      - '.cirrus.yml'
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/coverity.yml'
     branches: [ main ]
 
 concurrency:
