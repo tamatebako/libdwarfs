@@ -46,7 +46,7 @@ on:
       - '.github/workflows/*.yml'
       - '!.github/workflows/windows-msys.yml'
 
-    tags: [ v* ]
+#    tags: [ v* ]
 
   pull_request:
     paths-ignore:
