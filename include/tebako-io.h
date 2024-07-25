@@ -83,21 +83,13 @@ ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
 #endif
 #endif
 
-/* Another option -- to be cleaned if 'defined(_UNISTD_H)' works
-#if defined(__off_t_defined) || defined(_OFF_T) || defined(__NEED_off_t)
-    __off_t_defined    -- Ubuntu/GNU
-    _OFF_T             -- Darwin
-    __NEED_off_t       -- Alpine/musl
-    ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
-    off_t tebako_lseek(int vfd, off_t offset, int whence);
-#endif
-*/
-
-#if defined(_UNISTD_H) || defined(_UNISTD_H_)
-#ifdef TEBAKO_HAS_PREAD
+#if (defined(TEBAKO_HAS_PREAD) &&                    \
+     (defined(_UNISTD_H) || defined(_UNISTD_H_))) || \
+    defined(RB_W32)
 ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
 #endif
 
+#if defined(_UNISTD_H) || defined(_UNISTD_H_)
 #ifdef TEBAKO_HAS_GETATTRLIST
 int tebako_getattrlist(const char* path,
                        struct attrlist* attrList,

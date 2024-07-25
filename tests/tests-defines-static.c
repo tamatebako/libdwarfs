@@ -68,7 +68,7 @@
 
 static int attr_functions_c_test(char* fname);
 
-#ifdef TEBAKO_HAS_PREAD
+#if defined(TEBAKO_HAS_PREAD) || defined(RB_W32)
 static int pread_c_test(int fh);
 #endif
 
@@ -193,7 +193,7 @@ int main(int argc, char** argv)
       printf("failing\n");
 #endif
 
-#ifdef TEBAKO_HAS_PREAD
+#if defined(TEBAKO_HAS_PREAD) || defined(RB_W32)
     rOK &= pread_c_test(fh);
     if (!rOK)
       printf("failing\n");
@@ -325,7 +325,7 @@ static int lseek_read_c_test(int fh)
   return rOK;
 }
 
-#ifdef TEBAKO_HAS_PREAD
+#if defined(TEBAKO_HAS_PREAD) || defined(RB_W32)
 static int pread_c_test(int fh)
 {
   int rOK = true;

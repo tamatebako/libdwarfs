@@ -158,13 +158,13 @@ ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt)
 }
 #endif
 
-#ifdef TEBAKO_HAS_PREAD
+#if defined(TEBAKO_HAS_PREAD) || defined(RB_W32)
 ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset)
 {
   ssize_t ret = sync_tebako_fdtable::fdtable.pread(vfd, buf, nbyte, offset);
   if (ret == DWARFS_INVALID_FD) {
     ret = is_valid_system_file_descriptor(vfd)
-              ? ::pread(vfd, buf, nbyte, offset)
+              ? TO_RB_W32(pread)(vfd, buf, nbyte, offset)
               : DWARFS_IO_ERROR;
   }
   return ret;

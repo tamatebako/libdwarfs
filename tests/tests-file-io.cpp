@@ -251,7 +251,7 @@ TEST_F(FileIOTests, tebako_open_read_u_close_relative_path)
   EXPECT_EQ(0, ret);
 }
 
-#ifdef TEBAKO_HAS_PREAD
+#if defined(TEBAKO_HAS_PREAD) || defined(RB_W32)
 TEST_F(FileIOTests, tebako_open_pread_u_close_relative_path)
 {
   int ret = tebako_chdir(TEBAKIZE_PATH("directory-2"));

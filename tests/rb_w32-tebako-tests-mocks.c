@@ -1373,6 +1373,11 @@ ssize_t rb_w32_read(int fd, void* buf, size_t size)
   return _read(fd, buf, size);
 }
 
+ssize_t rb_w32_pread(int fd, void* buf, size_t size, size_t /* offset */)
+{
+  return _read(fd, buf, size);
+}
+
 off_t rb_w32_lseek(int fd, off_t ofs, int whence)
 {
   return _lseeki64(fd, ofs, whence);
