@@ -121,6 +121,7 @@
 #define lseek(_f, _o, _w) rb_w32_lseek(_f, _o, _w)
 #define close(h) rb_w32_close(h)
 #define read(f, b, s) rb_w32_read(f, b, s)
+#define pread(f, b, s, o) rb_w32_pread(f, b, s, o)
 
 #define chdir(p) rb_w32_uchdir((p))
 #define mkdir(p, m) rb_w32_umkdir((p), (m))

@@ -41,6 +41,7 @@ int rb_w32_access(const char*, int);
 int rb_w32_uopen(const char*, int, ...);
 int rb_w32_close(int);
 ssize_t rb_w32_read(int, void*, size_t);
+ssize_t rb_w32_pread(int, void*, size_t, size_t);
 off_t rb_w32_lseek(int, off_t, int);
 
 int rb_w32_stati128(const char*, struct stati128*);

@@ -75,6 +75,7 @@
 #define rb_w32_open(...) tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 #define rb_w32_uopen(...) tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 #define rb_w32_read(...) tebako_read(__VA_ARGS__)
+#define rb_w32_pread(...) tebako_pread(__VA_ARGS__)
 #define rb_w32_lseek(...) tebako_lseek(__VA_ARGS__)
 #define rb_w32_close(...) tebako_close(__VA_ARGS__)
 
@@ -96,6 +97,7 @@
 #define lstat(...) tebako_lstat(__VA_ARGS__)
 #define open(...) tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 #define read(...) tebako_read(__VA_ARGS__)
+#define pread(...) tebako_pread(__VA_ARGS__)
 #define lseek(...) tebako_lseek(__VA_ARGS__)
 #define close(...) tebako_close(__VA_ARGS__)
 #define opendir(...) tebako_opendir(__VA_ARGS__)
@@ -114,7 +116,6 @@
 #define fstatat(...) tebako_fstatat(__VA_ARGS__)
 #define openat(...) tebako_openat(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 #define readlink(...) tebako_readlink(__VA_ARGS__)
-#define pread(...) tebako_pread(__VA_ARGS__)
 #define readv(...) tebako_readv(__VA_ARGS__)
 #define dlopen(...) tebako_dlopen(__VA_ARGS__)
 #define dlerror tebako_dlerror
