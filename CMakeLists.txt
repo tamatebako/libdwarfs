@@ -188,7 +188,8 @@ else()
   elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
     message(STATUS "jemalloc homebrew library is not good enough, building locally")
     set(IS_DARWIN ON)
-    set(WITH_JEMALLOC_BUILD ON)
+    # To be removed
+    # set(WITH_JEMALLOC_BUILD ON)
   endif()
 endif(MSVC)
 
