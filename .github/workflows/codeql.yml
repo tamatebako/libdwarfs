@@ -29,36 +29,12 @@
 name: codeql
 
 on:
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - 'docs/**'
-      - '**.adoc'
-      - '**.md'
-      - 'macos-arm64.env'
-      - 'macos-x86_64.env'
-      - '.cirrus.yml'
-      - '.github/workflows/*.yml'
-      - '!.github/workflows/codeql.yml'
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ main ]
-    paths-ignore:
-      - 'docs/**'
-      - '**.adoc'
-      - '**.md'
-      - 'macos-arm64.env'
-      - 'macos-x86_64.env'
-      - '.cirrus.yml'
-      - '.github/workflows/*.yml'
-      - '!.github/workflows/codeql.yml'
+  schedule:
+    - cron: "0 3 * * 0"
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
-
-env:
-  CACHE_VER: 5
 
 jobs:
   analyze:
@@ -101,12 +77,6 @@ jobs:
 
     - name: Create deps folder
       run: mkdir ${{github.workspace}}/${{env.DEPS}}
-
-    - name: Process cache
-      uses: actions/cache@v4
-      with:
-        path: ${{github.workspace}}/${{env.DEPS}}
-        key:  CodeQL-${{ hashFiles('**/common.env') }}-v${{ env.CACHE_VER }}
 
     - name: Install packages
       run: |
