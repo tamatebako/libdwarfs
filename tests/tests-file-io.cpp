@@ -482,4 +482,71 @@ TEST_F(FileIOTests, tebako_flock_absolute)
 }
 #endif
 
+TEST_F(FileIOTests, tebako_lseek_errors)
+{
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
+                       O_RDONLY);
+  EXPECT_LT(0, fh);
+  errno = 0;
+  int ret = tebako_lseek(fh, -1, SEEK_SET);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(errno, EINVAL);
+
+  errno = 0;
+  ret = tebako_lseek(fh, 5, SEEK_SET);
+  EXPECT_EQ(5, ret);
+  ret = tebako_lseek(fh, -15, SEEK_CUR);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(errno, EINVAL);
+
+  errno = 0;
+  ret = tebako_lseek(fh, -100, SEEK_END);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(errno, EINVAL);
+
+  errno = 0;
+  ret = tebako_lseek(fh, 5, SEEK_SET);
+  EXPECT_LT(0, ret);
+  ret = tebako_lseek(fh, std::numeric_limits<off_t>::max() - 2, SEEK_CUR);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(errno, EOVERFLOW);
+
+  errno = 0;
+  ret = tebako_lseek(fh, std::numeric_limits<off_t>::max() - 2, SEEK_END);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(errno, EOVERFLOW);
+
+  errno = 0;
+  ret = tebako_lseek(fh, 0, 100);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(errno, EINVAL);
+}
+
+#ifdef TEBAKO_HAS_READV
+TEST_F(FileIOTests, tebako_readv_errors)
+{
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-2/file-in-directory-2.txt"),
+                       O_RDONLY);
+  EXPECT_LT(0, fh);
+
+  char buf0[10];
+  char buf1[20];
+  char buf2[20];
+  int iovcnt;
+  struct iovec iov[3];
+
+  iov[0].iov_base = buf0;
+  iov[0].iov_len = sizeof(buf0);
+  iov[1].iov_base = buf1;
+  iov[1].iov_len = sizeof(buf1);
+  iov[2].iov_base = buf2;
+  iov[2].iov_len = sizeof(buf2);
+  iovcnt = sizeof(iov) / sizeof(struct iovec);
+
+  errno = 0;
+  int ret = tebako_readv(fh, &iov[0], -2);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(errno, EINVAL);
+}
+#endif
 }  // namespace

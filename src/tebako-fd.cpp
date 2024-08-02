@@ -289,26 +289,48 @@ ssize_t sync_tebako_fdtable::readv(int vfd,
                                    const struct iovec* iov,
                                    int iovcnt) noexcept
 {
-  uint32_t ino;
-  off_t pos;
+  // Some specific error conditions:
+  // EOVERFLOW - the resulting file offset cannot be represented in an off_t.
+  // EINVAL - the sum of the iov_len values overflows an ssize_t value.
+  // EINVAL - the vector count, iovcnt, is less than zero or greater
+  //          than the permitted maximum.
+
   ssize_t ret = DWARFS_INVALID_FD;
-  auto p_fdtable = *rlock();
-  auto p_fd = p_fdtable->find(vfd);
-  if (p_fd != p_fdtable->end()) {
-    ret = 0;
-    for (int i = 0; i < iovcnt; ++i) {
-      ssize_t ssize =
-          dwarfs_inode_read(p_fd->second->st.st_ino, iov[i].iov_base,
-                            iov[i].iov_len, p_fd->second->pos);
-      if (ssize > 0) {
-        p_fd->second->pos += ssize;
-        ret += ssize;
-      }
-      else {
-        if (ssize < 0) {
-          ret = DWARFS_IO_ERROR;
+  if (iovcnt < 0) {
+    TEBAKO_SET_LAST_ERROR(EINVAL);
+    ret = DWARFS_IO_ERROR;
+  }
+  else {
+    uint32_t ino;
+    off_t pos;
+    auto p_fdtable = *rlock();
+    auto p_fd = p_fdtable->find(vfd);
+    if (p_fd != p_fdtable->end()) {
+      ret = 0;
+      for (int i = 0; i < iovcnt; ++i) {
+        ssize_t ssize =
+            dwarfs_inode_read(p_fd->second->st.st_ino, iov[i].iov_base,
+                              iov[i].iov_len, p_fd->second->pos);
+        if (ssize > 0) {
+          if (p_fd->second->pos > std::numeric_limits<off_t>::max() - ssize) {
+            TEBAKO_SET_LAST_ERROR(EOVERFLOW);
+            ret = DWARFS_IO_ERROR;
+            break;
+          }
+          if (ret > std::numeric_limits<ssize_t>::max() - ssize) {
+            TEBAKO_SET_LAST_ERROR(EINVAL);
+            ret = DWARFS_IO_ERROR;
+            break;
+          }
+          p_fd->second->pos += ssize;
+          ret += ssize;
         }
-        break;
+        else {
+          if (ssize < 0) {
+            ret = DWARFS_IO_ERROR;
+          }
+          break;
+        }
       }
     }
   }
@@ -323,37 +345,61 @@ off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence) noexcept
   if (p_fd != p_fdtable->end()) {
     switch (whence) {
       case SEEK_SET:
-        ret = p_fd->second->pos = offset;
+        if (offset < 0) {
+          // [EINVAL] The resulting file offset would be negative for a regular
+          // file, block special file, or directory.
+          TEBAKO_SET_LAST_ERROR(EINVAL);
+          ret = DWARFS_IO_ERROR;
+        }
+        else {
+          ret = p_fd->second->pos = offset;
+        }
         break;
       case SEEK_CUR:
-        ret = p_fd->second->pos = p_fd->second->pos + offset;
-        if (ret < 0) {
-          // [EOVERFLOW] The resulting file offset would be a value which cannot
-          // be represented correctly in an object of type off_t.
-          TEBAKO_SET_LAST_ERROR(EOVERFLOW);
+        if (offset < 0 && p_fd->second->pos < -offset) {
+          // [EINVAL] The resulting file offset would be negative for a regular
+          // file, block special file, or directory.
+          TEBAKO_SET_LAST_ERROR(EINVAL);
           ret = DWARFS_IO_ERROR;
+        }
+        else {
+          if (offset > 0 &&
+              p_fd->second->pos > std::numeric_limits<off_t>::max() - offset) {
+            // [EOVERFLOW] The resulting file offset would be a value which
+            // cannot be represented correctly in an object of type off_t.
+            TEBAKO_SET_LAST_ERROR(EOVERFLOW);
+            ret = DWARFS_IO_ERROR;
+          }
+          else {
+            ret = p_fd->second->pos = p_fd->second->pos + offset;
+          }
         }
         break;
       case SEEK_END:
-        ret = p_fd->second->pos = p_fd->second->st.st_size + offset;
-        if (ret < 0) {
-          // [EOVERFLOW] The resulting file offset would be a value which cannot
-          // be represented correctly in an object of type off_t.
-          TEBAKO_SET_LAST_ERROR(EOVERFLOW);
+        if (offset < 0 && p_fd->second->st.st_size < -offset) {
+          // [EINVAL] The resulting file offset would be negative for a regular
+          // file, block special file, or directory.
+          TEBAKO_SET_LAST_ERROR(EINVAL);
           ret = DWARFS_IO_ERROR;
+        }
+        else {
+          if (offset > 0 && p_fd->second->st.st_size >
+                                std::numeric_limits<off_t>::max() - offset) {
+            // [EOVERFLOW] The resulting file offset would be a value which
+            // cannot be represented correctly in an object of type off_t.
+            TEBAKO_SET_LAST_ERROR(EOVERFLOW);
+            ret = DWARFS_IO_ERROR;
+          }
+          else {
+            ret = p_fd->second->pos = p_fd->second->st.st_size + offset;
+          }
         }
         break;
       default:
         // [EINVAL] The whence argument is not a proper value, or the resulting
-        // file offset would be negative for a regular file, block special file,
-        // or directory.
         TEBAKO_SET_LAST_ERROR(EINVAL);
         ret = DWARFS_IO_ERROR;
         break;
-    }
-    if (ret < 0) {
-      TEBAKO_SET_LAST_ERROR(EOVERFLOW);
-      ret = DWARFS_IO_ERROR;
     }
   }
   return ret;
