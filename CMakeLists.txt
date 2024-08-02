@@ -31,6 +31,11 @@ cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0091 NEW)
 # DOWNLOAD_EXTRACT_TIMESTAMP option default = true
 cmake_policy(SET CMP0135 NEW)
+# FindBoost moudule
+# Pls refer to the comment re 'set(Boost_NO_BOOST_CMAKE ON)' below
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
+  cmake_policy(SET CMP0167 OLD)
+endif(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
 
 include(tools/cmake-scripts/version.cmake)
 determine_version("${CMAKE_CURRENT_SOURCE_DIR}" LIBDWARFS_WR)
@@ -186,9 +191,9 @@ else()
       set(WITH_BROTLI_BUILD ON)
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
-    message(STATUS "jemalloc homebrew library is not good enough, building locally")
     set(IS_DARWIN ON)
     # To be removed
+    # message(STATUS "jemalloc homebrew library is not good enough, building locally")
     # set(WITH_JEMALLOC_BUILD ON)
   endif()
 endif(MSVC)
@@ -284,7 +289,7 @@ if(NOT IS_WINDOWS)
     message(STATUS "glog static library was not found, building locally")
     set(WITH_GLOG_BUILD ON)
     if(IS_DARWIN)
-      message(STATUS "building gflags locally as well because os MacOS specifics")
+      message(STATUS "building gflags locally as well because of MacOS specifics")
       set(WITH_GFLAGS_BUILD ON)
     endif(IS_DARWIN)
   endif()
@@ -866,7 +871,10 @@ if(WITH_TESTS)
     @ONLY
   )
 
-  if(NOT PREFER_SYSTEM_GTEST)
+  if(PREFER_SYSTEM_GTEST)
+    find_package(GTest REQUIRED)
+    set(GTestMain GTest::Main)
+  else(PREFER_SYSTEM_GTEST)
     message(STATUS "Fetching googletest")
     include(FetchContent)
 
@@ -882,7 +890,9 @@ if(WITH_TESTS)
 
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
-  endif(NOT PREFER_SYSTEM_GTEST)
+
+    set(GTestMain gtest_main)
+  endif(PREFER_SYSTEM_GTEST)
 
   enable_testing()
   include(GoogleTest)
@@ -1176,7 +1186,7 @@ endif(RB_W32)
   list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
   if(IS_DARWIN)
-    list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA} c++ c++abi)
+    list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA} c++abi)
   else(IS_DARWIN)
   # libgcc_eh shall precede libunwind to aboid duplicate symbols during linking
   # liblzma shall follow libunwind because it is libunwind dependency
@@ -1197,7 +1207,7 @@ endif(RB_W32)
   endif(IS_DARWIN)
 
   target_link_libraries(wr-bin ${_LIBRARIES})
-  target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
+  target_link_libraries(wr-tests ${GTestMain} ${_LIBRARIES})
 
   if(WITH_JEMALLOC_BUILD)
     add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)
