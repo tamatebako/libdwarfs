@@ -136,6 +136,10 @@ endif(NOT CMAKE_BUILD_TYPE)
 # Reasonable defaults
 set(USE_JEMALLOC ON)
 set(WITH_JEMALLOC_BUILD OFF)
+set(JEMALLOC_LG_VADDR "")
+set(JEMALLOC_LG_VADDR_MSG "")
+set(JEMALLOC_LG_PAGE "")
+set(JEMALLOC_LG_PAGE_MSG "")
 set(WITH_GLOG_BUILD OFF)
 set(WITH_GFLAGS_BUILD OFF)
 set(WITH_DC_BUILD OFF)
@@ -192,9 +196,19 @@ else()
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
     set(IS_DARWIN ON)
-    # To be removed
-    # message(STATUS "jemalloc homebrew library is not good enough, building locally")
-    # set(WITH_JEMALLOC_BUILD ON)
+    message(STATUS "Building jemalloc library locally")
+    set(WITH_JEMALLOC_BUILD ON)
+    if(DEFINED ENV{LG_VADDR})
+      set(JEMALLOC_LG_VADDR  --with-lg-vaddr=$ENV{LG_VADDR})
+      set(JEMALLOC_LG_VADDR_MSG ", lg_vaddr = $ENV{LG_VADDR}")
+      message(STATUS "Using LG_VADDR environment variable: ${JEMALLOC_LG_VADDR}")
+    endif(DEFINED ENV{LG_VADDR})
+    if(DEFINED ENV{LG_PAGE})
+      set(JEMALLOC_LG_PAGE  --with-lg-page=$ENV{LG_PAGE})
+      set(JEMALLOC_LG_PAGE_MSG ", lg_page = $ENV{LG_PAGE}")
+      message(STATUS "Using LG_PAGE environment variable: ${JEMALLOC_LG_PAGE}")
+  endif(DEFINED ENV{LG_PAGE})
+
   endif()
 endif(MSVC)
 
@@ -214,9 +228,9 @@ else(NOT IS_WINDOWS AND NOT IS_MSYS)
   set(RB_W32 ON)
 endif(NOT IS_WINDOWS AND NOT IS_MSYS)
 # -----------------------------------------------------------------------------
-#  - "darwin.*"                 will have IS_MUSL flag set
+#  - "darwin.*"                 will have IS_DARWIN flag set
 # -----------------------------------------------------------------------------
-#  - "linux-musl.*"             will have IS_DARWIN flag set
+#  - "linux-musl.*"             will have IS_MUSL flag set
 # -----------------------------------------------------------------------------
 #  - ... everything else ...    will be be treated as linux-gnu but in reality
 #                               only Ubuntu is supported/tested
@@ -232,7 +246,7 @@ message(STATUS "Tebako build scope: ${TEBAKO_BUILD_SCOPE}")
 if (IS_WINDOWS)
   message(STATUS "Building for Ruby Win32: ${RB_W32}")
 endif(IS_WINDOWS)
-message(STATUS "Use jemalloc: ${USE_JEMALLOC}")
+message(STATUS "Use jemalloc: ${USE_JEMALLOC}${JEMALLOC_LG_VADDR_MSG}${JEMALLOC_LG_PAGE_MSG}")  
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
@@ -674,6 +688,7 @@ if(WITH_JEMALLOC_BUILD)
                       --disable-shared
                       --datarootdir=${DEPS}/share.dummy
                       --disable-syscall
+                      ${JEMALLOC_LG_VADDR} ${JEMALLOC_LG_PAGE}
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBJEMALLOC}
