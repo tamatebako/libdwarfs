@@ -54,6 +54,14 @@
  *
  */
 
+/* For the functions marked with: "License: Artistic or GPL"
+ *
+ *    Copyright (c) 1993:: Intergraph Corporation
+ *
+ *    You may distribute under the terms of either the GNU General Public
+ *    License or the Artistic License, as specified in the perl README file.
+ */
+
 #include <tebako-pch.h>
 #include <time.h>
 #include <sys/timeb.h>
