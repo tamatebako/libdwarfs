@@ -31,6 +31,11 @@ cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0091 NEW)
 # DOWNLOAD_EXTRACT_TIMESTAMP option default = true
 cmake_policy(SET CMP0135 NEW)
+# FindBoost moudule
+# Pls refer to the comment re 'set(Boost_NO_BOOST_CMAKE ON)' below
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
+  cmake_policy(SET CMP0167 OLD)
+endif(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
 
 include(tools/cmake-scripts/version.cmake)
 determine_version("${CMAKE_CURRENT_SOURCE_DIR}" LIBDWARFS_WR)
@@ -131,6 +136,10 @@ endif(NOT CMAKE_BUILD_TYPE)
 # Reasonable defaults
 set(USE_JEMALLOC ON)
 set(WITH_JEMALLOC_BUILD OFF)
+set(JEMALLOC_LG_VADDR "")
+set(JEMALLOC_LG_VADDR_MSG "")
+set(JEMALLOC_LG_PAGE "")
+set(JEMALLOC_LG_PAGE_MSG "")
 set(WITH_GLOG_BUILD OFF)
 set(WITH_GFLAGS_BUILD OFF)
 set(WITH_DC_BUILD OFF)
@@ -186,10 +195,20 @@ else()
       set(WITH_BROTLI_BUILD ON)
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
-    message(STATUS "jemalloc homebrew library is not good enough, building locally")
     set(IS_DARWIN ON)
-    # To be removed
-    # set(WITH_JEMALLOC_BUILD ON)
+    message(STATUS "Building jemalloc library locally")
+    set(WITH_JEMALLOC_BUILD ON)
+    if(DEFINED ENV{LG_VADDR})
+      set(JEMALLOC_LG_VADDR  --with-lg-vaddr=$ENV{LG_VADDR})
+      set(JEMALLOC_LG_VADDR_MSG ", lg_vaddr = $ENV{LG_VADDR}")
+      message(STATUS "Using LG_VADDR environment variable: ${JEMALLOC_LG_VADDR}")
+    endif(DEFINED ENV{LG_VADDR})
+    if(DEFINED ENV{LG_PAGE})
+      set(JEMALLOC_LG_PAGE  --with-lg-page=$ENV{LG_PAGE})
+      set(JEMALLOC_LG_PAGE_MSG ", lg_page = $ENV{LG_PAGE}")
+      message(STATUS "Using LG_PAGE environment variable: ${JEMALLOC_LG_PAGE}")
+  endif(DEFINED ENV{LG_PAGE})
+
   endif()
 endif(MSVC)
 
@@ -209,9 +228,9 @@ else(NOT IS_WINDOWS AND NOT IS_MSYS)
   set(RB_W32 ON)
 endif(NOT IS_WINDOWS AND NOT IS_MSYS)
 # -----------------------------------------------------------------------------
-#  - "darwin.*"                 will have IS_MUSL flag set
+#  - "darwin.*"                 will have IS_DARWIN flag set
 # -----------------------------------------------------------------------------
-#  - "linux-musl.*"             will have IS_DARWIN flag set
+#  - "linux-musl.*"             will have IS_MUSL flag set
 # -----------------------------------------------------------------------------
 #  - ... everything else ...    will be be treated as linux-gnu but in reality
 #                               only Ubuntu is supported/tested
@@ -227,7 +246,7 @@ message(STATUS "Tebako build scope: ${TEBAKO_BUILD_SCOPE}")
 if (IS_WINDOWS)
   message(STATUS "Building for Ruby Win32: ${RB_W32}")
 endif(IS_WINDOWS)
-message(STATUS "Use jemalloc: ${USE_JEMALLOC}")
+message(STATUS "Use jemalloc: ${USE_JEMALLOC}${JEMALLOC_LG_VADDR_MSG}${JEMALLOC_LG_PAGE_MSG}")  
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
@@ -284,7 +303,7 @@ if(NOT IS_WINDOWS)
     message(STATUS "glog static library was not found, building locally")
     set(WITH_GLOG_BUILD ON)
     if(IS_DARWIN)
-      message(STATUS "building gflags locally as well because os MacOS specifics")
+      message(STATUS "building gflags locally as well because of MacOS specifics")
       set(WITH_GFLAGS_BUILD ON)
     endif(IS_DARWIN)
   endif()
@@ -669,6 +688,7 @@ if(WITH_JEMALLOC_BUILD)
                       --disable-shared
                       --datarootdir=${DEPS}/share.dummy
                       --disable-syscall
+                      ${JEMALLOC_LG_VADDR} ${JEMALLOC_LG_PAGE}
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
     BUILD_BYPRODUCTS ${__LIBJEMALLOC}
@@ -866,7 +886,10 @@ if(WITH_TESTS)
     @ONLY
   )
 
-  if(NOT PREFER_SYSTEM_GTEST)
+  if(PREFER_SYSTEM_GTEST)
+    find_package(GTest REQUIRED)
+    set(GTestMain GTest::Main)
+  else(PREFER_SYSTEM_GTEST)
     message(STATUS "Fetching googletest")
     include(FetchContent)
 
@@ -882,7 +905,9 @@ if(WITH_TESTS)
 
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
-  endif(NOT PREFER_SYSTEM_GTEST)
+
+    set(GTestMain gtest_main)
+  endif(PREFER_SYSTEM_GTEST)
 
   enable_testing()
   include(GoogleTest)
@@ -1176,7 +1201,7 @@ endif(RB_W32)
   list(APPEND _LIBRARIES ${Boost_LIBRARIES} ${_LIBEVENT})
 
   if(IS_DARWIN)
-    list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA} c++ c++abi)
+    list(APPEND _LIBRARIES ${_LIBZ} ${_LIBLZMA} c++abi)
   else(IS_DARWIN)
   # libgcc_eh shall precede libunwind to aboid duplicate symbols during linking
   # liblzma shall follow libunwind because it is libunwind dependency
@@ -1197,7 +1222,7 @@ endif(RB_W32)
   endif(IS_DARWIN)
 
   target_link_libraries(wr-bin ${_LIBRARIES})
-  target_link_libraries(wr-tests gtest_main gtest ${_LIBRARIES})
+  target_link_libraries(wr-tests ${GTestMain} ${_LIBRARIES})
 
   if(WITH_JEMALLOC_BUILD)
     add_dwarfs_library(_LIBJEMALLOC ${JEMALLOC_PRJ} wr-bin)

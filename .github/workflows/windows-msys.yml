@@ -149,15 +149,15 @@ jobs:
       - name: Run additional tests
         run:  tests/scripts/tests.sh
 
-      - name: Pack
-        run: cpack --config build/CPackConfig.cmake
+#      - name: Pack
+#        run: cpack --config build/CPackConfig.cmake
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: libdwarfs-wr
-          path: '*.7z'
-          retention-days: 1
+#      - name: Upload artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: libdwarfs-wr
+#          path: '*.7z'
+#          retention-days: 1
 
   publish:
     name: Publish artifacts

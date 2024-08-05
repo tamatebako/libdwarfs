@@ -65,9 +65,9 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - { os: 'macos-12', arch: 'x86_64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '13.1'  }
-          - { os: 'macos-14', arch: 'arm64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '14.3.1'  }
-          - { os: 'macos-14', arch: 'arm64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.4'  }
+          - { os: 'macos-12', arch: 'x86_64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '13.1'                  }
+          - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '14.3.1', LG_VADDR: 39  }
+          - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.4'                  }
 
     env: ${{ matrix.env }}
 
@@ -106,15 +106,13 @@ jobs:
         run: brew install zlib
 
       - name: Install packages
-# Already installed: openssl, libevent, libsodium, lz4, xz
-# Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
-        run: brew install bison flex gnu-sed bash double-conversion boost jemalloc fmt glog
+        # Already installed: openssl, libevent, libsodium, lz4, xz
+        # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
+        run: brew install bison flex gnu-sed bash double-conversion boost jemalloc fmt glog googletest
 
       - name: Configure
         run: |
-          xcodebuild -find clang
-          xcrun --show-sdk-path
-          cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+          cmake -B build -DPREFER_SYSTEM_GTEST=ON -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
       - name: Build
         run: cmake --build build --parallel "$CORES"

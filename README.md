@@ -15,11 +15,42 @@ This is libdwarfs-wr  - a wrapper for https://github.com/mhx/dwarfs core library
 * C interface (as opposed to dwarfs C++ API)
 * fd (file descriptor) addressing above dwarfs inode implementation
 
-### CMake project options
 
-* **WITH_TESTS**, default:ON      -- If this option is ON, build script looks for Google test,  installs INCBIN, and build google tests and static test application.
-* **WITH_ASAN**, default:ON       -- If this option is ON, address amd memory sanitizer tests are performed.
-* **WITH_COVERAGE**, default:ON   -- If this option is ON, test coverage analysis is perfornmed using codecov.
-* **RB_W32**, default:OFF         -- If this option is ON, the version integrated with Ruby library is built.
-* **WITH_LINK_TEST**, default:ON  -- If this option is ON,  symbolic/hard link tests are enabled.
-* **USE_TEMP_FS**, default:OFF    -- If this option is ON, the data for test file system is created under /tmp.  Otherwise in-source location is used.
+### CMake Project Options
+
+* **WITH_TESTS**, default: ON      -- If this option is ON, the build script looks for Google Test, installs INCBIN, and builds Google tests and a static test application.
+* **WITH_ASAN**, default: ON       -- If this option is ON, address and memory sanitizer tests are performed.
+* **WITH_COVERAGE**, default: ON   -- If this option is ON, test coverage analysis is performed using Codecov.
+* **RB_W32**, default: OFF         -- If this option is ON, the version integrated with the Ruby library is built.
+* **WITH_LINK_TEST**, default: ON  -- If this option is ON, symbolic/hard link tests are enabled.
+* **USE_TEMP_FS**, default: OFF    -- If this option is ON, the data for the test file system is created under /tmp. Otherwise, an in-source location is used.
+
+### jemalloc Library Build on macOS
+
+The `libdwarfs` build script creates an additional jemalloc installation on macOS. This is done to satisfy the magic applied by folly during linking but uses a static library.
+If the library is created in an emulated environment (QEMU, Rosetta, etc.), there are known issues ([jemalloc issue #1997](https://github.com/jemalloc/jemalloc/issues/1997)) where jemalloc incorrectly defines the number of significant virtual address bits (lg-vaddr parameter).
+
+These issues can be fixed by explicitly setting the `--with-lg-vaddr` parameter for the jemalloc build. We decided not to automate this since we do not feel that we can provide reasonable test coverage. Instead, our build script accepts the `LG_VADDR` environment variable and passes it to the jemalloc build as `--with-lg-vaddr=${LG_VADDR}`.
+
+Simple script to set `LG_VADDR`. Please note that it is provided for illustration only.
+
+```bash
+#!/bin/bash
+
+# Check the CPU architecture
+ARCH=$(uname -m)
+
+# Check if running under Rosetta 2 emulation
+if [[ "$ARCH" == "x86_64" && $(sysctl -n sysctl.proc_translated) == "1" ]]; then
+  echo "Running on Apple Silicon under Rosetta 2 emulation"
+  export LG_VADDR=39
+elif [[ "$ARCH" == "arm64" ]]; then
+  echo "Running on Apple Silicon"
+  export LG_VADDR=39
+else
+  echo "Running on Intel Silicon"
+  export LG_VADDR=48
+fi
+
+echo "Setting lg-vaddr to $LG_VADDR"
+```
