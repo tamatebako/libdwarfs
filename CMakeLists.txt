@@ -246,7 +246,7 @@ message(STATUS "Tebako build scope: ${TEBAKO_BUILD_SCOPE}")
 if (IS_WINDOWS)
   message(STATUS "Building for Ruby Win32: ${RB_W32}")
 endif(IS_WINDOWS)
-message(STATUS "Use jemalloc: ${USE_JEMALLOC}${JEMALLOC_LG_VADDR_MSG}${JEMALLOC_LG_PAGE_MSG}")  
+message(STATUS "Use jemalloc: ${USE_JEMALLOC}${JEMALLOC_LG_VADDR_MSG}${JEMALLOC_LG_PAGE_MSG}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  with ASAN: ${WITH_ASAN}")
 message(STATUS "  with coverage: ${WITH_COVERAGE}")
@@ -294,7 +294,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.8.0")
+def_ext_prj_g(DWARFS "tebako-v0.8.1")
 def_ext_prj_g(INCBIN "348e36b")
 
 if(NOT IS_WINDOWS)
