@@ -59,11 +59,14 @@
 #ifdef RB_W32
 #include <tebako-io-rb-w32.h>
 
+namespace tebako {
 typedef struct tebako_dirent {
   struct direct e;
   tebako_path_t d_name;
 } tebako_dirent;
+}  // namespace tebako
 #else
+namespace tebako {
 typedef struct _tebako_dirent {
   unsigned char
       padding[offsetof(struct dirent, d_name) / sizeof(unsigned char)];
@@ -74,9 +77,10 @@ typedef union tebako_dirent {
   struct dirent e;
   struct _tebako_dirent _e;
 } tebako_dirent;
-
+}  // namespace tebako
 #endif
 
+namespace tebako {
 const size_t TEBAKO_DIR_CACHE_SIZE = 50;
 
 struct tebako_ds {
@@ -95,14 +99,20 @@ struct tebako_ds {
   int load_cache(int new_cache_start, bool set_pos = false) noexcept;
 };
 
+// sync_tebako_dstable
+// This class manages dwarfs directories opened with opendir (tebako_opendir)
+// Each opened directory is mapped to tebako_ds structure that can be traversed
+// by functions like readdir or seekdir File handler is supposed to be managed
+// tebako_fd class
+
 typedef std::map<uintptr_t, std::shared_ptr<tebako_ds>> tebako_dstable;
 
-class sync_tebako_dstable : public folly::Synchronized<tebako_dstable*> {
+class sync_tebako_dstable {
+ private:
+  folly::Synchronized<tebako_dstable> s_tebako_dstable;
+
  public:
-  sync_tebako_dstable(void)
-      : folly::Synchronized<tebako_dstable*>(new tebako_dstable)
-  {
-  }
+  static sync_tebako_dstable& get_tebako_dstable(void);
   uintptr_t opendir(int vfd, size_t& size) noexcept;
   uintptr_t opendir(int vfd) noexcept
   {
@@ -115,6 +125,5 @@ class sync_tebako_dstable : public folly::Synchronized<tebako_dstable*> {
   int seekdir(uintptr_t dirp, long pos) noexcept;
   long dirfd(uintptr_t dirp) noexcept;
   int readdir(uintptr_t dirp, tebako_dirent*& entry) noexcept;
-
-  static sync_tebako_dstable dstable;
 };
+}  // namespace tebako

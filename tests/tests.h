@@ -35,6 +35,9 @@
 #include <tebako-pch.h>
 #ifdef __cplusplus
 #include <tebako-pch-pp.h>
+
+#include <thread>
+#include <vector>
 #endif
 
 #include <tebako-common.h>

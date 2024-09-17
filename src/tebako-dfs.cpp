@@ -99,6 +99,7 @@ void load_filesystem(dwarfs_userdata& userdata)
 }  // namespace dwarfs
 
 using namespace dwarfs;
+using namespace tebako;
 
 // dwarFS user data including fs pointer
 // RW lock implemented using folly tooling
@@ -115,9 +116,9 @@ void drop_fs(void)
   *locked = NULL;
 
 #if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
-  sync_tebako_dstable::dstable.close_all();
+  sync_tebako_dstable::get_tebako_dstable().close_all();
 #endif
-  sync_tebako_fdtable::fdtable.close_all();
+  sync_tebako_fdtable::get_tebako_fdtable().close_all();
   tebako_drop_cwd();
 }
 

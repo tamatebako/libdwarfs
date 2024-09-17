@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -27,29 +27,42 @@
  *
  */
 
-/*
- * This a set of standard "C++" headers used through libdwarfs-wr source files
- */
+#include <tebako-pch.h>
+#include <tebako-pch-pp.h>
 
-#pragma once
+#include <tebako-kfd.h>
 
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <map>
-#include <random>
-#include <optional>
-#include <set>
-#include <sstream>
-#include <stdexcept>
+namespace tebako {
 
-#include <filesystem>
-namespace fs = std::filesystem;
+sync_tebako_kfdtable& sync_tebako_kfdtable::get_tebako_kfdtable(void)
+{
+  static sync_tebako_kfdtable kfd_table{};
+  return kfd_table;
+}
 
-#include <folly/Conv.h>
-#include <folly/Synchronized.h>
+bool sync_tebako_kfdtable::check(uintptr_t dirp)
+{
+  auto p_kfdtable = s_tebako_kfdtable.rlock();
+  auto p_kfd = p_kfdtable->find(dirp);
+  return (p_kfd != p_kfdtable->end());
+};
 
-#include <dwarfs/logger.h>
+void sync_tebako_kfdtable::clear(void)
+{
+  auto p_kfdtable = s_tebako_kfdtable.wlock();
+  p_kfdtable->clear();
+}
+
+void sync_tebako_kfdtable::erase(uintptr_t dirp)
+{
+  auto p_kfdtable = s_tebako_kfdtable.wlock();
+  p_kfdtable->erase(dirp);
+}
+
+void sync_tebako_kfdtable::insert(uintptr_t dirp)
+{
+  auto p_kfdtable = s_tebako_kfdtable.wlock();
+  p_kfdtable->insert(dirp);
+}
+
+};  // namespace tebako

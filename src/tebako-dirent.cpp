@@ -37,12 +37,17 @@
 
 using namespace std;
 
-sync_tebako_dstable sync_tebako_dstable::dstable;
+namespace tebako {
+
+sync_tebako_dstable& sync_tebako_dstable::get_tebako_dstable(void)
+{
+  static sync_tebako_dstable ds_table{};
+  return ds_table;
+}
 
 uintptr_t sync_tebako_dstable::opendir(int vfd, size_t& size) noexcept
 {
   uintptr_t ret = 0;
-  ;
   int err = ENOTDIR;
   try {
     auto ds = make_shared<tebako_ds>(vfd);
@@ -52,7 +57,7 @@ uintptr_t sync_tebako_dstable::opendir(int vfd, size_t& size) noexcept
     else {
       if (ds->load_cache(0, true) == DWARFS_IO_CONTINUE) {
         ret = reinterpret_cast<uintptr_t>(ds.get());
-        (**wlock())[ret] = ds;
+        (*s_tebako_dstable.wlock())[ret] = ds;
         size = ds->dir_size;
       }
       else {
@@ -81,10 +86,10 @@ uintptr_t sync_tebako_dstable::opendir(int vfd, size_t& size) noexcept
 int sync_tebako_dstable::closedir(uintptr_t dirp) noexcept
 {
   int ret = DWARFS_INVALID_FD;
-  auto p_dstable = *wlock();
+  auto p_dstable = s_tebako_dstable.wlock();
   auto p_ds = p_dstable->find(dirp);
   if (p_ds != p_dstable->end()) {
-    ret = sync_tebako_fdtable::fdtable.close(p_ds->second->vfd);
+    ret = sync_tebako_fdtable::get_tebako_fdtable().close(p_ds->second->vfd);
     p_dstable->erase(dirp);
   }
   return ret;
@@ -92,9 +97,9 @@ int sync_tebako_dstable::closedir(uintptr_t dirp) noexcept
 
 void sync_tebako_dstable::close_all(void) noexcept
 {
-  auto p_dstable = *wlock();
+  auto p_dstable = s_tebako_dstable.wlock();
   for (auto it = p_dstable->begin(); it != p_dstable->end(); ++it) {
-    sync_tebako_fdtable::fdtable.close(it->second->vfd);
+    sync_tebako_fdtable::get_tebako_fdtable().close(it->second->vfd);
   }
   p_dstable->clear();
 }
@@ -102,7 +107,7 @@ void sync_tebako_dstable::close_all(void) noexcept
 long sync_tebako_dstable::telldir(uintptr_t dirp) noexcept
 {
   long ret = DWARFS_INVALID_FD;
-  auto p_dstable = *rlock();
+  auto p_dstable = s_tebako_dstable.rlock();
   auto p_ds = p_dstable->find(dirp);
   if (p_ds != p_dstable->end()) {
     ret = p_ds->second->dir_position;
@@ -113,7 +118,7 @@ long sync_tebako_dstable::telldir(uintptr_t dirp) noexcept
 int sync_tebako_dstable::seekdir(uintptr_t dirp, long pos) noexcept
 {
   long ret = DWARFS_INVALID_FD;
-  auto p_dstable = *rlock();
+  auto p_dstable = s_tebako_dstable.rlock();
   auto p_ds = p_dstable->find(dirp);
   if (p_ds != p_dstable->end()) {
     p_ds->second->dir_position = pos;
@@ -125,7 +130,7 @@ int sync_tebako_dstable::seekdir(uintptr_t dirp, long pos) noexcept
 long sync_tebako_dstable::dirfd(uintptr_t dirp) noexcept
 {
   long ret = DWARFS_INVALID_FD;
-  auto p_dstable = *rlock();
+  auto p_dstable = s_tebako_dstable.rlock();
   auto p_ds = p_dstable->find(dirp);
   if (p_ds != p_dstable->end()) {
     ret = p_ds->second->vfd;
@@ -137,7 +142,7 @@ int sync_tebako_dstable::readdir(uintptr_t dirp, tebako_dirent*& entry) noexcept
 {
   int ret = DWARFS_INVALID_FD;
   entry = NULL;
-  auto p_dstable = *rlock();
+  auto p_dstable = s_tebako_dstable.rlock();
   auto p_ds = p_dstable->find(dirp);
   if (p_ds != p_dstable->end()) {
     if (p_ds->second->dir_position < 0) {  // Should not happen ever
@@ -180,7 +185,7 @@ int sync_tebako_dstable::readdir(uintptr_t dirp, tebako_dirent*& entry) noexcept
 
 int tebako_ds::load_cache(int new_cache_start, bool set_pos) noexcept
 {
-  int ret = sync_tebako_fdtable::fdtable.readdir(
+  int ret = sync_tebako_fdtable::get_tebako_fdtable().readdir(
       vfd, cache, new_cache_start, TEBAKO_DIR_CACHE_SIZE, cache_size, dir_size);
 
   if (ret == DWARFS_IO_CONTINUE) {
@@ -195,3 +200,4 @@ int tebako_ds::load_cache(int new_cache_start, bool set_pos) noexcept
   }
   return ret;
 }
+}  // namespace tebako

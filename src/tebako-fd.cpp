@@ -37,7 +37,13 @@
 
 using namespace std;
 
-sync_tebako_fdtable sync_tebako_fdtable::fdtable;
+namespace tebako {
+
+sync_tebako_fdtable& sync_tebako_fdtable::get_tebako_fdtable(void)
+{
+  static sync_tebako_fdtable fd_table{};
+  return fd_table;
+}
 
 int sync_tebako_fdtable::open(const char* path,
                               int flags,
@@ -82,7 +88,7 @@ int sync_tebako_fdtable::open(const char* path,
               else {
                 // construct a handle (mainly) for win32
                 *fd->handle = ret;
-                (**wlock())[ret] = fd;
+                (*s_tebako_fdtable.wlock())[ret] = fd;
               }
             }
           }
@@ -176,7 +182,7 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
                   else {
                     // construct a handle (mainly) for win32
                     *fd->handle = ret;
-                    (**wlock())[ret] = std::move(fd);
+                    (*s_tebako_fdtable.wlock())[ret] = std::move(fd);
                   }
                 }
               }
@@ -212,18 +218,19 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
 
 int sync_tebako_fdtable::close(int vfd) noexcept
 {
-  return ((**wlock()).erase(vfd) > 0) ? DWARFS_IO_CONTINUE : DWARFS_INVALID_FD;
+  return ((*s_tebako_fdtable.wlock()).erase(vfd) > 0) ? DWARFS_IO_CONTINUE
+                                                      : DWARFS_INVALID_FD;
 }
 
 void sync_tebako_fdtable::close_all(void) noexcept
 {
-  (*wlock())->clear();
+  s_tebako_fdtable.wlock()->clear();
 }
 
 bool sync_tebako_fdtable::is_valid_file_descriptor(int vfd) noexcept
 {
   int ret = false;
-  auto p_fdtable = *rlock();
+  auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
   if (p_fd != p_fdtable->end()) {
     ret = true;
@@ -234,7 +241,7 @@ bool sync_tebako_fdtable::is_valid_file_descriptor(int vfd) noexcept
 int sync_tebako_fdtable::fstat(int vfd, struct stat* st) noexcept
 {
   int ret = DWARFS_INVALID_FD;
-  auto p_fdtable = *rlock();
+  auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
   if (p_fd != p_fdtable->end()) {
     memcpy(st, &p_fd->second->st, sizeof(struct stat));
@@ -246,7 +253,7 @@ int sync_tebako_fdtable::fstat(int vfd, struct stat* st) noexcept
 ssize_t sync_tebako_fdtable::read(int vfd, void* buf, size_t nbyte) noexcept
 {
   int ret = DWARFS_INVALID_FD;
-  auto p_fdtable = *rlock();
+  auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
   if (p_fd != p_fdtable->end()) {
     ret = dwarfs_inode_read(p_fd->second->st.st_ino, buf, nbyte,
@@ -263,7 +270,7 @@ ssize_t sync_tebako_fdtable::pread(int vfd,
                                    size_t nbyte,
                                    off_t offset) noexcept
 {
-  auto p_fdtable = *rlock();
+  auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
   return (p_fd != p_fdtable->end())
              ? dwarfs_inode_read(p_fd->second->st.st_ino, buf, nbyte, offset)
@@ -271,13 +278,13 @@ ssize_t sync_tebako_fdtable::pread(int vfd,
 }
 
 int sync_tebako_fdtable::readdir(int vfd,
-                                 tebako_dirent* cache,
+                                 tebako::tebako_dirent* cache,
                                  off_t cache_start,
                                  size_t buffer_size,
                                  size_t& cache_size,
                                  size_t& dir_size) noexcept
 {
-  auto p_fdtable = *rlock();
+  auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
   return (p_fd != p_fdtable->end())
              ? dwarfs_inode_readdir(p_fd->second->st.st_ino, cache, cache_start,
@@ -285,8 +292,9 @@ int sync_tebako_fdtable::readdir(int vfd,
              : DWARFS_INVALID_FD;
 }
 
+#ifdef TEBAKO_HAS_READV
 ssize_t sync_tebako_fdtable::readv(int vfd,
-                                   const struct iovec* iov,
+                                   const struct ::iovec* iov,
                                    int iovcnt) noexcept
 {
   // Some specific error conditions:
@@ -303,7 +311,7 @@ ssize_t sync_tebako_fdtable::readv(int vfd,
   else {
     uint32_t ino;
     off_t pos;
-    auto p_fdtable = *rlock();
+    auto p_fdtable = s_tebako_fdtable.rlock();
     auto p_fd = p_fdtable->find(vfd);
     if (p_fd != p_fdtable->end()) {
       ret = 0;
@@ -336,11 +344,12 @@ ssize_t sync_tebako_fdtable::readv(int vfd,
   }
   return ret;
 }
+#endif
 
 off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence) noexcept
 {
   ssize_t ret = DWARFS_INVALID_FD;
-  auto p_fdtable = *this->rlock();
+  auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
   if (p_fd != p_fdtable->end()) {
     switch (whence) {
@@ -430,7 +439,7 @@ int sync_tebako_fdtable::fstatat(int vfd,
 int sync_tebako_fdtable::flock(int fd, int operation) noexcept
 {
   int ret = DWARFS_INVALID_FD;
-  auto p_fdtable = *sync_tebako_fdtable::fdtable.rlock();
+  auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(fd);
   if (p_fd != p_fdtable->end()) {
     ret = DWARFS_IO_CONTINUE;
@@ -441,3 +450,4 @@ int sync_tebako_fdtable::flock(int fd, int operation) noexcept
   }
   return ret;
 }
+}  // namespace tebako
