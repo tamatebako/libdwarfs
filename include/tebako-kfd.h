@@ -32,13 +32,10 @@
 namespace tebako {
 
 // sync_tebako_kfdtable
-// This class manages a set of DIR* pointer created by Tebako when processing
+// This class manages a set of DIR* pointers created outside of memfs  when processing
 // opendir calls. Directory functions will fail if an alien DIR pointer is
-// passed to them, so we must filter out Tebako handles using this set. DIR* is
-// converted to uintptr_t to simplify portability since DiR is defined
-// differently in POSIX vs Windows vs Windows MinGW vs Ruby core on Windows and
-// we do not ptoagate tons of #ifdefs everywhere Refer to dir_io.cpp for usage
-// details.
+// passed to them, so we use this set to deide whether to return an error or to pass
+// call to system library
 
 typedef std::set<uintptr_t> tebako_kfdtable;
 

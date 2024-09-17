@@ -56,6 +56,13 @@ struct tebako_fd {
 
 typedef std::map<int, std::shared_ptr<tebako_fd>> tebako_fdtable;
 
+// sync_tebako_dstable
+// This class manages dwarfs file handlers opened with open, openat (tebako_open)
+// Each opened file is mapped to tebako_fd structure that can be traversed
+// by functions like read or seek
+// Please note that directories are open as files although have additional handling
+// by tebako_dstable (tebako-dirent)
+
 class sync_tebako_fdtable {
  private:
   folly::Synchronized<tebako_fdtable> s_tebako_fdtable;

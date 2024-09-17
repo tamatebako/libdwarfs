@@ -98,8 +98,8 @@ struct tebako_ds {
 // sync_tebako_dstable
 // This class manages dwarfs directories opened with opendir (tebako_opendir)
 // Each opened directory is mapped to tebako_ds structure that can be traversed
-// by functions like readdir or seekdir File handler is supposed to be managed
-// tebako_fd class
+// by functions like readdir or seekdir
+// File handler is supposed to be managed by sync_tebako_fdtable (tebako-fd)
 
 typedef std::map<uintptr_t, std::shared_ptr<tebako_ds>> tebako_dstable;
 
