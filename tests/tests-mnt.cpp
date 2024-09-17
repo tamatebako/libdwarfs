@@ -34,8 +34,7 @@ namespace tebako {
 
 class TebakoMountTableTests : public ::testing::Test {
  protected:
-  sync_tebako_mount_table& mount_table =
-      sync_tebako_mount_table::get_tebako_mount_table();
+  sync_tebako_mount_table& mount_table = sync_tebako_mount_table::get_tebako_mount_table();
 
   void SetUp() override { mount_table.clear(); }
 
@@ -103,8 +102,7 @@ TEST_F(TebakoMountTableTests, InsertDuplicatePath)
   std::string mount2 = "mount8";
 
   EXPECT_TRUE(mount_table.insert(path, mount1));
-  EXPECT_FALSE(mount_table.insert(
-      path, mount2));  // Insertion should fail for duplicate path
+  EXPECT_FALSE(mount_table.insert(path, mount2));  // Insertion should fail for duplicate path
   std::optional<std::string> result = mount_table.get(path);
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(result.value(), mount1);  // Original mount should remain
@@ -119,8 +117,7 @@ TEST_F(TebakoMountTableTests, ConcurrentInsertAndCheck)
   auto insert_task = [this](int id) {
     for (int i = 0; i < num_operations; ++i) {
       std::string path = "/path" + std::to_string(id) + "_" + std::to_string(i);
-      std::string mount =
-          "mount" + std::to_string(id) + "_" + std::to_string(i);
+      std::string mount = "mount" + std::to_string(id) + "_" + std::to_string(i);
       mount_table.insert(path, mount);
       mount_table.check(path);
     }
@@ -154,8 +151,7 @@ TEST_F(TebakoMountTableTests, ConcurrentInsertAndErase)
   auto insert_task = [this](int id) {
     for (int i = 0; i < num_operations; ++i) {
       std::string path = "/path" + std::to_string(id) + "_" + std::to_string(i);
-      std::string mount =
-          "mount" + std::to_string(id) + "_" + std::to_string(i);
+      std::string mount = "mount" + std::to_string(id) + "_" + std::to_string(i);
       mount_table.insert(path, mount);
       mount_table.erase(path);
     }

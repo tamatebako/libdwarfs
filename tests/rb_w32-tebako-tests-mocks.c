@@ -158,15 +158,11 @@ enum { FINAL_PATH_MAX = PATH_MAX + numberof(namespace_prefix) };
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 static int check_valid_dir(const WCHAR* path);
-static unsigned fileattr_to_unixmode(DWORD attr,
-                                     const WCHAR* path,
-                                     unsigned mode);
+static unsigned fileattr_to_unixmode(DWORD attr, const WCHAR* path, unsigned mode);
 static time_t filetime_to_unixtime(const FILETIME* ft);
 static long filetime_to_nsec(const FILETIME* ft);
 static HANDLE open_dir_handle(const WCHAR* filename, WIN32_FIND_DATAW* fd);
-static FARPROC get_proc_address(const char* module,
-                                const char* func,
-                                HANDLE* mh);
+static FARPROC get_proc_address(const char* module, const char* func, HANDLE* mh);
 static time_t filetime_split(const FILETIME* ft, long* subsec);
 static DWORD stati128_handle(HANDLE h, struct stati128* st);
 static DWORD get_ino(HANDLE h, FILE_ID_INFO* id);
@@ -177,10 +173,7 @@ static int check_if_wdir(const WCHAR* wfile);
 char* rb_w32_wstr_to_mbstr(UINT cp, const WCHAR* wstr, int clen, long* plen);
 char* rb_w32_conv_from_wstr(const WCHAR* wstr, long* lenp, const void* enc);
 static void move_to_next_entry(DIR* dirp);
-static int w32_stati128(const char* path,
-                        struct stati128* st,
-                        UINT cp,
-                        BOOL lstat);
+static int w32_stati128(const char* path, struct stati128* st, UINT cp, BOOL lstat);
 static int wstati128(const WCHAR* path, struct stati128* st, BOOL lstat);
 
 typedef char lowio_text_mode;
@@ -197,8 +190,8 @@ typedef struct {
   uint8_t unicode : 1;           // Was the file opened as unicode?
   uint8_t utf8translations : 1;  // Buffer contains translations other than CRLF
   uint8_t dbcsBufferUsed : 1;    // Is the dbcsBuffer in use?
-  char dbcsBuffer;  // Buffer for the lead byte of DBCS when converting from
-                    // DBCS to Unicode
+  char dbcsBuffer;               // Buffer for the lead byte of DBCS when converting from
+                                 // DBCS to Unicode
 } ioinfo;
 
 static ioinfo** __pioinfo = NULL;
@@ -245,11 +238,8 @@ static void set_pioinfo_extra(void)
   if (p) {
     for (pend += 10; pend < p + 300; pend++) {
       // find end of function
-      if (memcmp(pend, FUNCTION_BEFORE_RET_MARK,
-                 sizeof(FUNCTION_BEFORE_RET_MARK) - 1) == 0 &&
-          (*(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) +
-             FUNCTION_SKIP_BYTES) &
-           FUNCTION_RET) == FUNCTION_RET) {
+      if (memcmp(pend, FUNCTION_BEFORE_RET_MARK, sizeof(FUNCTION_BEFORE_RET_MARK) - 1) == 0 &&
+          (*(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) & FUNCTION_RET) == FUNCTION_RET) {
         // search backwards from end of function
         for (pend -= (sizeof(PIOINFO_MARK) - 1); pend > p; pend--) {
           if (memcmp(pend, PIOINFO_MARK, sizeof(PIOINFO_MARK) - 1) == 0) {
@@ -292,8 +282,7 @@ static inline ioinfo* _pioinfo(int fd)
     set_pioinfo_extra();
   }
   const size_t sizeof_ioinfo = sizeof(ioinfo) + pioinfo_extra;
-  return (ioinfo*)((char*)__pioinfo[fd >> IOINFO_L2E] +
-                   (fd & (IOINFO_ARRAY_ELTS - 1)) * sizeof_ioinfo);
+  return (ioinfo*)((char*)__pioinfo[fd >> IOINFO_L2E] + (fd & (IOINFO_ARRAY_ELTS - 1)) * sizeof_ioinfo);
 }
 
 #define FOPEN 0x01      /* file handle open */
@@ -459,8 +448,7 @@ static void get_systemtime(FILETIME* ft)
   if (func == (get_time_func)-1) {
     /* GetSystemTimePreciseAsFileTime is available since Windows 8 and Windows
      * Server 2012. */
-    func = (get_time_func)get_proc_address(
-        "kernel32", "GetSystemTimePreciseAsFileTime", NULL);
+    func = (get_time_func)get_proc_address("kernel32", "GetSystemTimePreciseAsFileTime", NULL);
     if (func == NULL) {
       func = GetSystemTimeAsFileTime;
       have_precisetime = 0;
@@ -480,22 +468,15 @@ static void get_systemtime(FILETIME* ft)
 typedef DWORD(WINAPI* get_final_path_func)(HANDLE, WCHAR*, DWORD, DWORD);
 static get_final_path_func get_final_path;
 
-static DWORD WINAPI get_final_path_fail(HANDLE f,
-                                        WCHAR* buf,
-                                        DWORD len,
-                                        DWORD flag)
+static DWORD WINAPI get_final_path_fail(HANDLE f, WCHAR* buf, DWORD len, DWORD flag)
 {
   return 0;
 }
 
-static DWORD WINAPI get_final_path_unknown(HANDLE f,
-                                           WCHAR* buf,
-                                           DWORD len,
-                                           DWORD flag)
+static DWORD WINAPI get_final_path_unknown(HANDLE f, WCHAR* buf, DWORD len, DWORD flag)
 {
   /* Since Windows Vista and Windows Server 2008 */
-  get_final_path_func func = (get_final_path_func)get_proc_address(
-      "kernel32", "GetFinalPathNameByHandleW", NULL);
+  get_final_path_func func = (get_final_path_func)get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
   if (!func)
     func = get_final_path_fail;
   get_final_path = func;
@@ -556,16 +537,12 @@ static void* getcwd_alloc(int size, void* dummy)
 /* TODO: better name */
 static HANDLE open_special(const WCHAR* path, DWORD access, DWORD flags)
 {
-  const DWORD share_mode =
-      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
-  return CreateFileW(path, access, share_mode, NULL, OPEN_EXISTING,
-                     FILE_FLAG_BACKUP_SEMANTICS | flags, NULL);
+  const DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+  return CreateFileW(path, access, share_mode, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | flags, NULL);
 }
 
 /* License: Ruby's */
-static FARPROC get_proc_address(const char* module,
-                                const char* func,
-                                HANDLE* mh)
+static FARPROC get_proc_address(const char* module, const char* func, HANDLE* mh)
 {
   HANDLE h;
   FARPROC ptr;
@@ -588,9 +565,7 @@ static FARPROC get_proc_address(const char* module,
 }
 
 /* License: Ruby's */
-static unsigned fileattr_to_unixmode(DWORD attr,
-                                     const WCHAR* path,
-                                     unsigned mode)
+static unsigned fileattr_to_unixmode(DWORD attr, const WCHAR* path, unsigned mode)
 {
   if (attr & FILE_ATTRIBUTE_READONLY) {
     mode |= S_IREAD;
@@ -621,8 +596,8 @@ static unsigned fileattr_to_unixmode(DWORD attr,
     while (path < end) {
       end = CharPrevW(path, end);
       if (*end == L'.') {
-        if ((_wcsicmp(end, L".bat") == 0) || (_wcsicmp(end, L".cmd") == 0) ||
-            (_wcsicmp(end, L".com") == 0) || (_wcsicmp(end, L".exe") == 0)) {
+        if ((_wcsicmp(end, L".bat") == 0) || (_wcsicmp(end, L".cmd") == 0) || (_wcsicmp(end, L".com") == 0) ||
+            (_wcsicmp(end, L".exe") == 0)) {
           mode |= S_IEXEC;
         }
         break;
@@ -711,8 +686,7 @@ static int check_valid_dir(const WCHAR* path)
   if (!(p = wcsstr(path, L"...")))
     return 0;
   q = p + wcsspn(p, L".");
-  if ((p == path || wcschr(L":/\\", *(p - 1))) &&
-      (!*q || wcschr(L":/\\", *q))) {
+  if ((p == path || wcschr(L":/\\", *(p - 1))) && (!*q || wcschr(L":/\\", *q))) {
     errno = ENOENT;
     return -1;
   }
@@ -821,11 +795,7 @@ static int isUNCRoot(const WCHAR* path)
 }
 
 /* License: Ruby's */
-static char* w32_getcwd(char* buffer,
-                        int size,
-                        UINT cp,
-                        void* alloc(int, void*),
-                        void* arg)
+static char* w32_getcwd(char* buffer, int size, UINT cp, void* alloc(int, void*), void* arg)
 {
   WCHAR* p;
   int wlen, len;
@@ -899,10 +869,7 @@ int rb_w32_stati128(const char* path, struct stati128* st)
 }
 
 /* License: Ruby's */
-static int w32_stati128(const char* path,
-                        struct stati128* st,
-                        UINT cp,
-                        BOOL lstat)
+static int w32_stati128(const char* path, struct stati128* st, UINT cp, BOOL lstat)
 {
   WCHAR* wpath;
   int ret;
@@ -995,8 +962,7 @@ static int stat_by_find(const WCHAR* path, struct stati128* st)
 /* License: Ruby's */
 static int path_drive(const WCHAR* path)
 {
-  return (iswalpha(path[0]) && path[1] == L':') ? towupper(path[0]) - L'A'
-                                                : _getdrive() - 1;
+  return (iswalpha(path[0]) && path[1] == L':') ? towupper(path[0]) - L'A' : _getdrive() - 1;
 }
 
 /* License: Ruby's */
@@ -1130,8 +1096,7 @@ static DWORD get_ino(HANDLE h, FILE_ID_INFO* id)
 
   if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
     /* Since Windows Vista and Windows Server 2008 */
-    pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address(
-        "kernel32", "GetFileInformationByHandleEx", NULL);
+    pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
 
   if (pGetFileInformationByHandleEx) {
     if (pGetFileInformationByHandleEx(h, FileIdInfo, id, sizeof(*id)))
@@ -1319,9 +1284,7 @@ static int w32_wopen(const WCHAR* file, int oflag, int pmode)
     _set_osfhnd(fd, (intptr_t)INVALID_HANDLE_VALUE);
     _set_osflags(fd, 0);
 
-    h = CreateFileW(file, access,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec,
-                    create, attr, NULL);
+    h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL);
     if (h == INVALID_HANDLE_VALUE) {
       DWORD e = GetLastError();
       if (e != ERROR_ACCESS_DENIED || !check_if_wdir(file))
@@ -1362,8 +1325,7 @@ static int w32_wopen(const WCHAR* file, int oflag, int pmode)
 static int check_if_wdir(const WCHAR* wfile)
 {
   DWORD attr = GetFileAttributesW(wfile);
-  if (attr == (DWORD)-1L || !(attr & FILE_ATTRIBUTE_DIRECTORY) ||
-      check_valid_dir(wfile)) {
+  if (attr == (DWORD)-1L || !(attr & FILE_ATTRIBUTE_DIRECTORY) || check_valid_dir(wfile)) {
     return FALSE;
   }
   errno = EISDIR;
@@ -1454,9 +1416,8 @@ static DIR* w32_wopendir(const WCHAR* wpath)
   if (wstati128(wpath, &sbuf, FALSE) < 0) {
     return NULL;
   }
-  if (!(sbuf.st_mode & S_IFDIR) &&
-      (!isalpha(wpath[0]) || wpath[1] != L':' || wpath[2] != L'\0' ||
-       ((1 << ((wpath[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
+  if (!(sbuf.st_mode & S_IFDIR) && (!isalpha(wpath[0]) || wpath[1] != L':' || wpath[2] != L'\0' ||
+                                    ((1 << ((wpath[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
     errno = ENOTDIR;
     return NULL;
   }
@@ -1575,10 +1536,7 @@ void rb_w32_closedir(DIR* dirp)
 // string pointer to the next entry.
 //
 /* License: Ruby's */
-static BOOL win32_direct_conv(const WCHAR* file,
-                              const WCHAR* alt,
-                              struct direct* entry,
-                              const void* enc)
+static BOOL win32_direct_conv(const WCHAR* file, const WCHAR* alt, struct direct* entry, const void* enc)
 {
   UINT cp = *((UINT*)enc);
   if (!(entry->d_name = wstr_to_mbstr(cp, file, -1, &entry->d_namlen)))
@@ -1592,10 +1550,7 @@ static BOOL win32_direct_conv(const WCHAR* file,
 }
 
 /* License: Ruby's */
-static BOOL ruby_direct_conv(const WCHAR* file,
-                             const WCHAR* alt,
-                             struct direct* entry,
-                             const void* enc)
+static BOOL ruby_direct_conv(const WCHAR* file, const WCHAR* alt, struct direct* entry, const void* enc)
 {
   if (!(entry->d_name = rb_w32_conv_from_wstr(file, &entry->d_namlen, enc)))
     return FALSE;
@@ -1608,10 +1563,9 @@ static BOOL ruby_direct_conv(const WCHAR* file,
 }
 
 /* License: Artistic or GPL */
-static struct direct* readdir_internal(
-    DIR* dirp,
-    BOOL (*conv)(const WCHAR*, const WCHAR*, struct direct*, const void*),
-    const void* enc)
+static struct direct* readdir_internal(DIR* dirp,
+                                       BOOL (*conv)(const WCHAR*, const WCHAR*, struct direct*, const void*),
+                                       const void* enc)
 {
   static long dummy_ino = 0;
 

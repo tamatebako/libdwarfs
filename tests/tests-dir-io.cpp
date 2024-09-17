@@ -65,9 +65,8 @@ class DirIOTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
-            NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
-            NULL /* image_offset */
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+            NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
@@ -161,8 +160,7 @@ TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)
       EXPECT_EQ(++pos, tebako_telldir(dirp));
     }
 
-    entry = tebako_readdir_adjusted(
-        dirp);  // Expecting dirent buffer reload at this point
+    entry = tebako_readdir_adjusted(dirp);  // Expecting dirent buffer reload at this point
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = "file-";
@@ -191,8 +189,7 @@ TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)
 
     tebako_seekdir(dirp, 0);
     EXPECT_EQ(0, tebako_telldir(dirp));
-    entry = tebako_readdir_adjusted(
-        dirp);  // Expecting dirent buffer reload at this point
+    entry = tebako_readdir_adjusted(dirp);  // Expecting dirent buffer reload at this point
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       fname = ".";
@@ -245,8 +242,7 @@ TEST_F(DirIOTests, tebako_scandir)
   const size_t size_dir = 90;
   struct dirent** namelist;
   std::string fname;
-  int n = tebako_scandir(TEBAKIZE_PATH("directory-with-90-files"), &namelist,
-                         NULL, alphasort);
+  int n = tebako_scandir(TEBAKIZE_PATH("directory-with-90-files"), &namelist, NULL, alphasort);
   EXPECT_EQ(n, size_dir + 2);
   EXPECT_TRUE(namelist != NULL);
   if (n > 0 && namelist != NULL) {
@@ -283,8 +279,7 @@ TEST_F(DirIOTests, tebako_scandir_filter_empty)
 {
   struct dirent** namelist;
   std::string fname;
-  int n = tebako_scandir(TEBAKIZE_PATH("directory-with-90-files"), &namelist,
-                         zero_filter, NULL);
+  int n = tebako_scandir(TEBAKIZE_PATH("directory-with-90-files"), &namelist, zero_filter, NULL);
   EXPECT_EQ(0, n);
   EXPECT_TRUE(namelist != NULL);
   if (namelist != NULL) {
@@ -345,16 +340,14 @@ TEST_F(DirIOTests, tebako_dir_io_null_ptr)
   EXPECT_EQ(ENOENT, errno);
 
   errno = 0;
-  EXPECT_EQ(-1, tebako_scandir(TEBAKIZE_PATH("directory-3"), NULL, zero_filter,
-                               alphasort));
+  EXPECT_EQ(-1, tebako_scandir(TEBAKIZE_PATH("directory-3"), NULL, zero_filter, alphasort));
   EXPECT_EQ(EFAULT, errno);
 #endif
 }
 
 TEST_F(DirIOTests, tebako_opendir_readdir_closedir_dot_dot)
 {
-  DIR* dirp = tebako_opendir(
-      TEBAKIZE_PATH("directory-3/level-1/.//level-2/level-3/.."));
+  DIR* dirp = tebako_opendir(TEBAKIZE_PATH("directory-3/level-1/.//level-2/level-3/.."));
   EXPECT_TRUE(dirp != NULL);
   if (dirp != NULL) {
     std::string fname;
@@ -379,15 +372,13 @@ TEST_F(DirIOTests, tebako_opendir_readdir_closedir_dot_dot)
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       EXPECT_TRUE((fname == entry->d_name) || (fname_alt == entry->d_name));
-      EXPECT_TRUE(entry->d_type ==
-                  (entry->d_name == fname_alt ? DT_DIR : DT_REG));
+      EXPECT_TRUE(entry->d_type == (entry->d_name == fname_alt ? DT_DIR : DT_REG));
     }
     entry = tebako_readdir_adjusted(dirp);
     EXPECT_TRUE(entry != NULL);
     if (entry != NULL) {
       EXPECT_TRUE((fname == entry->d_name) || (fname_alt == entry->d_name));
-      EXPECT_TRUE(entry->d_type ==
-                  (entry->d_name == fname_alt ? DT_DIR : DT_REG));
+      EXPECT_TRUE(entry->d_type == (entry->d_name == fname_alt ? DT_DIR : DT_REG));
     }
     EXPECT_EQ(0, tebako_closedir(dirp));
   }

@@ -64,9 +64,8 @@ class DirCtlTests : public testing::Test {
     tmp_dir = p_tmp_dir.generic_string();
     tmp_name = p_tmp_name.generic_string();
 
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
-            NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
-            NULL /* image_offset */
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+            NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
@@ -226,13 +225,11 @@ TEST_F(DirCtlTests, tebako_dir_ctl_null_ptr)
 
 TEST_F(DirCtlTests, tebako_dir_ctl_dot_dot)
 {
-  int ret = tebako_chdir(
-      TEBAKIZE_PATH("directory-3/level-1/level-2/level-3/level-4/../.."));
+  int ret = tebako_chdir(TEBAKIZE_PATH("directory-3/level-1/level-2/level-3/level-4/../.."));
   EXPECT_EQ(0, ret);
 
   char* r2 = tebako_getcwd(NULL, 0);
-  EXPECT_STREQ(
-      r2, TEBAKIZE_PATH("directory-3" __S__ "level-1" __S__ "level-2" __S__));
+  EXPECT_STREQ(r2, TEBAKIZE_PATH("directory-3" __S__ "level-1" __S__ "level-2" __S__));
   if (r2) {
     free(r2);
   }

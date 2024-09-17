@@ -80,20 +80,15 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
 
   void map_name(const char* path, std::string& mapped)
   {
-    const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH] == '\0'
-                          ? path + TEBAKO_MOUNT_POINT_LENGTH
-                          : path + TEBAKO_MOUNT_POINT_LENGTH + 1;
+    const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? path + TEBAKO_MOUNT_POINT_LENGTH
+                                                              : path + TEBAKO_MOUNT_POINT_LENGTH + 1;
     fs::path _mapped = dl_tmpdir / adj;
     fs::create_directories(_mapped.parent_path());
     mapped = _mapped.make_preferred().string();
   }
 
  public:
-  sync_tebako_dltable(void)
-      : folly::Synchronized<tebako_dltable*>(new tebako_dltable)
-  {
-    create_temporary_directory();
-  }
+  sync_tebako_dltable(void) : folly::Synchronized<tebako_dltable*>(new tebako_dltable) { create_temporary_directory(); }
   ~sync_tebako_dltable(void)
   {
     auto p_dltable = *wlock();
@@ -131,8 +126,7 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
             *tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
           }
           else {
-            int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT | O_BINARY,
-                                st.st_mode);
+            int fh_out = ::open(mapped.c_str(), O_WRONLY | O_CREAT | O_BINARY, st.st_mode);
             if (fh_out < 0) {
               *tebako_dlerror_stash.wlock() = tebako_dlerror_data(EIO, path);
             }
@@ -141,8 +135,7 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
               const int bsize = 16 * 1024;
               char buf[bsize];
               ssize_t r_size;
-              while (f_size > 0 &&
-                     (r_size = tebako_read(fh_in, buf, bsize)) > 0) {
+              while (f_size > 0 && (r_size = tebako_read(fh_in, buf, bsize)) > 0) {
                 f_size -= r_size;
                 if (r_size != ::write(fh_out, buf, r_size))
                   break;
@@ -214,14 +207,10 @@ extern "C" char* tebako_dlmap2file(const char* path)
 extern "C" char* tebako_dlerror(void)
 {
   string tebako_dlerror_text;
-  tebako_dlerror_data last_dl_error =
-      tebako_dlerror_stash.exchange(tebako_dlerror_data());
+  tebako_dlerror_data last_dl_error = tebako_dlerror_stash.exchange(tebako_dlerror_data());
   if (last_dl_error.err != 0) {
-    tebako_dlerror_text =
-        last_dl_error.fname +
-        ": cannot open shared object file: " + strerror(last_dl_error.err);
-    strncpy(tebako_dlerror_msg, tebako_dlerror_text.c_str(),
-            sizeof(tebako_dlerror_msg) / sizeof(char) - 1);
+    tebako_dlerror_text = last_dl_error.fname + ": cannot open shared object file: " + strerror(last_dl_error.err);
+    strncpy(tebako_dlerror_msg, tebako_dlerror_text.c_str(), sizeof(tebako_dlerror_msg) / sizeof(char) - 1);
     tebako_dlerror_msg[sizeof(tebako_dlerror_msg) / sizeof(char) - 1] = '\0';
   }
   char* native_dlerror_msg = ::dlerror();

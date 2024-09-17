@@ -54,9 +54,8 @@ class FileIOTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
-            NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
-            NULL /* image_offset */
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+            NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
@@ -113,8 +112,7 @@ TEST_F(FileIOTests, tebako_open_no_file)
 #ifdef TEBAKO_HAS_O_DIRECTORY
 TEST_F(FileIOTests, tebako_open_dir)
 {
-  int ret =
-      tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
+  int ret = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
   EXPECT_LT(0, ret);
   ret = tebako_close(ret);
   EXPECT_EQ(0, ret);
@@ -122,8 +120,7 @@ TEST_F(FileIOTests, tebako_open_dir)
 
 TEST_F(FileIOTests, tebako_open_not_dir)
 {
-  int ret = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
-                        O_RDONLY | O_DIRECTORY);
+  int ret = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY | O_DIRECTORY);
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(ENOTDIR, errno);
 }
@@ -139,8 +136,7 @@ TEST_F(FileIOTests, tebako_close_bad_file)
 #ifdef TEBAKO_HAS_O_NOFOLLOW
 TEST_F(FileIOTests, tebako_open_read_close_absolute_path_with_nofollow)
 {
-  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
-                       O_RDONLY | O_NOFOLLOW);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY | O_NOFOLLOW);
   EXPECT_LT(0, fh);
 
   char readbuf[32];
@@ -158,8 +154,7 @@ TEST_F(FileIOTests, tebako_open_read_close_absolute_path_with_nofollow)
 
 TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path)
 {
-  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
-                       O_RDONLY);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
 
   const char* pattern = "This is a file in the first directory";
@@ -189,8 +184,7 @@ TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path)
 #ifdef TEBAKO_HAS_READV
 TEST_F(FileIOTests, tebako_open_lseek_readv_close_absolute_path)
 {
-  int fh = tebako_open(2, TEBAKIZE_PATH("directory-2/file-in-directory-2.txt"),
-                       O_RDONLY);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-2/file-in-directory-2.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
 
   const char* pattern = "This is a file in the second directory";
@@ -309,15 +303,13 @@ TEST_F(FileIOTests, tebako_openat_not_relative_with_nofollow)
 {
   int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_NOFOLLOW);
   EXPECT_LT(0, fh1);
-  int fh2 =
-      tebako_openat(3, fh1, TEBAKIZE_PATH("file.txt"), O_RDONLY | O_NOFOLLOW);
+  int fh2 = tebako_openat(3, fh1, TEBAKIZE_PATH("file.txt"), O_RDONLY | O_NOFOLLOW);
   EXPECT_LT(0, fh2);
 
   char readbuf[32];
   const char* pattern = "Just a file";
   const int num2read = strlen(pattern);
-  EXPECT_EQ(num2read,
-            tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
+  EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
   EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
 
   EXPECT_EQ(0, tebako_close(fh1));
@@ -334,8 +326,7 @@ TEST_F(FileIOTests, tebako_openat_relative)
   char readbuf[64];
   const char* pattern = "This is a file in the first directory";
   const int num2read = strlen(pattern);
-  EXPECT_EQ(num2read,
-            tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
+  EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
   EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
 
   EXPECT_EQ(0, tebako_close(fh1));
@@ -354,8 +345,7 @@ TEST_F(FileIOTests, tebako_openat_atcwd)
   char readbuf[32];
   const char* pattern = "Just a file";
   const int num2read = strlen(pattern);
-  EXPECT_EQ(num2read,
-            tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
+  EXPECT_EQ(num2read, tebako_read(fh2, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
   EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
 
   EXPECT_EQ(0, tebako_close(fh1));
@@ -414,11 +404,7 @@ TEST_F(FileIOTests, tebako_open_close_relative_path_pass_through)
 
 TEST_F(FileIOTests, tebako_open_read_close_absolute_path_dot_dot)
 {
-  int fh = tebako_open(
-      2,
-      TEBAKIZE_PATH(
-          "directory-3/.//level-1/../../directory-1/file-in-directory-1.txt"),
-      O_RDONLY);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-3/.//level-1/../../directory-1/file-in-directory-1.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
 
   char readbuf[32];
@@ -435,8 +421,7 @@ TEST_F(FileIOTests, tebako_open_read_close_absolute_path_dot_dot)
 
 TEST_F(FileIOTests, is_tebako_file_descriptor)
 {
-  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
-                       O_RDONLY);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
   EXPECT_TRUE(is_tebako_file_descriptor(fh));
   int ret = tebako_close(fh);
@@ -472,8 +457,7 @@ TEST_F(FileIOTests, tebako_flock_pass_through)
 
 TEST_F(FileIOTests, tebako_flock_absolute)
 {
-  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
-                       O_RDONLY);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
   int ret = tebako_flock(fh, LOCK_EX | LOCK_NB);
   EXPECT_EQ(0, ret);
@@ -484,8 +468,7 @@ TEST_F(FileIOTests, tebako_flock_absolute)
 
 TEST_F(FileIOTests, tebako_lseek_errors)
 {
-  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
-                       O_RDONLY);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
   errno = 0;
   int ret = tebako_lseek(fh, -1, SEEK_SET);
@@ -525,8 +508,7 @@ TEST_F(FileIOTests, tebako_lseek_errors)
 #ifdef TEBAKO_HAS_READV
 TEST_F(FileIOTests, tebako_readv_errors)
 {
-  int fh = tebako_open(2, TEBAKIZE_PATH("directory-2/file-in-directory-2.txt"),
-                       O_RDONLY);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-2/file-in-directory-2.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
 
   char buf0[10];

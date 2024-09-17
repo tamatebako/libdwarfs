@@ -83,9 +83,7 @@ ssize_t tebako_readv(int vfd, const struct iovec* iov, int iovcnt);
 #endif
 #endif
 
-#if (defined(TEBAKO_HAS_PREAD) &&                    \
-     (defined(_UNISTD_H) || defined(_UNISTD_H_))) || \
-    defined(RB_W32)
+#if (defined(TEBAKO_HAS_PREAD) && (defined(_UNISTD_H) || defined(_UNISTD_H_))) || defined(RB_W32)
 ssize_t tebako_pread(int vfd, void* buf, size_t nbyte, off_t offset);
 #endif
 
@@ -99,11 +97,7 @@ int tebako_getattrlist(const char* path,
 #endif
 
 #ifdef TEBAKO_HAS_FGETATTRLIST
-int tebako_fgetattrlist(int fd,
-                        struct attrlist* attrList,
-                        void* attrBuf,
-                        size_t attrBufSize,
-                        unsigned long options);
+int tebako_fgetattrlist(int fd, struct attrlist* attrList, void* attrBuf, size_t attrBufSize, unsigned long options);
 #endif
 
 #endif
@@ -138,8 +132,7 @@ ssize_t tebako_readlink(const char* path, char* buf, size_t bufsiz);
         tebako_seekdir
     are used to shadow rb_w32_xxx counterparts and not API methods
 */
-#if defined(_DIRENT_H) || defined(_DIRENT_H_) || defined(RUBY_WIN32_DIR_H) || \
-    defined(RB_W32_DIR_DEFINED)
+#if defined(_DIRENT_H) || defined(_DIRENT_H_) || defined(RUBY_WIN32_DIR_H) || defined(RB_W32_DIR_DEFINED)
 
 DIR* tebako_opendir(const char* dirname);
 
