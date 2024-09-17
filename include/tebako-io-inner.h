@@ -54,11 +54,13 @@ const int DWARFS_S_LINK_OUTSIDE = -3;
 #define O_NOFOLLOW 0x0
 #endif
 
+namespace tebako {
 #ifdef _WIN32
 struct tebako_dirent;
 #else
 union tebako_dirent;
 #endif
+}  // namespace tebako
 
 int dwarfs_access(const char* path,
                   int amode,
@@ -82,7 +84,7 @@ ssize_t dwarfs_inode_read(uint32_t inode,
                           size_t size,
                           off_t offset) noexcept;
 int dwarfs_inode_readdir(uint32_t inode,
-                         tebako_dirent* cache,
+                         tebako::tebako_dirent* cache,
                          off_t cache_start,
                          size_t buffer_size,
                          size_t& cache_size,

@@ -360,6 +360,7 @@ TEST_F(LnTests, tebako_open_dir_outside_of_memfs)
           found = true;
       }
       EXPECT_TRUE(found);
+      EXPECT_EQ(0, tebako_closedir(dirp));
     }
   }
   else {

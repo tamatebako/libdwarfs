@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2022-2024, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -29,33 +29,22 @@
 
 #pragma once
 
-typedef std::set<uintptr_t> tebako_kfdtable;
+namespace tebako {
 
-class sync_tebako_kfdtable : public folly::Synchronized<tebako_kfdtable*> {
+typedef std::map<std::string, std::string> tebako_mount_table;
+
+class sync_tebako_mount_table {
+ private:
+  folly::Synchronized<tebako_mount_table> s_tebako_mount_table;
+
  public:
-  sync_tebako_kfdtable(void)
-      : folly::Synchronized<tebako_kfdtable*>(new tebako_kfdtable)
-  {
-  }
+  static sync_tebako_mount_table& get_tebako_mount_table(void);
 
-  bool check(uintptr_t dirp)
-  {
-    auto p_kfdtable = *rlock();
-    auto p_kfd = p_kfdtable->find(dirp);
-    return (p_kfd != p_kfdtable->end());
-  };
-
-  void erase(uintptr_t dirp)
-  {
-    auto p_kfdtable = *wlock();
-    p_kfdtable->erase(dirp);
-  }
-
-  void insert(uintptr_t dirp)
-  {
-    auto p_kfdtable = *wlock();
-    p_kfdtable->insert(dirp);
-  }
-
-  static sync_tebako_kfdtable kfdtable;
+  bool check(std::string& path);
+  void clear(void);
+  void erase(std::string& path);
+  std::optional<std::string> get(std::string& path);
+  bool insert(std::string& path, std::string& mount);
 };
+
+}  // namespace tebako

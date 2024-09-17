@@ -29,6 +29,7 @@
 
 #pragma once
 
+namespace tebako {
 #ifdef _WIN32
 struct tebako_dirent;
 #else
@@ -58,12 +59,12 @@ struct tebako_fd {
 
 typedef std::map<int, std::shared_ptr<tebako_fd>> tebako_fdtable;
 
-class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
+class sync_tebako_fdtable {
+ private:
+  folly::Synchronized<tebako_fdtable> s_tebako_fdtable;
+
  public:
-  sync_tebako_fdtable(void)
-      : folly::Synchronized<tebako_fdtable*>(new tebako_fdtable)
-  {
-  }
+  static sync_tebako_fdtable& get_tebako_fdtable(void);
 
   int open(const char* path, int flags, std::string& lnk) noexcept;
   int openat(int vfd, const char* path, int flags) noexcept;
@@ -73,12 +74,14 @@ class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
   ssize_t read(int vfd, void* buf, size_t nbyte) noexcept;
   ssize_t pread(int vfd, void* buf, size_t nbyte, off_t offset) noexcept;
   int readdir(int vfd,
-              tebako_dirent* cache,
+              tebako::tebako_dirent* cache,
               off_t cache_start,
               size_t buffer_size,
               size_t& cache_size,
               size_t& dir_size) noexcept;
-  ssize_t readv(int vfd, const struct iovec* iov, int iovcnt) noexcept;
+#ifdef TEBAKO_HAS_READV
+  ssize_t readv(int vfd, const struct ::iovec* iov, int iovcnt) noexcept;
+#endif
   off_t lseek(int vfd, off_t offset, int whence) noexcept;
   int fstatat(int vfd,
               const char* path,
@@ -86,6 +89,5 @@ class sync_tebako_fdtable : public folly::Synchronized<tebako_fdtable*> {
               bool follow) noexcept;
   int flock(int vfd, int operation) noexcept;
   bool is_valid_file_descriptor(int vfd) noexcept;
-
-  static sync_tebako_fdtable fdtable;
 };
+}  // namespace tebako

@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2022-2024, [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -27,29 +27,32 @@
  *
  */
 
-/*
- * This a set of standard "C++" headers used through libdwarfs-wr source files
- */
-
 #pragma once
 
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <map>
-#include <random>
-#include <optional>
-#include <set>
-#include <sstream>
-#include <stdexcept>
+namespace tebako {
 
-#include <filesystem>
-namespace fs = std::filesystem;
+// sync_tebako_kfdtable
+// This class manages a set of DIR* pointer created by Tebako when processing
+// opendir calls. Directory functions will fail if an alien DIR pointer is
+// passed to them, so we must filter out Tebako handles using this set. DIR* is
+// converted to uintptr_t to simplify portability since DiR is defined
+// differently in POSIX vs Windows vs Windows MinGW vs Ruby core on Windows and
+// we do not ptoagate tons of #ifdefs everywhere Refer to dir_io.cpp for usage
+// details.
 
-#include <folly/Conv.h>
-#include <folly/Synchronized.h>
+typedef std::set<uintptr_t> tebako_kfdtable;
 
-#include <dwarfs/logger.h>
+class sync_tebako_kfdtable {
+ private:
+  folly::Synchronized<tebako_kfdtable> s_tebako_kfdtable;
+
+ public:
+  static sync_tebako_kfdtable& get_tebako_kfdtable(void);
+
+  bool check(uintptr_t dirp);
+  void clear(void);
+  void erase(uintptr_t dirp);
+  void insert(uintptr_t dirp);
+};
+
+}  // namespace tebako
