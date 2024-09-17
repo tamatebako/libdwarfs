@@ -54,9 +54,8 @@ class DlTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
-            NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
-            NULL /* image_offset */
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+            NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
@@ -69,13 +68,11 @@ class DlTests : public testing::Test {
 TEST_F(DlTests, tebako_dlopen_no_file)
 {
   errno = 0;
-  void* dlptr =
-      tebako_dlopen(TEBAKIZE_PATH("no_file"), RTLD_LAZY | RTLD_GLOBAL);
+  void* dlptr = tebako_dlopen(TEBAKIZE_PATH("no_file"), RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_EQ(dlptr, nullptr);
   char* r = tebako_dlerror();
   std::string expected =
-      std::string(TEBAKIZE_PATH("no_file")) +
-      ": cannot open shared object file: No such file or directory";
+      std::string(TEBAKIZE_PATH("no_file")) + ": cannot open shared object file: No such file or directory";
   std::replace(expected.begin(), expected.end(), '\\', '/');
   EXPECT_EQ(expected, r);
 }
@@ -85,16 +82,14 @@ TEST_F(DlTests, tebako_dlopen_no_file_pass_through)
   errno = 0;
   void* dlptr = tebako_dlopen(__AT_BIN__("no_file"), RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_EQ(dlptr, nullptr);
-  EXPECT_NE(
-      tebako_dlerror(),
-      nullptr);  // Specific otput cannot be guaranteed accross diffrent OSs
+  EXPECT_NE(tebako_dlerror(),
+            nullptr);  // Specific otput cannot be guaranteed accross diffrent OSs
 }
 
 TEST_F(DlTests, tebako_dlopen_absolute_path)
 {
   void* handle;
-  handle = tebako_dlopen(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__),
-                         RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__), RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
     EXPECT_EQ(0, dlclose(handle));
@@ -105,8 +100,7 @@ TEST_F(DlTests, tebako_dlopen_absolute_path)
 TEST_F(DlTests, tebako_dlopen_absolute_path_win)
 {
   void* handle;
-  handle = tebako_dlopen(TEBAKIZE_PATH("directory-1\\" __LIBEMPTY__),
-                         RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen(TEBAKIZE_PATH("directory-1\\" __LIBEMPTY__), RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
     EXPECT_EQ(0, dlclose(handle));
@@ -129,8 +123,7 @@ TEST_F(DlTests, tebako_dlopen_relative_path_dot_dot)
 {
   EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-3/level-1/level-2///")));
   void* handle;
-  handle = tebako_dlopen("../../../directory-1/" __LIBEMPTY__,
-                         RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen("../../../directory-1/" __LIBEMPTY__, RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
     EXPECT_EQ(0, dlclose(handle));
@@ -140,11 +133,9 @@ TEST_F(DlTests, tebako_dlopen_relative_path_dot_dot)
 #ifdef _WIN32
 TEST_F(DlTests, tebako_dlopen_relative_path_dot_dot_win)
 {
-  EXPECT_EQ(0,
-            tebako_chdir(TEBAKIZE_PATH("directory-3\\level-1\\level-2\\\\\\")));
+  EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("directory-3\\level-1\\level-2\\\\\\")));
   void* handle;
-  handle = tebako_dlopen("..\\..\\..\\directory-1\\" __LIBEMPTY__,
-                         RTLD_LAZY | RTLD_GLOBAL);
+  handle = tebako_dlopen("..\\..\\..\\directory-1\\" __LIBEMPTY__, RTLD_LAZY | RTLD_GLOBAL);
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
     EXPECT_EQ(0, dlclose(handle));
@@ -202,16 +193,14 @@ TEST_F(DlTests, tebako_dlmap2file_no_file)
   EXPECT_EQ(dlmapped, nullptr);
   char* r = tebako_dlerror();
   std::string expected =
-      std::string(TEBAKIZE_PATH("no_file")) +
-      ": cannot open shared object file: No such file or directory";
+      std::string(TEBAKIZE_PATH("no_file")) + ": cannot open shared object file: No such file or directory";
   std::replace(expected.begin(), expected.end(), '\\', '/');
   EXPECT_EQ(expected, r);
 }
 
 TEST_F(DlTests, tebako_dlmap2file_absolute_path)
 {
-  char* dlmapped =
-      tebako_dlmap2file(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__));
+  char* dlmapped = tebako_dlmap2file(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__));
   EXPECT_NE(dlmapped, nullptr);
   if (dlmapped != nullptr) {
     void* handle = ::dlopen(dlmapped, RTLD_LAZY | RTLD_GLOBAL);

@@ -55,8 +55,7 @@ class LoadTests : public testing::Test {
   {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
-    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX |
-                 SEM_NOOPENFILEERRORBOX);
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 #endif
   }
 };
@@ -71,9 +70,8 @@ TEST(LoadTests, smoke)
 TEST(LoadTests, tebako_load_invalid_filesystem)
 {
   const unsigned char data[] = "This is broken filesystem image";
-  int ret = load_fs(&data[0], sizeof(data) / sizeof(data[0]), tests_log_level(),
-                    NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, "0" /* image_offset */
+  int ret = load_fs(&data[0], sizeof(data) / sizeof(data[0]), tests_log_level(), NULL /* cachesize*/,
+                    NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/, "0" /* image_offset */
   );
   EXPECT_EQ(1, ret);
   drop_fs();
@@ -83,9 +81,8 @@ TEST(LoadTests, tebako_load_invalid_offset)
 {
   int ret = load_fs(&gfsData[0],  // &data[0],
                     gfsSize,      // sizeof(data)/sizeof(data[0]),
-                    tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
-                    NULL /* mlock */, NULL /* decompress_ratio*/,
-                    "xxx" /* image_offset */
+                    tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                    NULL /* decompress_ratio*/, "xxx" /* image_offset */
   );
   EXPECT_EQ(1, ret);
   drop_fs();
@@ -93,9 +90,8 @@ TEST(LoadTests, tebako_load_invalid_offset)
 
 TEST(LoadTests, tebako_load_invalid_parameter)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, "invalid parameter" /*debuglevel*/,
-                    NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, NULL /* image_offset */
+  int ret = load_fs(&gfsData[0], gfsSize, "invalid parameter" /*debuglevel*/, NULL /* cachesize*/, NULL /* workers */,
+                    NULL /* mlock */, NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
   EXPECT_EQ(1, ret);
@@ -105,8 +101,7 @@ TEST(LoadTests, tebako_load_invalid_parameter)
 
 TEST(LoadTests, tebako_load_valid_filesystem)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(),
-                    NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
                     NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
@@ -140,8 +135,7 @@ TEST(LoadTests, tebako_open_not_loaded_filesystem)
 
 TEST(LoadTests, tebako_close_all_fd)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(),
-                    NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
                     NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
@@ -163,8 +157,7 @@ TEST(LoadTests, tebako_close_all_fd)
 
 TEST(LoadTests, tebako_close_all_dir)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(),
-                    NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
                     NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 

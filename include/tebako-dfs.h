@@ -75,10 +75,7 @@ struct options {
 };
 
 struct dwarfs_userdata {
-  dwarfs_userdata(std::ostream& os, const void* dt, const unsigned int sz)
-      : lgr{os}, data{dt}, size{sz}
-  {
-  }
+  dwarfs_userdata(std::ostream& os, const void* dt, const unsigned int sz) : lgr{os}, data{dt}, size{sz} {}
 
   const void* data;
   const unsigned int size;

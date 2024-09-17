@@ -68,8 +68,7 @@ typedef struct tebako_dirent {
 #else
 namespace tebako {
 typedef struct _tebako_dirent {
-  unsigned char
-      padding[offsetof(struct dirent, d_name) / sizeof(unsigned char)];
+  unsigned char padding[offsetof(struct dirent, d_name) / sizeof(unsigned char)];
   tebako_path_t d_name;
 } _tebako_dirent;
 
@@ -91,10 +90,7 @@ struct tebako_ds {
   size_t cache_size;
   int vfd;
 
-  tebako_ds(int fd)
-      : cache_size(0), cache_start(0), dir_position(-1), dir_size(0), vfd(fd)
-  {
-  }
+  tebako_ds(int fd) : cache_size(0), cache_start(0), dir_position(-1), dir_size(0), vfd(fd) {}
 
   int load_cache(int new_cache_start, bool set_pos = false) noexcept;
 };

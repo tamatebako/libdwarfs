@@ -56,13 +56,11 @@ class LnTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
-            NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
-            NULL /* image_offset */
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+            NULL /* decompress_ratio*/, NULL /* image_offset */
     );
 #ifdef WITH_LINK_TESTS
-    std::string tdp_template =
-        (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
+    std::string tdp_template = (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
     size_t l = tdp_template.length();
     char* dir_name = new char[l + 1];
     if (dir_name) {
@@ -108,8 +106,7 @@ TEST_F(LnTests, tebako_softlink)
 
   int ret = tebako_read(fh, readbuf, num2read);
   EXPECT_EQ(num2read, ret);
-  EXPECT_EQ(
-      0, strncmp(readbuf, "This is a file in the first directory", num2read));
+  EXPECT_EQ(0, strncmp(readbuf, "This is a file in the first directory", num2read));
 
   ret = tebako_close(fh);
   EXPECT_EQ(0, ret);
@@ -160,8 +157,7 @@ TEST_F(LnTests, tebako_hardlink)
 
   int ret = tebako_read(fh, readbuf, num2read);
   EXPECT_EQ(num2read, ret);
-  EXPECT_TRUE(strncmp(readbuf, "This is a file in the second directory",
-                      num2read) == 0);
+  EXPECT_TRUE(strncmp(readbuf, "This is a file in the second directory", num2read) == 0);
 
   ret = tebako_close(fh);
   EXPECT_EQ(0, ret);
@@ -209,11 +205,9 @@ TEST_F(LnTests, tebako_readlink_absolute_path)
 {
   char readbuf[32];
   const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
-  int ret =
-      tebako_readlink(TEBAKIZE_PATH("s-link-to-file-1"), readbuf, num2read);
+  int ret = tebako_readlink(TEBAKIZE_PATH("s-link-to-file-1"), readbuf, num2read);
   EXPECT_EQ(num2read, ret);
-  EXPECT_TRUE(
-      strncmp(readbuf, "directory-1/file-in-directory-1.txt", num2read) == 0);
+  EXPECT_TRUE(strncmp(readbuf, "directory-1/file-in-directory-1.txt", num2read) == 0);
 }
 
 TEST_F(LnTests, tebako_readlink_relative_path)
@@ -223,16 +217,14 @@ TEST_F(LnTests, tebako_readlink_relative_path)
   EXPECT_EQ(0, tebako_chdir(TEBAKIZE_PATH("")));
   int ret = tebako_readlink("s-link-to-file-1", readbuf, num2read);
   EXPECT_EQ(num2read, ret);
-  EXPECT_TRUE(
-      strncmp(readbuf, "directory-1/file-in-directory-1.txt", num2read) == 0);
+  EXPECT_TRUE(strncmp(readbuf, "directory-1/file-in-directory-1.txt", num2read) == 0);
 }
 
 TEST_F(LnTests, tebako_readlink_absolute_path_pass_through)
 {
   char readbuf[32];
   const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
-  int ret =
-      tebako_readlink((tmp_path / "link2false").c_str(), readbuf, num2read);
+  int ret = tebako_readlink((tmp_path / "link2false").c_str(), readbuf, num2read);
   EXPECT_EQ(strlen("/bin/false"), ret);
   EXPECT_TRUE(strncmp(readbuf, "/bin/false", ret) == 0);
 }
@@ -374,8 +366,7 @@ TEST_F(LnTests, tebako_scan_dir_outside_of_memfs)
     std::string fname = "a-file-outside-of-memfs.txt";
     bool found = false;
     struct dirent** namelist;
-    int n = tebako_scandir(TEBAKIZE_PATH("s-dir-outside-of-memfs"), &namelist,
-                           NULL, alphasort);
+    int n = tebako_scandir(TEBAKIZE_PATH("s-dir-outside-of-memfs"), &namelist, NULL, alphasort);
     EXPECT_EQ(n, 3);
     EXPECT_TRUE(namelist != NULL);
     if (n > 0 && namelist != NULL) {
@@ -399,8 +390,7 @@ TEST_F(LnTests, tebako_scan_dir_outside_of_memfs)
 TEST_F(LnTests, tebako_fstatat_link_follow_absolute)
 {
   struct STAT_TYPE buf;
-  int ret =
-      tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, 0);
+  int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, 0);
   EXPECT_EQ(0, ret);
   EXPECT_EQ(strlen("This is a file in the first directory"),
             buf.st_size);  // Content of the file
@@ -409,8 +399,7 @@ TEST_F(LnTests, tebako_fstatat_link_follow_absolute)
 TEST_F(LnTests, tebako_fstatat_link_nofollow_absolute)
 {
   struct STAT_TYPE buf;
-  int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf,
-                           AT_SYMLINK_NOFOLLOW);
+  int ret = tebako_fstatat(AT_FDCWD, TEBAKIZE_PATH("s-link-to-file-1"), &buf, AT_SYMLINK_NOFOLLOW);
   EXPECT_EQ(0, ret);
   EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"),
             buf.st_size);  // The link itself

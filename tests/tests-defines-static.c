@@ -83,9 +83,8 @@ static int open_3_args_c_test(void);
 static int openat_c_test(int fh);
 #endif
 
-#if (defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && \
-     defined(TEBAKO_HAS_READDIR) && defined(TEBAKO_HAS_SEEKDIR) &&  \
-     defined(TEBAKO_HAS_TELLDIR)) ||                                \
+#if (defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && defined(TEBAKO_HAS_READDIR) && \
+     defined(TEBAKO_HAS_SEEKDIR) && defined(TEBAKO_HAS_TELLDIR)) ||                                \
     defined(RB_W32)
 static int dirio_c_test(void);
 #endif
@@ -131,8 +130,7 @@ int main(int argc, char** argv)
   _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
 
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(),
-                    NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
                     NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
@@ -158,8 +156,7 @@ int main(int argc, char** argv)
       printf("failing\n");
 
     r = getcwd(NULL, 0);
-    printf("A call to 'getcwd' returned %s ('%s' expected)\n", r,
-           TEBAKIZE_PATH("directory-1"));
+    printf("A call to 'getcwd' returned %s ('%s' expected)\n", r, TEBAKIZE_PATH("directory-1"));
     rOK &= (strstr(r, "directory-1") != NULL);
     free(r);
     if (!rOK)
@@ -177,8 +174,7 @@ int main(int argc, char** argv)
       printf("failing\n");
 
     fh = open(TEBAKIZE_PATH("file.txt"), O_RDONLY);
-    printf("A call to 'open' returned %i (non negative file handle expected)\n",
-           fh);
+    printf("A call to 'open' returned %i (non negative file handle expected)\n", fh);
     rOK &= (fh >= 0);
     if (!rOK)
       printf("failing\n");
@@ -228,9 +224,8 @@ int main(int argc, char** argv)
     if (!rOK)
       printf("failing\n");
 
-#if defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && \
-    defined(TEBAKO_HAS_READDIR) && defined(TEBAKO_HAS_SEEKDIR) &&  \
-    defined(TEBAKO_HAS_TELLDIR)
+#if defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && defined(TEBAKO_HAS_READDIR) && \
+    defined(TEBAKO_HAS_SEEKDIR) && defined(TEBAKO_HAS_TELLDIR)
     rOK &= dirio_c_test();
     if (!rOK)
       printf("failing\n");
@@ -366,12 +361,10 @@ static int readv_c_test(int fh)
   iovcnt = sizeof(iov) / sizeof(struct iovec);
 
   s = readv(fh, &iov[0], iovcnt);
-  printf("A call to 'readv' returned %li (7 expected)\n",
-         s); /* Skipped 'Ju', read 'st', ' a file' remains */
+  printf("A call to 'readv' returned %li (7 expected)\n", s); /* Skipped 'Ju', read 'st', ' a file' remains */
   rOK &= (s == 7);
 
-  printf("buf0 = '%.*s'(' a fi' expected); buf1 = '%.*s'('le' expected)\n",
-         buflen, buf0, l - buflen, buf1);
+  printf("buf0 = '%.*s'(' a fi' expected); buf1 = '%.*s'('le' expected)\n", buflen, buf0, l - buflen, buf1);
   rOK &= (strncmp(buf0, pattern, buflen) == 0);
   rOK &= (strncmp(buf1, pattern + buflen, l - buflen) == 0);
   return rOK;
@@ -382,13 +375,10 @@ static int open_3_args_c_test(void)
 {
   int rOK = true;
   int ret = unlink(__AT_TMP__("some-tebako-test-file.txt"));
-  printf(
-      "A call to 'unlink' returned %i (-1 supposed but 0 is also possible)\n",
-      ret);
+  printf("A call to 'unlink' returned %i (-1 supposed but 0 is also possible)\n", ret);
   // ret is not checked intensionally !!!
 
-  ret = open(__AT_TMP__("some-tebako-test-file.txt"), O_RDWR | O_CREAT,
-             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  ret = open(__AT_TMP__("some-tebako-test-file.txt"), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   printf(
       "A call to 'open' with 3 arguments returned %i (non negative file handle "
       "expected)\n",
@@ -407,9 +397,8 @@ static int open_3_args_c_test(void)
   return rOK;
 }
 
-#if defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && \
-    defined(TEBAKO_HAS_READDIR) && defined(TEBAKO_HAS_SEEKDIR) &&  \
-    defined(TEBAKO_HAS_TELLDIR)
+#if defined(TEBAKO_HAS_OPENDIR) && defined(TEBAKO_HAS_CLOSEDIR) && defined(TEBAKO_HAS_READDIR) && \
+    defined(TEBAKO_HAS_SEEKDIR) && defined(TEBAKO_HAS_TELLDIR)
 static int dirio_c_test(void)
 {
   int rOK = true;
@@ -437,16 +426,13 @@ static int dirio_c_test(void)
   printf("A call to 'readdir'  returned %p (not NULL expected)\n", entry);
   rOK &= (entry != NULL);
   if (entry != NULL) {
-    printf("Filename: %s ('file-in-directory-2.txt' expected)\n",
-           entry->d_name);
+    printf("Filename: %s ('file-in-directory-2.txt' expected)\n", entry->d_name);
     rOK &= (strcmp(entry->d_name, "file-in-directory-2.txt") == 0);
   }
 
   rewinddir(dirp);
   pos = telldir(dirp);
-  printf(
-      "A call to 'telldir' after 'rewinddir(dirp)' returned %li (0 expected)\n",
-      pos);
+  printf("A call to 'telldir' after 'rewinddir(dirp)' returned %li (0 expected)\n", pos);
   rOK &= (pos == 0L);
 
   int ret = closedir(dirp);
@@ -462,8 +448,7 @@ static int dirio_fd_c_test(void)
 {
   int rOK = true;
   int fh = open(TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
-  printf("A call to 'open' returned %i (non negative file handle expected)\n",
-         fh);
+  printf("A call to 'open' returned %i (non negative file handle expected)\n", fh);
   rOK &= (fh >= 0);
 
   DIR* dirp = fdopendir(fh);
@@ -505,8 +490,7 @@ static int scandir_c_test(void)
 static int dlopen_c_test(void)
 {
   int rOK = true;
-  void* handle = dlopen(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__),
-                        RTLD_LAZY | RTLD_GLOBAL);
+  void* handle = dlopen(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__), RTLD_LAZY | RTLD_GLOBAL);
   rOK &= (handle != NULL);
   printf("A call to 'dlopen' returned %p (not NULL expected)\n", handle);
   if (handle != NULL) {
@@ -527,8 +511,7 @@ static int link_c_tests(void)
   printf("A call to 'lstat' returned %i (0 expected)\n", ret);
   rOK &= (ret == 0);
 
-  ret = readlink(TEBAKIZE_PATH("s-link-to-file-1"), buf,
-                 sizeof(buf) / sizeof(buf[0]));
+  ret = readlink(TEBAKIZE_PATH("s-link-to-file-1"), buf, sizeof(buf) / sizeof(buf[0]));
   printf("A call to 'readlink' returned %i (35 expected)\n", ret);
   rOK &= (ret == 35);
   return rOK;

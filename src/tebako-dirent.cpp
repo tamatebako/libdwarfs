@@ -154,14 +154,12 @@ int sync_tebako_dstable::readdir(uintptr_t dirp, tebako_dirent*& entry) noexcept
         ret = DWARFS_IO_CONTINUE;
       }
       else {
-        if (p_ds->second->dir_position >
-                p_ds->second->cache_start + p_ds->second->cache_size - 1 ||
+        if (p_ds->second->dir_position > p_ds->second->cache_start + p_ds->second->cache_size - 1 ||
             p_ds->second->dir_position < p_ds->second->cache_start) {
           try {
             ret = p_ds->second->load_cache(p_ds->second->dir_position, false);
             if (ret == DWARFS_IO_CONTINUE) {
-              entry = &p_ds->second->cache[p_ds->second->dir_position++ -
-                                           p_ds->second->cache_start];
+              entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start];
             }
             else {
               TEBAKO_SET_LAST_ERROR(ret);
@@ -173,8 +171,7 @@ int sync_tebako_dstable::readdir(uintptr_t dirp, tebako_dirent*& entry) noexcept
           }
         }
         else {
-          entry = &p_ds->second->cache[p_ds->second->dir_position++ -
-                                       p_ds->second->cache_start];
+          entry = &p_ds->second->cache[p_ds->second->dir_position++ - p_ds->second->cache_start];
           ret = DWARFS_IO_CONTINUE;
         }
       }
@@ -185,8 +182,8 @@ int sync_tebako_dstable::readdir(uintptr_t dirp, tebako_dirent*& entry) noexcept
 
 int tebako_ds::load_cache(int new_cache_start, bool set_pos) noexcept
 {
-  int ret = sync_tebako_fdtable::get_tebako_fdtable().readdir(
-      vfd, cache, new_cache_start, TEBAKO_DIR_CACHE_SIZE, cache_size, dir_size);
+  int ret = sync_tebako_fdtable::get_tebako_fdtable().readdir(vfd, cache, new_cache_start, TEBAKO_DIR_CACHE_SIZE,
+                                                              cache_size, dir_size);
 
   if (ret == DWARFS_IO_CONTINUE) {
     if (set_pos) {

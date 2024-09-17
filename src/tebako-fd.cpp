@@ -45,9 +45,7 @@ sync_tebako_fdtable& sync_tebako_fdtable::get_tebako_fdtable(void)
   return fd_table;
 }
 
-int sync_tebako_fdtable::open(const char* path,
-                              int flags,
-                              std::string& lnk) noexcept
+int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk) noexcept
 {
   int ret = DWARFS_IO_ERROR;
   if (flags & (O_RDWR | O_WRONLY | O_TRUNC)) {
@@ -148,12 +146,10 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
         //	....
         //	However, Linux does not support O_SEARCH (
         //  So, We will assume that it is not set
-        if (dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid()) ==
-            DWARFS_IO_CONTINUE) {
+        if (dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid()) == DWARFS_IO_CONTINUE) {
           try {
             auto fd = make_shared<tebako_fd>(path);
-            if (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st,
-                                           (flags & O_NOFOLLOW) == 0) ==
+            if (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st, (flags & O_NOFOLLOW) == 0) ==
                 DWARFS_IO_CONTINUE) {
               if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
                 // [ENOTDIR] ... or O_DIRECTORY was specified and the path
@@ -218,8 +214,7 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
 
 int sync_tebako_fdtable::close(int vfd) noexcept
 {
-  return ((*s_tebako_fdtable.wlock()).erase(vfd) > 0) ? DWARFS_IO_CONTINUE
-                                                      : DWARFS_INVALID_FD;
+  return ((*s_tebako_fdtable.wlock()).erase(vfd) > 0) ? DWARFS_IO_CONTINUE : DWARFS_INVALID_FD;
 }
 
 void sync_tebako_fdtable::close_all(void) noexcept
@@ -256,8 +251,7 @@ ssize_t sync_tebako_fdtable::read(int vfd, void* buf, size_t nbyte) noexcept
   auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
   if (p_fd != p_fdtable->end()) {
-    ret = dwarfs_inode_read(p_fd->second->st.st_ino, buf, nbyte,
-                            p_fd->second->pos);
+    ret = dwarfs_inode_read(p_fd->second->st.st_ino, buf, nbyte, p_fd->second->pos);
     if (ret > 0) {
       p_fd->second->pos += ret;
     }
@@ -265,16 +259,12 @@ ssize_t sync_tebako_fdtable::read(int vfd, void* buf, size_t nbyte) noexcept
   return ret;
 }
 
-ssize_t sync_tebako_fdtable::pread(int vfd,
-                                   void* buf,
-                                   size_t nbyte,
-                                   off_t offset) noexcept
+ssize_t sync_tebako_fdtable::pread(int vfd, void* buf, size_t nbyte, off_t offset) noexcept
 {
   auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
-  return (p_fd != p_fdtable->end())
-             ? dwarfs_inode_read(p_fd->second->st.st_ino, buf, nbyte, offset)
-             : DWARFS_INVALID_FD;
+  return (p_fd != p_fdtable->end()) ? dwarfs_inode_read(p_fd->second->st.st_ino, buf, nbyte, offset)
+                                    : DWARFS_INVALID_FD;
 }
 
 int sync_tebako_fdtable::readdir(int vfd,
@@ -287,15 +277,12 @@ int sync_tebako_fdtable::readdir(int vfd,
   auto p_fdtable = s_tebako_fdtable.rlock();
   auto p_fd = p_fdtable->find(vfd);
   return (p_fd != p_fdtable->end())
-             ? dwarfs_inode_readdir(p_fd->second->st.st_ino, cache, cache_start,
-                                    buffer_size, cache_size, dir_size)
+             ? dwarfs_inode_readdir(p_fd->second->st.st_ino, cache, cache_start, buffer_size, cache_size, dir_size)
              : DWARFS_INVALID_FD;
 }
 
 #ifdef TEBAKO_HAS_READV
-ssize_t sync_tebako_fdtable::readv(int vfd,
-                                   const struct ::iovec* iov,
-                                   int iovcnt) noexcept
+ssize_t sync_tebako_fdtable::readv(int vfd, const struct ::iovec* iov, int iovcnt) noexcept
 {
   // Some specific error conditions:
   // EOVERFLOW - the resulting file offset cannot be represented in an off_t.
@@ -316,9 +303,7 @@ ssize_t sync_tebako_fdtable::readv(int vfd,
     if (p_fd != p_fdtable->end()) {
       ret = 0;
       for (int i = 0; i < iovcnt; ++i) {
-        ssize_t ssize =
-            dwarfs_inode_read(p_fd->second->st.st_ino, iov[i].iov_base,
-                              iov[i].iov_len, p_fd->second->pos);
+        ssize_t ssize = dwarfs_inode_read(p_fd->second->st.st_ino, iov[i].iov_base, iov[i].iov_len, p_fd->second->pos);
         if (ssize > 0) {
           if (p_fd->second->pos > std::numeric_limits<off_t>::max() - ssize) {
             TEBAKO_SET_LAST_ERROR(EOVERFLOW);
@@ -372,8 +357,7 @@ off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence) noexcept
           ret = DWARFS_IO_ERROR;
         }
         else {
-          if (offset > 0 &&
-              p_fd->second->pos > std::numeric_limits<off_t>::max() - offset) {
+          if (offset > 0 && p_fd->second->pos > std::numeric_limits<off_t>::max() - offset) {
             // [EOVERFLOW] The resulting file offset would be a value which
             // cannot be represented correctly in an object of type off_t.
             TEBAKO_SET_LAST_ERROR(EOVERFLOW);
@@ -392,8 +376,7 @@ off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence) noexcept
           ret = DWARFS_IO_ERROR;
         }
         else {
-          if (offset > 0 && p_fd->second->st.st_size >
-                                std::numeric_limits<off_t>::max() - offset) {
+          if (offset > 0 && p_fd->second->st.st_size > std::numeric_limits<off_t>::max() - offset) {
             // [EOVERFLOW] The resulting file offset would be a value which
             // cannot be represented correctly in an object of type off_t.
             TEBAKO_SET_LAST_ERROR(EOVERFLOW);
@@ -414,10 +397,7 @@ off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence) noexcept
   return ret;
 }
 
-int sync_tebako_fdtable::fstatat(int vfd,
-                                 const char* path,
-                                 struct stat* st,
-                                 bool follow) noexcept
+int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st, bool follow) noexcept
 {
   struct stat stfd;
   int ret = fstat(vfd, &stfd);

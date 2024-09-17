@@ -38,12 +38,9 @@ char* tebako_path_assign(tebako_path_t out, const std::string& in)
   return out;
 }
 
-static char* tebako_path_assign(tebako_path_t out,
-                                const fs::path& in,
-                                bool win_separator = false)
+static char* tebako_path_assign(tebako_path_t out, const fs::path& in, bool win_separator = false)
 {
-  return tebako_path_assign(out,
-                            win_separator ? in.string() : in.generic_string());
+  return tebako_path_assign(out, win_separator ? in.string() : in.generic_string());
 }
 
 //  Current working direcory (within tebako memfs)
@@ -127,8 +124,7 @@ class tebako_path_s_l : public tebako_path_s {
   virtual const char* expand_path(tebako_path_t expanded_path, const char* path)
   {
     tebako_path_s::expand_path(expanded_path, path);
-    LOG_TRACE << __func__ << " expanding [ " << (path ? path : NULL) << " --> "
-              << expanded_path << " ]";
+    LOG_TRACE << __func__ << " expanding [ " << (path ? path : NULL) << " --> " << expanded_path << " ]";
     return expanded_path;
   }
 };
@@ -139,11 +135,8 @@ void tebako_init_cwd(dwarfs::logger& lgr, bool need_debug_policy)
 {
   auto locked = tebako_cwd.wlock();
   //	*locked = new tebako_path_s;
-  *locked = (need_debug_policy)
-                ? static_cast<tebako_path_s*>(
-                      new tebako_path_s_l<dwarfs::debug_logger_policy>(lgr))
-                : static_cast<tebako_path_s*>(
-                      new tebako_path_s_l<dwarfs::prod_logger_policy>(lgr));
+  *locked = (need_debug_policy) ? static_cast<tebako_path_s*>(new tebako_path_s_l<dwarfs::debug_logger_policy>(lgr))
+                                : static_cast<tebako_path_s*>(new tebako_path_s_l<dwarfs::prod_logger_policy>(lgr));
 }
 
 void tebako_drop_cwd(void)

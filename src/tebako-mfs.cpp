@@ -87,10 +87,7 @@ size_t mfs::size() const
   return size_;
 }
 
-mfs::mfs(const void* addr, size_t size)
-    : size_(size), addr_(addr), page_size_(sysconf(_SC_PAGESIZE))
-{
-}
+mfs::mfs(const void* addr, size_t size) : size_(size), addr_(addr), page_size_(sysconf(_SC_PAGESIZE)) {}
 
 std::filesystem::path const& mfs::path() const
 {

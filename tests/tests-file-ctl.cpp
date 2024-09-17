@@ -50,9 +50,8 @@ class FileCtlTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/,
-            NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/,
-            NULL /* image_offset */
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+            NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
@@ -212,8 +211,7 @@ TEST_F(FileCtlTests, tebako_stat_relative_path_pass_through)
 
 TEST_F(FileCtlTests, tebako_open_fstat_close_absolute_path)
 {
-  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"),
-                       O_RDONLY);
+  int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
   if (fh > 0) {
     struct STAT_TYPE st;
@@ -287,8 +285,7 @@ TEST_F(FileCtlTests, tebako_fstatat_absolute_path)
   EXPECT_LT(0, fd);
   if (fd > 0) {
     struct STAT_TYPE st;
-    int ret = tebako_fstatat(
-        fd, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), &st, 0);
+    int ret = tebako_fstatat(fd, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), &st, 0);
     EXPECT_EQ(0, ret);
     ret = tebako_close(fd);
     EXPECT_EQ(0, ret);
@@ -336,8 +333,7 @@ TEST_F(FileCtlTests, tebako_access_relative_path_dot_dot)
 {
   int ret = tebako_chdir(TEBAKIZE_PATH("//directory-3/level-1//"));
   EXPECT_EQ(0, ret);
-  ret = tebako_access("level-2/../../../directory-2/file-in-directory-2.txt",
-                      R_OK);
+  ret = tebako_access("level-2/../../../directory-2/file-in-directory-2.txt", R_OK);
   EXPECT_EQ(0, ret);
 }
 
@@ -363,11 +359,9 @@ TEST_F(FileCtlTests, tebako_getattrlist_absolute_path)
 
   memset(&attrList, 0, sizeof(attrList));
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
-  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT |
-                     ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
+  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT | ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
 
-  int ret = tebako_getattrlist(TEBAKIZE_PATH("file.txt"), &attrList, &attrBuf,
-                               sizeof(attrBuf), 0);
+  int ret = tebako_getattrlist(TEBAKIZE_PATH("file.txt"), &attrList, &attrBuf, sizeof(attrBuf), 0);
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(ENOTSUP, errno);
 }
@@ -379,12 +373,10 @@ TEST_F(FileCtlTests, tebako_getattrlist_relative_path)
 
   memset(&attrList, 0, sizeof(attrList));
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
-  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT |
-                     ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
+  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT | ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
   int ret = tebako_chdir(TEBAKIZE_PATH("directory-1"));
   EXPECT_EQ(0, ret);
-  ret = tebako_getattrlist(TEBAKIZE_PATH("file-in-directory-1.txt"), &attrList,
-                           &attrBuf, sizeof(attrBuf), 0);
+  ret = tebako_getattrlist(TEBAKIZE_PATH("file-in-directory-1.txt"), &attrList, &attrBuf, sizeof(attrBuf), 0);
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(ENOTSUP, errno);
 }
@@ -396,8 +388,7 @@ TEST_F(FileCtlTests, tebako_getattrlist_nullptr)
 
   memset(&attrList, 0, sizeof(attrList));
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
-  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT |
-                     ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
+  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT | ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
 
   int ret = tebako_getattrlist(NULL, &attrList, &attrBuf, sizeof(attrBuf), 0);
   EXPECT_EQ(-1, ret);
@@ -411,11 +402,9 @@ TEST_F(FileCtlTests, tebako_getattrlist_pass_through_no_file)
 
   memset(&attrList, 0, sizeof(attrList));
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
-  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT |
-                     ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
+  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT | ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
 
-  int ret = tebako_getattrlist("/bin/no-file", &attrList, &attrBuf,
-                               sizeof(attrBuf), 0);
+  int ret = tebako_getattrlist("/bin/no-file", &attrList, &attrBuf, sizeof(attrBuf), 0);
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(ENOENT, errno);
 }
@@ -427,11 +416,9 @@ TEST_F(FileCtlTests, tebako_getattrlist_pass_through)
 
   memset(&attrList, 0, sizeof(attrList));
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
-  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT |
-                     ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
+  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT | ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
 
-  int ret =
-      tebako_getattrlist(shell_file, &attrList, &attrBuf, sizeof(attrBuf), 0);
+  int ret = tebako_getattrlist(shell_file, &attrList, &attrBuf, sizeof(attrBuf), 0);
   EXPECT_EQ(0, ret);
 }
 #endif
@@ -444,8 +431,7 @@ TEST_F(FileCtlTests, tebako_fgetattrlist)
 
   memset(&attrList, 0, sizeof(attrList));
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
-  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT |
-                     ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
+  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT | ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
 
   int ret = tebako_chdir(TEBAKIZE_PATH("directory-1"));
   EXPECT_EQ(0, ret);
@@ -465,8 +451,7 @@ TEST_F(FileCtlTests, tebako_fgetattrlist_path_through)
 
   memset(&attrList, 0, sizeof(attrList));
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
-  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT |
-                     ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
+  attrList.volattr = ATTR_VOL_INFO | ATTR_VOL_FILECOUNT | ATTR_VOL_DIRCOUNT | ATTR_VOL_MOUNTPOINT | ATTR_VOL_NAME;
 
   int fh = tebako_open(2, shell_file, O_RDONLY);
   EXPECT_LT(0, fh);
@@ -481,15 +466,13 @@ TEST_F(FileCtlTests, tebako_within_tebako_memfs)
 {
   EXPECT_EQ(-1, within_tebako_memfs(TEBAKIZE_PATH("")));
   EXPECT_EQ(-1, within_tebako_memfs(TEBAKIZE_PATH("directory-1")));
-  EXPECT_EQ(-1, within_tebako_memfs(
-                    TEBAKIZE_PATH("directory-1/file-in-directory-1.txt")));
+  EXPECT_EQ(-1, within_tebako_memfs(TEBAKIZE_PATH("directory-1/file-in-directory-1.txt")));
   EXPECT_EQ(0, within_tebako_memfs(shell_file));
 }
 
 TEST_F(FileCtlTests, tebako_file_load_ok)
 {
-  EXPECT_EQ(-1, tebako_file_load_ok(
-                    TEBAKIZE_PATH("directory-1/file-in-directory-1.txt")));
+  EXPECT_EQ(-1, tebako_file_load_ok(TEBAKIZE_PATH("directory-1/file-in-directory-1.txt")));
   EXPECT_EQ(0, within_tebako_memfs(shell_file));
 }
 

@@ -43,10 +43,7 @@ struct tebako_fd {
   int lock;
   int* handle;
 
-  tebako_fd(const char* p) : filename(p), pos(0), lock(0), handle(NULL)
-  {
-    memset(&st, 0, sizeof(st));
-  }
+  tebako_fd(const char* p) : filename(p), pos(0), lock(0), handle(NULL) { memset(&st, 0, sizeof(st)); }
   ~tebako_fd()
   {
     if (handle) {
@@ -83,10 +80,7 @@ class sync_tebako_fdtable {
   ssize_t readv(int vfd, const struct ::iovec* iov, int iovcnt) noexcept;
 #endif
   off_t lseek(int vfd, off_t offset, int whence) noexcept;
-  int fstatat(int vfd,
-              const char* path,
-              struct stat* buf,
-              bool follow) noexcept;
+  int fstatat(int vfd, const char* path, struct stat* buf, bool follow) noexcept;
   int flock(int vfd, int operation) noexcept;
   bool is_valid_file_descriptor(int vfd) noexcept;
 };
