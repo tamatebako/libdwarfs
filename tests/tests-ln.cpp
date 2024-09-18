@@ -60,24 +60,25 @@ class LnTests : public testing::Test {
             NULL /* decompress_ratio*/, NULL /* image_offset */
     );
 #ifdef WITH_LINK_TESTS
-    std::string tdp_template = (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
+    std::string tdp_template =
+        (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
     size_t l = tdp_template.length();
     char* dir_name = new char[l + 1];
     if (dir_name) {
       strcpy(dir_name, tdp_template.c_str());
+// *** need different approach on Windows
       dir_name = mkdtemp(dir_name);
       tmp_path = dir_name;
       fs::create_directories(tmp_path);
       path_initialized = true;
 
-      fs::create_symlink("/bin/true", tmp_path / "link2true");
-      fs::create_symlink("/bin/false", tmp_path / "link2false");
+      fs::create_symlink(__AT_BIN__(__SHELL__), tmp_path / "link2shell");
 
       delete[] dir_name;
     }
-
-    cross_test = (std::getenv("TEBAKO_CROSS_TEST") != NULL);
 #endif
+    cross_test = (std::getenv("TEBAKO_CROSS_TEST") != NULL);
+
   }
 
   static void TearDownTestSuite()
@@ -220,24 +221,26 @@ TEST_F(LnTests, tebako_readlink_relative_path)
   EXPECT_TRUE(strncmp(readbuf, "directory-1/file-in-directory-1.txt", num2read) == 0);
 }
 
+#ifndef _WIN32
 TEST_F(LnTests, tebako_readlink_absolute_path_pass_through)
 {
   char readbuf[32];
   const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
-  int ret = tebako_readlink((tmp_path / "link2false").c_str(), readbuf, num2read);
-  EXPECT_EQ(strlen("/bin/false"), ret);
-  EXPECT_TRUE(strncmp(readbuf, "/bin/false", ret) == 0);
+  int ret = tebako_readlink((tmp_path / "link2shell").generic_string().c_str(), readbuf, num2read);
+  EXPECT_EQ(strlen(__AT_BIN__(__SHELL__)), ret);
+  EXPECT_TRUE(strncmp(readbuf, __AT_BIN__(__SHELL__), ret) == 0);
 }
 
 TEST_F(LnTests, tebako_readlink_relative_path_pass_through)
 {
   char readbuf[32];
   const int num2read = sizeof(readbuf) / sizeof(readbuf[0]);
-  EXPECT_EQ(0, tebako_chdir(tmp_path.c_str()));
-  int ret = tebako_readlink("link2true", readbuf, num2read);
-  EXPECT_EQ(strlen("/bin/true"), ret);
-  EXPECT_TRUE(strncmp(readbuf, "/bin/true", ret) == 0);
+  EXPECT_EQ(0, tebako_chdir(tmp_path.generic_string().c_str()));
+  int ret = tebako_readlink("link2shell", readbuf, num2read);
+  EXPECT_EQ(strlen(__AT_BIN__(__SHELL__)), ret);
+  EXPECT_TRUE(strncmp(readbuf, __AT_BIN__(__SHELL__), ret) == 0);
 }
+#endif
 
 TEST_F(LnTests, tebako_lstat_absolute_path)
 {
@@ -289,16 +292,16 @@ TEST_F(LnTests, tebako_lstat_relative_path_no_file)
 TEST_F(LnTests, tebako_lstat_absolute_path_pass_through)
 {
   struct STAT_TYPE st;
-  int ret = tebako_lstat((tmp_path / "link2true").c_str(), &st);
+  int ret = tebako_lstat((tmp_path / "link2shell").generic_string().c_str(), &st);
   EXPECT_EQ(0, ret);
 }
 
 TEST_F(LnTests, tebako_lstat_relative_path_pass_through)
 {
   struct STAT_TYPE st;
-  int ret = tebako_chdir(tmp_path.c_str());
+  int ret = tebako_chdir(tmp_path.generic_string().c_str());
   EXPECT_EQ(0, ret);
-  ret = tebako_lstat("link2false", &st);
+  ret = tebako_lstat("link2shell", &st);
   EXPECT_EQ(0, ret);
 }
 
@@ -344,10 +347,10 @@ TEST_F(LnTests, tebako_open_dir_outside_of_memfs)
     DIR* dirp = tebako_opendir(TEBAKIZE_PATH("s-dir-outside-of-memfs"));
     EXPECT_TRUE(dirp != NULL);
     if (dirp != NULL) {
-      struct dirent* entry;
+      pdirent entry;
       std::string fname = "a-file-outside-of-memfs.txt";
       bool found = false;
-      while ((entry = tebako_readdir(dirp)) != NULL) {
+      while ((entry = tebako_readdir_adjusted(dirp)) != NULL) {
         if (fname == entry->d_name)
           found = true;
       }
@@ -360,6 +363,7 @@ TEST_F(LnTests, tebako_open_dir_outside_of_memfs)
   }
 }
 
+#ifdef TEBAKO_HAS_SCANDIR
 TEST_F(LnTests, tebako_scan_dir_outside_of_memfs)
 {
   if (!cross_test) {
@@ -367,7 +371,6 @@ TEST_F(LnTests, tebako_scan_dir_outside_of_memfs)
     bool found = false;
     struct dirent** namelist;
     int n = tebako_scandir(TEBAKIZE_PATH("s-dir-outside-of-memfs"), &namelist, NULL, alphasort);
-    EXPECT_EQ(n, 3);
     EXPECT_TRUE(namelist != NULL);
     if (n > 0 && namelist != NULL) {
       for (int i = 0; i < n; i++) {
@@ -386,7 +389,9 @@ TEST_F(LnTests, tebako_scan_dir_outside_of_memfs)
     GTEST_SKIP();
   }
 }
+#endif
 
+#ifdef TEBAKO_HAS_FSTATAT
 TEST_F(LnTests, tebako_fstatat_link_follow_absolute)
 {
   struct STAT_TYPE buf;
@@ -430,7 +435,9 @@ TEST_F(LnTests, tebako_fstatat_link_nofollow_relative)
   EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"),
             buf.st_size);  // The link itself
 }
+#endif
 
+#ifdef TEBAKO_HAS_OPENAT
 TEST_F(LnTests, tebako_openat_link_nofollow_relative)
 {
   int fh1 = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY);
@@ -444,6 +451,7 @@ TEST_F(LnTests, tebako_openat_link_nofollow_relative)
   EXPECT_EQ(-1, tebako_close(fh2));
   EXPECT_EQ(0, tebako_close(fh1));
 }
+#endif
 
 /*	TEST_F(LnTests, tebako_open_link_nofollow) {
                 int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-file-1"),

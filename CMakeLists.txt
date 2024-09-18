@@ -926,14 +926,19 @@ if(WITH_TESTS)
   add_dependencies(PACKAGED_FILESYSTEM_STEP_1 empty)
   add_dependencies(dwarfs-wr PACKAGED_FILESYSTEM_STEP_1)
 
+  set(TESTS_OUTSIDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files")
+
   if (WITH_LINK_TESTS)
     add_custom_target(PACKAGED_FILESYSTEM_STEP_2 ALL
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} rm -rf h-link-to-file-2 s-link-to-file-1 s-link-to-dir-1 s-link-outside-of-memfs s-dir-outside-of-memfs
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln directory-2/file-in-directory-2.txt h-link-to-file-2
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-1/file-in-directory-1.txt s-link-to-file-1
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s directory-2 s-link-to-dir-1
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/a-file-outside-of-memfs.txt s-link-outside-of-memfs
-      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files s-dir-outside-of-memfs
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f directory-2/file-in-directory-2.txt h-link-to-file-2
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s directory-1/file-in-directory-1.txt s-link-to-file-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s directory-2 s-link-to-dir-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/a-file-outside-of-memfs.txt s-link-outside-of-memfs
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files s-dir-outside-of-memfs
+      COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/o-link-outside-of-memfs
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/a-file-outside-of-memfs.txt
+                                                                  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/o-link-outside-of-memfs
     )
     add_dependencies(PACKAGED_FILESYSTEM_STEP_2 PACKAGED_FILESYSTEM_STEP_1)
 

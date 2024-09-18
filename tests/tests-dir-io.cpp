@@ -30,20 +30,6 @@
 #include "tests.h"
 #include <tebako-common.h>
 
-#if defined(RB_W32)
-typedef struct direct* pdirent;
-static pdirent tebako_readdir_adjusted(DIR* dirp)
-{
-  return tebako_readdir(dirp, NULL);
-}
-#else
-typedef struct dirent* pdirent;
-static pdirent tebako_readdir_adjusted(DIR* dirp)
-{
-  return tebako_readdir(dirp);
-}
-#endif
-
 namespace {
 class DirIOTests : public testing::Test {
  protected:
@@ -109,9 +95,18 @@ TEST_F(DirIOTests, tebako_fdopendir_not_invalid_handle)
   EXPECT_EQ(NULL, dirp);
   EXPECT_EQ(EBADF, errno);
 }
+
+TEST_F(DirIOTests, tebako_fdopendir_closedir_outside)
+{
+  int fh = tebako_open(2, __BIN__, O_RDONLY);
+  EXPECT_LT(0, fh);
+  DIR* dirp = tebako_fdopendir(fh);
+  EXPECT_TRUE(dirp != NULL);
+  EXPECT_EQ(0, tebako_closedir(dirp));
+}
 #endif
 
-#ifdef TEBAKO_HAS_DIRFD
+#if defined(TEBAKO_HAS_DIRFD) && defined(TEBAKO_HAS_FDOPENDIR)
 TEST_F(DirIOTests, tebako_fdopendir_dirfd_closedir)
 {
   int fh = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY);
@@ -122,6 +117,19 @@ TEST_F(DirIOTests, tebako_fdopendir_dirfd_closedir)
   EXPECT_EQ(0, tebako_closedir(dirp));
 }
 #endif
+
+#if defined(TEBAKO_HAS_DIRFD)
+TEST_F(DirIOTests, tebako_dirfd_invalid_dirp)
+{
+  uint some_uint;
+  int fh = tebako_dirfd(reinterpret_cast<DIR*>(&some_uint));
+  EXPECT_EQ(-1, fh);
+  // IMHO it shall be EINVAL
+  // https://man7.org/linux/man-pages/man3/dirfd.3.html
+  EXPECT_EQ(EBADF, errno);
+}
+#endif
+
 
 #if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
 TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)

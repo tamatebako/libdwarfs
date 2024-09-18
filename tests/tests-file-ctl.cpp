@@ -80,15 +80,20 @@ TEST_F(FileCtlTests, tebako_access_absolute_path)
 #endif
 }
 
-TEST_F(FileCtlTests, tebako_access_absolute_path_no_file)
+TEST_F(FileCtlTests, tebako_access_absolute_path_no_dir)
 {
   int ret = tebako_access(TEBAKIZE_PATH("no-directory/file.txt"), X_OK);
   EXPECT_EQ(ENOENT, errno);
   EXPECT_EQ(-1, ret);
-  ret = tebako_access(TEBAKIZE_PATH("no-file.txt"), F_OK);
+}
+
+TEST_F(FileCtlTests, tebako_access_absolute_path_no_file)
+{
+  int ret = tebako_access(TEBAKIZE_PATH("no-file.txt"), F_OK);
   EXPECT_EQ(ENOENT, errno);
   EXPECT_EQ(-1, ret);
 }
+
 
 TEST_F(FileCtlTests, tebako_access_null)
 {

@@ -66,16 +66,20 @@ int tebako_lstat(const char* path, struct STAT_TYPE* buf)
     TEBAKO_SET_LAST_ERROR(ENOENT);
   }
   else {
+    std::string r_path;
     tebako_path_t t_path;
     const char* p_path = to_tebako_path(t_path, path);
     if (p_path) {
 #ifdef _WIN32
       struct stat _buf;
-      ret = dwarfs_lstat(p_path, &_buf);
+      ret = dwarfs_lstat(p_path, &_buf, r_path);
       buf << _buf;
 #else
-      ret = dwarfs_lstat(p_path, buf);
+      ret = dwarfs_lstat(p_path, buf, r_path);
 #endif
+      if (ret == DWARFS_S_LINK_OUTSIDE) {
+        ret = TO_RB_W32_I128(lstat)(r_path.c_str(), buf);
+      }
     }
     else {
       ret = TO_RB_W32_I128(lstat)(path, buf);
@@ -95,11 +99,16 @@ ssize_t tebako_readlink(const char* path, char* buf, size_t bufsize)
     tebako_path_t t_path;
     const char* p_path = to_tebako_path(t_path, path);
     if (p_path) {
+      std::string link;
       std::string lnk;
-      ret = dwarfs_readlink(p_path, lnk);
+
+      ret = dwarfs_readlink(p_path, link, lnk);
       if (ret >= 0) {
-        strncpy(buf, lnk.c_str(), bufsize);
-        ret = std::min(lnk.length(), bufsize);
+        strncpy(buf, link.c_str(), bufsize);
+        ret = std::min(link.length(), bufsize);
+      }
+      else if (ret == DWARFS_S_LINK_OUTSIDE) {
+        ret = ::readlink(lnk.c_str(), buf, bufsize);
       }
     }
     else {
@@ -122,10 +131,10 @@ int tebako_stat(const char* path, struct STAT_TYPE* buf)
     if (p_path) {
 #ifdef RB_W32
       struct stat _buf;
-      ret = dwarfs_stat(p_path, &_buf, lnk);
+      ret = dwarfs_stat(p_path, &_buf, lnk, true);
       buf << _buf;
 #else
-      ret = dwarfs_stat(p_path, buf, lnk);
+      ret = dwarfs_stat(p_path, buf, lnk, true);
 #endif
       if (ret == DWARFS_S_LINK_OUTSIDE)
         ret = TO_RB_W32_I128(stat)(lnk.c_str(), buf);

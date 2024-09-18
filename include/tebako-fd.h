@@ -39,11 +39,10 @@ union tebako_dirent;
 struct tebako_fd {
   struct stat st;
   uint64_t pos;
-  std::string filename;
   int lock;
   int* handle;
 
-  tebako_fd(const char* p) : filename(p), pos(0), lock(0), handle(NULL) { memset(&st, 0, sizeof(st)); }
+  tebako_fd() : pos(0), lock(0), handle(NULL) { memset(&st, 0, sizeof(st)); }
   ~tebako_fd()
   {
     if (handle) {
@@ -71,7 +70,7 @@ class sync_tebako_fdtable {
   static sync_tebako_fdtable& get_tebako_fdtable(void);
 
   int open(const char* path, int flags, std::string& lnk) noexcept;
-  int openat(int vfd, const char* path, int flags) noexcept;
+  int openat(int vfd, const char* path, int flags, std::string& lnk) noexcept;
   int close(int vfd) noexcept;
   void close_all(void) noexcept;
   int fstat(int vfd, struct stat* st) noexcept;
@@ -87,8 +86,9 @@ class sync_tebako_fdtable {
   ssize_t readv(int vfd, const struct ::iovec* iov, int iovcnt) noexcept;
 #endif
   off_t lseek(int vfd, off_t offset, int whence) noexcept;
-  int fstatat(int vfd, const char* path, struct stat* buf, bool follow) noexcept;
+  int fstatat(int vfd, const char* path, struct stat* buf, std::string& lnk, bool follow) noexcept;
   int flock(int vfd, int operation) noexcept;
   bool is_valid_file_descriptor(int vfd) noexcept;
+  std::optional<std::string> filename(int vfd) noexcept;
 };
 }  // namespace tebako
