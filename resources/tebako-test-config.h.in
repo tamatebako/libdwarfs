@@ -47,3 +47,11 @@
 
 #define __AT_BIN__(A) __BIN__ __S__ A
 #define __AT_TMP__(A) __TMP__ __S__ A
+
+#if defined(RB_W32)
+typedef struct direct* pdirent;
+#define tebako_readdir_adjusted(dirp) tebako_readdir((dirp), NULL)
+#else
+typedef struct dirent* pdirent;
+#define tebako_readdir_adjusted(dirp) tebako_readdir((dirp))
+#endif

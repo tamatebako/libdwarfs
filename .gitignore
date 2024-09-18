@@ -55,6 +55,8 @@ tests/tebako-test-config.h
 test-w/tebako-fs.c
 test-w/tebako-fs0.c
 
+tests/test_files/o-link-outside-of-memfs
+
 *.bin
 
 # VS files

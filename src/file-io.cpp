@@ -91,19 +91,27 @@ int tebako_openat(int nargs, int vfd, const char* path, int flags, ...)
   // the current working directory shall be used and the behavior shall be
   // identical to a call to open().
   try {
+    std::string r_path;
     std::filesystem::path std_path(path);
     if (std_path.is_relative() && vfd != AT_FDCWD) {
-      ret = sync_tebako_fdtable::get_tebako_fdtable().openat(vfd, path, flags);
-      if (ret == DWARFS_INVALID_FD) {
-        if (nargs == 3) {
-          ret = ::openat(vfd, path, flags);
-        }
-        else {
-          va_start(args, flags);
-          mode = (mode_t)va_arg(args, int);
-          va_end(args);
-          ret = ::openat(vfd, path, flags, mode);
-        }
+      ret = sync_tebako_fdtable::get_tebako_fdtable().openat(vfd, path, flags, r_path);
+      switch(ret) {
+        case DWARFS_INVALID_FD:
+          if (nargs == 3) {
+            ret = ::openat(vfd, path, flags);
+          }
+          else {
+            va_start(args, flags);
+            mode = (mode_t)va_arg(args, int);
+            va_end(args);
+            ret = ::openat(vfd, path, flags, mode);
+          }
+          break;
+        case DWARFS_S_LINK_OUTSIDE:
+          ret = TO_RB_W32_U(openat)(vfd, r_path.c_str(), flags);
+          break;
+        default:
+          break;
       }
     }
     else {
@@ -200,9 +208,17 @@ int tebako_fstatat(int vfd, const char* path, struct stat* buf, int flag)
       ret = (flag & AT_SYMLINK_NOFOLLOW) ? tebako_lstat(path, buf) : tebako_stat(path, buf);
     }
     else {
-      ret = sync_tebako_fdtable::get_tebako_fdtable().fstatat(vfd, path, buf, (flag & AT_SYMLINK_NOFOLLOW) == 0);
-      if (ret == DWARFS_INVALID_FD) {
-        ret = is_valid_system_file_descriptor(vfd) ? ::fstatat(vfd, path, buf, flag) : DWARFS_IO_ERROR;
+      std::string r_path;
+      ret = sync_tebako_fdtable::get_tebako_fdtable().fstatat(vfd, path, buf, r_path, (flag & AT_SYMLINK_NOFOLLOW) == 0);
+      switch(ret) {
+        case DWARFS_INVALID_FD:
+          ret = is_valid_system_file_descriptor(vfd) ? ::fstatat(vfd, path, buf, flag) : DWARFS_IO_ERROR;
+          break;
+        case DWARFS_S_LINK_OUTSIDE:
+          ret = TO_RB_W32_I128(fstatat)(vfd, r_path.c_str(), buf, flag);
+          break;
+        default:
+          break;
       }
     }
   }

@@ -36,6 +36,7 @@
 #include <tebako-io-inner.h>
 #include <tebako-fd.h>
 #include <tebako-mfs.h>
+#include <tebako-mnt.h>
 
 namespace stdfs = std::filesystem;
 
@@ -101,6 +102,7 @@ using namespace tebako;
 // RW lock implemented using folly tooling
 // github.com/facebook/folly/blob/master/folly/docs/Synchronized
 static folly::Synchronized<dwarfs_userdata*> usd{NULL};
+uint32_t dwarfs_root = 0;
 
 // Drop previously loaded dwarFS image
 void drop_fs(void)
@@ -169,6 +171,9 @@ int load_fs(const void* data,
 
     (p->opts.debuglevel >= logger::DEBUG) ? load_filesystem<debug_logger_policy>(*p)
                                           : load_filesystem<prod_logger_policy>(*p);
+
+    auto dyn = p->fs.metadata_as_dynamic();
+    dwarfs_root = dyn["root"]["inode"].asInt();
   }
 
   catch (stdfs::filesystem_error const& e) {
@@ -186,54 +191,266 @@ int load_fs(const void* data,
   return DWARFS_IO_CONTINUE;
 }
 
-template <typename Functor, class... Args>
-int safe_dwarfs_call(Functor&& fn, const char* caller, const char* path, Args&&... args)
+// dwarfs_process_link
+//  Handles relative link
+// params
+//  lnk - symlink to process
+//  p_iterator - iterator to the path, rebuild with symlink applied
+//  p_path - path under traverse, rebuild with symlink applied
+//
+// returns
+//  DWARFS_IO_CONTINUE - success [st is filled]
+//  DWARFS_IO_ERROR - error [errno is set]
+//  DWARFS_LINK - symlink or mount point  [lnk is set]
+
+static int dwarfs_process_link(std::string& lnk, stdfs::path::iterator& p_iterator, stdfs::path& p_path)
 {
-  int err = ENOENT;
-  int ret = DWARFS_IO_ERROR;
-  auto locked = usd.rlock();
-  auto p = *locked;
-  if (p) {
-    if (p->opts.debuglevel >= logger::DEBUG) {
-      LOG_PROXY(debug_logger_policy, p->lgr);
-      LOG_DEBUG << caller << " [ " << path << " ]";
-    }
-    try {
-      // Normally we remove '/__tebako_memfs__/'
-      // However, there is also a case when it is memfs root and path isn just
-      // '/__tebako_memfs__'
-      const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? path + TEBAKO_MOUNT_POINT_LENGTH
-                                                                : path + TEBAKO_MOUNT_POINT_LENGTH + 1;
-      auto inode = p->fs.find(adj);
-      if (p->opts.debuglevel >= logger::DEBUG) {
-        LOG_PROXY(debug_logger_policy, p->lgr);
-        if (inode) {
-          LOG_DEBUG << "inode: " << inode->inode_num();
-        }
-        else {
-          LOG_DEBUG << "inode: not found";
-        }
-      }
-      if (inode) {
-        err = fn(&p->fs, *inode, std::forward<Args>(args)...);
-        if (err == 0) {
-          ret = DWARFS_IO_CONTINUE;
-        }
-      }
-    }
-    catch (dwarfs::system_error const& e) {
-      err = e.get_errno();
-      ret = DWARFS_IO_ERROR;
-    }
-    catch (...) {
-      err = EIO;
-      ret = DWARFS_IO_ERROR;
-    }
+  stdfs::path new_path = stdfs::path(lnk);
+  for (auto it = p_iterator; it != p_path.end(); ++it) {
+    new_path /= it->string();
   }
-  if (ret < DWARFS_IO_CONTINUE) {
-    TEBAKO_SET_LAST_ERROR(err < 0 ? -err : err);  // dwarfs returns -ERRNO
+  new_path = new_path.lexically_normal();
+  lnk = new_path.generic_string();
+  int ret = new_path.is_relative() ? DWARFS_S_LINK_RELATIVE : DWARFS_S_LINK_ABSOLUTE;
+  if (ret == DWARFS_S_LINK_RELATIVE) {
+    p_path = new_path;
+    p_iterator = p_path.begin();
   }
   return ret;
+}
+
+// dwarfs_process_inode
+//  Processes inode and handles relative links
+// params
+//  fs - dwarfs filesystem
+//  pi - inode to process
+//  st - out parameter to store the stat structure
+//  follow - should we follow the last element in the path if ti is symlink
+//  lnk - out parameter to store the symlink (or mount point)
+//  p_iterator - iterator to the path
+//  p_path - path under traverse
+//
+// returns
+//  DWARFS_IO_CONTINUE - success [st is filled]
+//  DWARFS_IO_ERROR - error [errno is set]
+//  DWARFS_LINK - symlink or mount point  [lnk is set]
+
+static int dwarfs_process_inode(filesystem_v2& fs, inode_view& pi, dwarfs::file_stat* st, bool follow,
+                               std::string& lnk, stdfs::path::iterator& p_iterator, stdfs::path& p_path)
+{
+  int ret = DWARFS_IO_CONTINUE;
+  int err = fs.getattr(pi, st);
+  if (err == 0)
+  {
+    // (1) It is symlink
+    // (2a) It is not the last element in the path
+    // (2b)   or we should follow the last element  (lstat called)
+    if (S_ISLNK(st->mode) && (++p_iterator != p_path.end() || follow)) {
+      err = fs.readlink(pi, &lnk);
+      if (err == 0) {
+        ret = dwarfs_process_link(lnk, p_iterator, p_path);
+      }
+    }
+  }
+  // Failed to get inode attributes
+  // dwarfs returns (-errno)
+  if (err !=0 ) {
+    TEBAKO_SET_LAST_ERROR(-err);
+    ret = DWARFS_IO_ERROR;
+  }
+  return ret;
+}
+
+// *** Now this is the core function ***
+//
+// dwarfs_find_inode
+//   Finds inode
+//   Converts mount points to links
+//   Follows relative links
+//
+// params
+//  start_from - inode number to start from
+//  p_path - path to find
+//  follow - should we follow the last element in the path if ti is symlink
+//  lnk - out parameter to store the symlink (or mount point)
+//  st - out parameter to store the stat structure
+//
+// returns
+//  DWARFS_IO_CONTINUE - success [st is filled]
+//  DWARFS_IO_ERROR - error [errno is set]
+//  DWARFS_LINK - symlink or mount point  [lnk is set]
+
+static int dwarfs_find_inode(uint32_t start_from, const stdfs::path& path, bool follow_last, std::string& lnk, struct stat* st) noexcept
+{
+  int ret = DWARFS_IO_CONTINUE;
+  dwarfs::file_stat dwarfs_st;
+  stdfs::path p_path{path};             // a copy of the path, mangled if symlink is found
+
+  auto locked = usd.rlock();
+  auto p = *locked;
+
+  try {
+    if (p) {
+
+      LOG_PROXY(debug_logger_policy, p->lgr);
+      LOG_DEBUG << __func__ << " [ @inode:" << start_from << " path:" << path << " ]";
+
+      auto pi = p->fs.find(start_from);
+      auto p_iterator = p_path.begin();
+      auto m_table = sync_tebako_mount_table::get_tebako_mount_table();
+
+      if (pi) {
+        ret = dwarfs_process_inode(p->fs, *pi, &dwarfs_st, follow_last, lnk, p_iterator, p_path);
+//(3) other stat calls (lstat, relative etc)
+
+        while (p_iterator != p_path.end() && p_iterator->string() != "" && ret == DWARFS_IO_CONTINUE) {
+          auto inode = pi->inode_num();
+          auto mount_point = m_table.get(inode, p_iterator->string());
+          // Hit mount point
+          // Convert it to symlink and proceed
+          if (mount_point) {
+            lnk = *mount_point;
+            LOG_DEBUG << __func__ << " [ mount point --> \"" << lnk << "\" ]";
+            ret = dwarfs_process_link(lnk, ++p_iterator, p_path);
+            if (ret == DWARFS_S_LINK_RELATIVE) {
+              ret = DWARFS_IO_CONTINUE;
+              continue;
+            }
+          }
+          else {
+            auto pi_prev = pi;
+            pi = p->fs.find(inode, p_iterator->string().c_str());
+
+            if (pi) {
+              ret = dwarfs_process_inode(p->fs, *pi, &dwarfs_st, follow_last, lnk, p_iterator, p_path);
+              if (ret == DWARFS_S_LINK_RELATIVE || ret == DWARFS_S_LINK_ABSOLUTE) {
+                LOG_DEBUG << __func__ << " [ reparse point --> \"" << lnk << "\" ]";
+              }
+              if (ret == DWARFS_S_LINK_RELATIVE) {
+                pi = pi_prev;
+                ret = DWARFS_IO_CONTINUE;
+                continue;
+              }
+            }
+            // Failed to find the next element in the path
+            else {
+              TEBAKO_SET_LAST_ERROR(ENOENT);
+              ret = DWARFS_IO_ERROR;
+            }
+          }
+          ++p_iterator;
+        }
+      }
+      // Failed to find the start inode
+      else {
+        TEBAKO_SET_LAST_ERROR(ENOENT);
+        ret = DWARFS_IO_ERROR;
+      }
+      // Copy the stat structure only if there is no error
+      if (ret != DWARFS_IO_ERROR) {
+#if defined(_WIN32)
+        copy_file_stat<false>(st, dwarfs_st);
+#else
+        copy_file_stat<true>(st, dwarfs_st);
+#endif
+      }
+    }
+    // Filesystem not mounted
+    else {
+      TEBAKO_SET_LAST_ERROR(ENOENT);
+      ret = DWARFS_IO_ERROR;
+    }
+  }
+  catch (dwarfs::system_error const& e) {
+    TEBAKO_SET_LAST_ERROR(e.get_errno());
+    ret = DWARFS_IO_ERROR;
+  }
+  catch (...) {
+    ret = DWARFS_IO_ERROR;
+    TEBAKO_SET_LAST_ERROR(ENOMEM);
+  }
+  return ret;
+}
+
+// dwarfs_find_inode_abs
+// Finds inode and follows absolute link if it is within memfs
+//
+// params
+//  start_from - inode number to start from
+//  p_path - path to find
+//  follow - should we follow the last element in the path if ti is symlink
+//  lnk - out parameter to store the symlink (or mount point)
+//  st - out parameter to store the stat structure
+//
+// returns
+//  DWARFS_IO_CONTINUE - success [st is filled]
+//  DWARFS_IO_ERROR - error [errno is set]
+//  DWARFS_LINK - symlink or mount point  [lnk is set]
+
+static int dwarfs_find_inode_abs(uint32_t start_from, const stdfs::path& path, bool follow, std::string& lnk, struct stat* st) noexcept
+{
+  int ret = DWARFS_IO_ERROR;
+  try {
+    ret = dwarfs_find_inode(start_from, path, follow, lnk, st);
+      // Follow absolute links if necessary
+      // (indirect recursion)
+      if (ret == DWARFS_S_LINK_ABSOLUTE) {
+        if (is_tebako_path(lnk.c_str())) {
+          if (follow) {
+#ifdef RB_W32
+            struct STAT_TYPE _st;
+            ret = tebako_stat(lnk.c_str(), &_st);
+            st << _st;
+#else
+            ret = tebako_stat(lnk.c_str(), st);
+#endif
+          }
+          else
+          {
+             ret = DWARFS_IO_CONTINUE;
+          }
+        }
+        else
+        {
+          ret = DWARFS_S_LINK_OUTSIDE;
+        }
+      }
+  }
+  catch (dwarfs::system_error const& e) {
+    TEBAKO_SET_LAST_ERROR(e.get_errno());
+    ret = DWARFS_IO_ERROR;
+  }
+  catch (...) {
+    ret = DWARFS_IO_ERROR;
+    TEBAKO_SET_LAST_ERROR(ENOMEM);
+  }
+  return ret;
+
+}
+
+// dwarfs_find_inode_root
+// Finds inode startinf from memfs root
+//
+// params
+//  path - path to find
+//  follow - should we follow the last element in the path if ti is symlink
+//  lnk - out parameter to store the symlink (or mount point)
+//  st - out parameter to store the stat structure
+//
+// returns
+//  DWARFS_IO_CONTINUE - success [st is filled]
+//  DWARFS_IO_ERROR - error [errno is set]
+//  DWARFS_LINK - symlink or mount point  [lnk is set]
+
+static int dwarfs_find_inode_root(const std::string& path, bool follow, std::string& lnk, struct stat* st) noexcept
+{
+  // Normally we remove '/__tebako_memfs__/'
+  // However, there is also a case when it is memfs root and path isn just
+  // '/__tebako_memfs__'
+  auto adjusted_path = path.substr(path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? TEBAKO_MOUNT_POINT_LENGTH
+                                                                           : TEBAKO_MOUNT_POINT_LENGTH + 1);
+
+  return dwarfs_find_inode_abs(dwarfs_root, adjusted_path, follow, lnk, st);
 }
 
 template <typename Functor, class... Args>
@@ -251,7 +468,7 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, uint32_t inode, Args&&...
     try {
       ret = fn(&p->fs, inode, std::forward<Args>(args)...);
       if (ret < 0) {
-        err = -ret;
+        err = ret;
         ret = DWARFS_IO_ERROR;
       }
     }
@@ -265,7 +482,7 @@ int safe_dwarfs_call(Functor&& fn, const char* caller, uint32_t inode, Args&&...
     }
   }
   if (ret < DWARFS_IO_CONTINUE) {
-    TEBAKO_SET_LAST_ERROR(err < 0 ? -err : err);  // dwarfs returns -ERRNO
+    TEBAKO_SET_LAST_ERROR(err < 0 ? -err : err);
   }
   return ret;
 }
@@ -286,219 +503,66 @@ static int dwarfs_access_inner(int amode, struct stat* st)
   return ret;
 }
 
-int dwarfs_access(const char* path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept
+int dwarfs_access(const std::string& path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept
 {
   struct stat st;
-  int ret = dwarfs_stat(path, &st, lnk);
+  int ret = dwarfs_stat(path, &st, lnk, true);
   if (ret == DWARFS_IO_CONTINUE) {
     ret = dwarfs_access_inner(amode, &st);
   }
   return ret;
 }
 
-#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32) || defined(_WIN32)
-int dwarfs_lstat(const char* path, struct stat* buf) noexcept
+static int get_dwarfs_file_stat(filesystem_v2* fs, inode_view& inode, struct stat* st)
 {
-  return safe_dwarfs_call(
-      std::function<int(filesystem_v2*, inode_view&, struct stat*)>{
-          [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int {
-            dwarfs::file_stat dwarfs_file_stat;
-            int ret = fs->getattr(inode, &dwarfs_file_stat);
+  dwarfs::file_stat dwarfs_file_stat;
+  int ret = fs->getattr(inode, &dwarfs_file_stat);
 #if defined(_WIN32)
-            copy_file_stat<false>(buf, dwarfs_file_stat);
+  copy_file_stat<false>(st, dwarfs_file_stat);
 #else
-            copy_file_stat<true>(buf, dwarfs_file_stat);
+  copy_file_stat<true>(st, dwarfs_file_stat);
 #endif
-            return ret;
-          }},
-      __func__, path, buf);
-}
-#endif
-
-int dwarfs_stat(const char* path, struct stat* buf, std::string& lnk) noexcept
-{
-  int ret = safe_dwarfs_call(
-      std::function<int(filesystem_v2*, inode_view&, struct stat*)>{
-          [](filesystem_v2* fs, inode_view& inode, struct stat* buf) -> int {
-            dwarfs::file_stat dwarfs_file_stat;
-            int ret = fs->getattr(inode, &dwarfs_file_stat);
-#if defined(_WIN32)
-            copy_file_stat<false>(buf, dwarfs_file_stat);
-#else
-            copy_file_stat<true>(buf, dwarfs_file_stat);
-#endif
-            return ret;
-          }},
-      __func__, path, buf);
-  try {
-    if (ret == DWARFS_IO_CONTINUE && S_ISLNK(buf->st_mode)) {
-      ret = dwarfs_readlink(path, lnk);
-      if (ret == DWARFS_IO_CONTINUE) {
-        stdfs::path p_new = path;
-        stdfs::path p_lnk = lnk;
-        if (p_lnk.is_relative())
-          p_new.replace_filename(lnk);
-        else
-          p_new = lnk;
-        p_new = p_new.lexically_normal();
-        if (is_tebako_path(p_new.generic_string().c_str())) {
-#ifdef RB_W32
-          struct STAT_TYPE _buf;
-          ret = tebako_stat(p_new.generic_string().c_str(), &_buf);
-          buf << _buf;
-#else
-          ret = tebako_stat(p_new.generic_string().c_str(), buf);
-#endif
-        }
-        else
-          ret = DWARFS_S_LINK_OUTSIDE;
-      }
-    }
-  }
-  catch (dwarfs::system_error const& e) {
-    TEBAKO_SET_LAST_ERROR(e.get_errno());
-    ret = DWARFS_IO_ERROR;
-  }
-  catch (...) {
-    ret = DWARFS_IO_ERROR;
-    TEBAKO_SET_LAST_ERROR(ENOMEM);
-  }
   return ret;
-}
-
-int dwarfs_readlink(const char* path, std::string& lnk) noexcept
-{
-  return safe_dwarfs_call(
-      std::function<int(filesystem_v2*, inode_view&, std::string&)>{
-          [](filesystem_v2* fs, inode_view& inode, std::string& lnk) -> int { return fs->readlink(inode, &lnk); }},
-      __func__, path, lnk);
 }
 
 int dwarfs_inode_readlink(uint32_t inode, std::string& lnk) noexcept
 {
-  return safe_dwarfs_call(
-      std::function<int(filesystem_v2*, uint32_t, std::string&)>{
-          [](filesystem_v2* fs, uint32_t inode, std::string& lnk) -> int {
-            auto pi = fs->find(inode);
-            return pi ? fs->readlink(*pi, &lnk) : DWARFS_IO_ERROR;
-          }},
-      __func__, inode, lnk);
-}
-
-static int internal_getattr_relative(uint32_t inode, stdfs::path& p_path, struct stat* buf)
-{
-  int ret = DWARFS_IO_ERROR;
-  auto locked = usd.rlock();
-  auto p = *locked;
-  if (p) {
-    auto pi = p->fs.find(inode);
-    for (auto p_it = p_path.begin(); p_it != p_path.end(); ++p_it) {
-      if (!pi)
-        break;
-      pi = p->fs.find(pi->inode_num(), p_it->string().c_str());
-    }
-    if (pi) {
-      dwarfs::file_stat dwarfs_file_stat;
-      ret = p->fs.getattr(*pi, &dwarfs_file_stat);
-#if defined(_WIN32)
-      copy_file_stat<false>(buf, dwarfs_file_stat);
-#else
-      copy_file_stat<true>(buf, dwarfs_file_stat);
-#endif
-    }
-    else {
-      ret = ENOENT;
-    }
-  }
-  return ret;
-}
-
-int dwarfs_inode_relative_stat(uint32_t inode, const char* path, struct stat* buf, bool follow) noexcept
-{
   int ret = safe_dwarfs_call(
-      std::function<int(filesystem_v2*, uint32_t, const char*, struct stat*)>{
-          [](filesystem_v2* fs, uint32_t inode, const char* path, struct stat* buf) -> int {
-            auto pi = fs->find(inode, path);
-            int ret = ENOENT;
-            if (pi) {
-              dwarfs::file_stat dwarfs_file_stat;
-              ret = fs->getattr(*pi, &dwarfs_file_stat);
-#if defined(_WIN32)
-              copy_file_stat<false>(buf, dwarfs_file_stat);
-#else
-              copy_file_stat<true>(buf, dwarfs_file_stat);
-#endif
-            }
-            return ret;
-          }},
-      __func__, inode, path, buf);
-  try {
-    if (ret == DWARFS_IO_CONTINUE && S_ISLNK(buf->st_mode) && follow) {
-      std::string lnk;
-      ret = dwarfs_inode_readlink(buf->st_ino, lnk);
-      if (ret == DWARFS_IO_CONTINUE) {
-        stdfs::path p_path(lnk);
-        if (p_path.is_relative())
-          ret = internal_getattr_relative(inode, p_path, buf);
-        else {
-#ifdef RB_W32
-          struct STAT_TYPE _buf;
-          ret = tebako_stat(p_path.generic_string().c_str(), &_buf);
-          buf << _buf;
-#else
-          ret = tebako_stat(p_path.generic_string().c_str(), buf);
-#endif
-        }
-      }
-    }
-  }
-  catch (dwarfs::system_error const& e) {
-    TEBAKO_SET_LAST_ERROR(e.get_errno());
-    ret = DWARFS_IO_ERROR;
-  }
-  catch (...) {
-    ret = DWARFS_IO_ERROR;
-    TEBAKO_SET_LAST_ERROR(ENOMEM);
-  }
+      [](filesystem_v2* fs, uint32_t inode, std::string& lnk) {
+        auto pi = fs->find(inode);
+        return pi ? fs->readlink(*pi, &lnk) : DWARFS_IO_ERROR;
+      },
+      __func__, inode, lnk);
+
   return ret;
 }
 
 int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid) noexcept
 {
   return safe_dwarfs_call(
-      std::function<int(filesystem_v2*, uint32_t, int, uid_t, gid_t)>{
-          [](filesystem_v2* fs, uint32_t inode, int amode, uid_t uid, gid_t gid) -> int {
-            int ret = DWARFS_IO_ERROR;
-            auto pi = fs->find(inode);
-            if (pi) {
-              struct stat st;
-              dwarfs::file_stat dwarfs_file_stat;
-              ret = fs->getattr(*pi, &dwarfs_file_stat);
-#if defined(_WIN32)
-              copy_file_stat<false>(&st, dwarfs_file_stat);
-#else
-              copy_file_stat<true>(&st, dwarfs_file_stat);
-#endif
-              if (ret == DWARFS_IO_CONTINUE) {
-                ret = dwarfs_access_inner(amode, &st);
-              }
-            }
-            else {
-              TEBAKO_SET_LAST_ERROR(ENOENT);
-            }
-            return ret;
-          }},
+      [](filesystem_v2* fs, uint32_t inode, int amode, uid_t uid, gid_t gid) {
+        int ret = DWARFS_IO_ERROR;
+        auto pi = fs->find(inode);
+        if (pi) {
+          struct stat st;
+          ret = get_dwarfs_file_stat(fs, *pi, &st);
+          if (ret == DWARFS_IO_CONTINUE) {
+            ret = dwarfs_access_inner(amode, &st);
+          }
+        }
+        else {
+          TEBAKO_SET_LAST_ERROR(ENOENT);
+        }
+        return ret;
+      },
       __func__, inode, amode, uid, gid);
 }
 
 ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept
 {
-  return safe_dwarfs_call(
-      std::function<int(filesystem_v2*, uint32_t, void*, size_t, off_t)>{
-          [](filesystem_v2* fs, uint32_t inode, void* buf, size_t size, off_t offset) -> int {
-            return fs->read(inode, (char*)buf, size, offset);
-          }},
-      __func__, inode, buf, size, offset);
+  return safe_dwarfs_call([](filesystem_v2* fs, uint32_t inode, void* buf, size_t size,
+                             off_t offset) { return fs->read(inode, static_cast<char*>(buf), size, offset); },
+                          __func__, inode, buf, size, offset);
 }
 
 static int internal_readdir(filesystem_v2* fs,
@@ -526,14 +590,8 @@ static int internal_readdir(filesystem_v2* fs,
         else {
           auto [entry, name_view] = *res;
           std::string name(std::move(name_view));
-
-          dwarfs::file_stat dwarfs_file_stat;
-          fs->getattr(entry, &dwarfs_file_stat);
-#if defined(_WIN32)
-          copy_file_stat<false>(&st, dwarfs_file_stat);
-#else
-          copy_file_stat<true>(&st, dwarfs_file_stat);
-#endif
+          struct stat st;
+          get_dwarfs_file_stat(fs, entry, &st);
 
 #ifndef RB_W32
           cache[cache_size].e.d_ino = st.st_ino;
@@ -593,6 +651,36 @@ int dwarfs_inode_readdir(uint32_t inode,
                          size_t& dir_size) noexcept
 {
   return safe_dwarfs_call(
-      std::function<int(filesystem_v2*, uint32_t, tebako_dirent*, off_t, size_t, size_t&, size_t&)>{internal_readdir},
+      [](filesystem_v2* fs, uint32_t inode, tebako_dirent* cache, off_t cache_start, size_t buffer_size,
+         size_t& cache_size, size_t& dir_size) {
+        return internal_readdir(fs, inode, cache, cache_start, buffer_size, cache_size, dir_size);
+      },
       __func__, inode, cache, cache_start, buffer_size, cache_size, dir_size);
+}
+
+int dwarfs_stat(const std::string& path, struct stat* st, std::string& lnk, bool follow) noexcept
+{
+  return dwarfs_find_inode_root(path, follow, lnk, st);
+}
+
+int dwarfs_inode_relative_stat(uint32_t inode, const std::string& path, struct stat* st, std::string& lnk, bool follow) noexcept
+{
+  return dwarfs_find_inode_abs(inode, path, follow, lnk, st);
+}
+
+#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32) || defined(_WIN32)
+int dwarfs_lstat(const std::string& path, struct stat* st, std::string& lnk) noexcept
+{
+  return dwarfs_find_inode_root(path, false, lnk, st);
+}
+#endif
+
+int dwarfs_readlink(const std::string& path, std::string& link, std::string& lnk) noexcept
+{
+  struct stat st;
+  int ret = dwarfs_find_inode_root(path, false, lnk, &st);
+  if (ret == DWARFS_IO_CONTINUE) {
+    ret = dwarfs_inode_readlink(st.st_ino, link);
+  }
+  return ret;
 }

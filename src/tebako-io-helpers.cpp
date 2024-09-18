@@ -53,6 +53,7 @@ class tebako_path_s {
 
  public:
   tebako_path_s(void) : p("") {}
+  // virtual ~tebako_path_s() {}
 
   //	Gets current working directory
   virtual const char* get_cwd(tebako_path_t cwd, bool win_separator = false)
@@ -134,7 +135,7 @@ static folly::Synchronized<tebako_path_s*> tebako_cwd{NULL};
 void tebako_init_cwd(dwarfs::logger& lgr, bool need_debug_policy)
 {
   auto locked = tebako_cwd.wlock();
-  //	*locked = new tebako_path_s;
+  // *locked = new tebako_path_s;
   *locked = (need_debug_policy) ? static_cast<tebako_path_s*>(new tebako_path_s_l<dwarfs::debug_logger_policy>(lgr))
                                 : static_cast<tebako_path_s*>(new tebako_path_s_l<dwarfs::prod_logger_policy>(lgr));
 }

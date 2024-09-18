@@ -66,7 +66,7 @@ TEST(LoadTests, smoke)
   EXPECT_EQ(1, i);
 }
 
-#if __MACH__ || defined(_WIN32)
+//#if __MACH__ || defined(_WIN32)
 TEST(LoadTests, tebako_load_invalid_filesystem)
 {
   const unsigned char data[] = "This is broken filesystem image";
@@ -76,17 +76,7 @@ TEST(LoadTests, tebako_load_invalid_filesystem)
   EXPECT_EQ(1, ret);
   drop_fs();
 }
-
-TEST(LoadTests, tebako_load_invalid_offset)
-{
-  int ret = load_fs(&gfsData[0],  // &data[0],
-                    gfsSize,      // sizeof(data)/sizeof(data[0]),
-                    tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, "xxx" /* image_offset */
-  );
-  EXPECT_EQ(1, ret);
-  drop_fs();
-}
+//#endif
 
 TEST(LoadTests, tebako_load_invalid_parameter)
 {
@@ -97,7 +87,6 @@ TEST(LoadTests, tebako_load_invalid_parameter)
   EXPECT_EQ(1, ret);
   drop_fs();
 }
-#endif
 
 TEST(LoadTests, tebako_load_valid_filesystem)
 {
@@ -108,6 +97,58 @@ TEST(LoadTests, tebako_load_valid_filesystem)
   EXPECT_EQ(0, ret);
   drop_fs();
 }
+
+TEST(LoadTests, tebako_load_valid_filesystem_with_offset_auto)
+{
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                    NULL /* decompress_ratio*/, "auto" /* image_offset */
+  );
+
+  EXPECT_EQ(0, ret);
+  drop_fs();
+}
+
+TEST(LoadTests, tebako_load_valid_filesystem_with_offset_wrong)
+{
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                    NULL /* decompress_ratio*/, "1024" /* image_offset */
+  );
+
+  EXPECT_EQ(1, ret);
+  drop_fs();
+}
+
+TEST(LoadTests, tebako_load_with_offset_invalid)
+{
+  int ret = load_fs(&gfsData[0],  // &data[0],
+                    gfsSize,      // sizeof(data)/sizeof(data[0]),
+                    tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                    NULL /* decompress_ratio*/, "xxx" /* image_offset */
+  );
+  EXPECT_EQ(1, ret);
+  drop_fs();
+}
+
+TEST(LoadTests, tebako_load_valid_filesystem_with_decompress_ratio)
+{
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                    "0.6" /* decompress_ratio*/, "auto" /* image_offset */
+  );
+
+  EXPECT_EQ(0, ret);
+  drop_fs();
+}
+
+TEST(LoadTests, tebako_load_valid_filesystem_with_invalid_decompress_ratio)
+{
+  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                    "1.6" /* decompress_ratio*/, "auto" /* image_offset */
+  );
+
+  EXPECT_EQ(1, ret);
+  drop_fs();
+}
+
 
 TEST(LoadTests, tebako_stat_not_loaded_filesystem)
 {

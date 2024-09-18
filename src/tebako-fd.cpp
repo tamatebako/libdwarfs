@@ -56,8 +56,8 @@ int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk) noe
   }
   else {
     try {
-      auto fd = make_shared<tebako_fd>(path);
-      switch (dwarfs_stat(path, &fd->st, lnk)) {
+      auto fd = make_shared<tebako_fd>();
+      switch (dwarfs_stat(path, &fd->st, lnk, (flags & O_NOFOLLOW) == 0)) {
         case DWARFS_IO_CONTINUE:
           if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
             // [ENOTDIR] ... or O_DIRECTORY was specified and the path argument
@@ -119,7 +119,7 @@ int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk) noe
   return ret;
 }
 
-int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
+int sync_tebako_fdtable::openat(int vfd, const char* path, int flags, std::string& lnk) noexcept
 {
   struct stat stfd;
   int ret = this->fstat(vfd, &stfd);  // !! this, and not ::
@@ -148,8 +148,8 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags) noexcept
         //  So, We will assume that it is not set
         if (dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid()) == DWARFS_IO_CONTINUE) {
           try {
-            auto fd = make_shared<tebako_fd>(path);
-            if (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st, (flags & O_NOFOLLOW) == 0) ==
+            auto fd = make_shared<tebako_fd>();
+            if (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st, lnk, (flags & O_NOFOLLOW) == 0) ==
                 DWARFS_IO_CONTINUE) {
               if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
                 // [ENOTDIR] ... or O_DIRECTORY was specified and the path
@@ -397,7 +397,7 @@ off_t sync_tebako_fdtable::lseek(int vfd, off_t offset, int whence) noexcept
   return ret;
 }
 
-int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st, bool follow) noexcept
+int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st, std::string& lnk, bool follow) noexcept
 {
   struct stat stfd;
   int ret = fstat(vfd, &stfd);
@@ -409,7 +409,7 @@ int sync_tebako_fdtable::fstatat(int vfd, const char* path, struct stat* st, boo
     else {
       ret = dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid());
       if (ret == DWARFS_IO_CONTINUE) {
-        ret = dwarfs_inode_relative_stat(stfd.st_ino, path, st, follow);
+        ret = dwarfs_inode_relative_stat(stfd.st_ino, path, st, lnk, follow);
       }
     }
   }

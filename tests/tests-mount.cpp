@@ -1,0 +1,182 @@
+/**
+ *
+ * Copyright (c) 2024, [Ribose Inc](https://www.ribose.com).
+ * All rights reserved.
+ * This file is a part of tebako (libdwarfs-wr)
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
+
+#include "tests.h"
+#include <tebako-mnt.h>
+
+namespace tebako {
+
+class TebakoMountTests : public ::testing::Test {
+ protected:
+  static bool cross_test;
+
+#ifdef _WIN32
+  static void invalidParameterHandler(const wchar_t* p1,
+                                      const wchar_t* p2,
+                                      const wchar_t* p3,
+                                      unsigned int p4,
+                                      uintptr_t p5)
+  {
+    // Just return to pass execution to standard library
+    // otherwise exception will be thrown by MSVC runtime
+    return;
+  }
+#endif
+
+  static void SetUpTestSuite()
+  {
+    cross_test = (std::getenv("TEBAKO_CROSS_TEST") != NULL);
+#ifdef _WIN32
+    _set_invalid_parameter_handler(invalidParameterHandler);
+#endif
+    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+            NULL /* decompress_ratio*/, NULL /* image_offset */
+    );
+  }
+
+  static void TearDownTestSuite()
+  {
+    drop_fs();
+  }
+
+  sync_tebako_mount_table& mount_table = sync_tebako_mount_table::get_tebako_mount_table();
+
+  void SetUp() override
+  {
+    mount_table.clear();
+    mount_table.insert(0, "m-dir-outside-of-memfs", tests_outside_dir());
+  }
+
+  void TearDown() override
+  {
+    mount_table.clear();
+  }
+};
+
+bool TebakoMountTests::cross_test = false;
+
+TEST_F(TebakoMountTests, test_mount_directory)
+{
+  if (!cross_test) {
+    DIR* dirp = tebako_opendir(TEBAKIZE_PATH("m-dir-outside-of-memfs"));
+    EXPECT_TRUE(dirp != NULL);
+    if (dirp != NULL) {
+#ifdef _WIN32
+      struct direct* entry;
+#else
+      struct dirent* entry;
+#endif
+      std::string fname = "a-file-outside-of-memfs.txt";
+      bool found = false;
+
+#ifdef _WIN32
+      while ((entry = tebako_readdir(dirp, NULL)) != NULL) {
+#else
+      while ((entry = tebako_readdir(dirp)) != NULL) {
+#endif
+        if (fname == entry->d_name)
+          found = true;
+      }
+      EXPECT_TRUE(found);
+      EXPECT_EQ(0, tebako_closedir(dirp));
+    }
+  }
+  else {
+    GTEST_SKIP();
+  }
+
+}
+
+TEST_F(TebakoMountTests, test_mount_file)
+{
+  if (!cross_test) {
+    int fh = tebako_open(2, TEBAKIZE_PATH("m-dir-outside-of-memfs/a-file-outside-of-memfs.txt"), O_RDONLY);
+    EXPECT_LT(0, fh);
+
+    char readbuf[128];
+    const char* pattern = "This is just a file outside of memfs that will be symlinked from inside memfs";
+    const int num2read = strlen(pattern);
+    EXPECT_EQ(num2read, tebako_read(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
+    EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
+    EXPECT_EQ(0, tebako_close(fh));
+  }
+  else {
+    GTEST_SKIP();
+  }
+}
+
+#ifdef WITH_LINK_TESTS
+TEST_F(TebakoMountTests, test_mount_symlink)
+{
+  if (!cross_test) {
+    int fh = tebako_open(2, TEBAKIZE_PATH("m-dir-outside-of-memfs/o-link-outside-of-memfs"), O_RDONLY);
+    EXPECT_LT(0, fh);
+
+    char readbuf[128];
+    const char* pattern = "This is just a file outside of memfs that will be symlinked from inside memfs";
+    const int num2read = strlen(pattern);
+    EXPECT_EQ(num2read, tebako_read(fh, readbuf, sizeof(readbuf) / sizeof(readbuf[0])));
+    EXPECT_EQ(0, strncmp(readbuf, pattern, num2read));
+    EXPECT_EQ(0, tebako_close(fh));
+  }
+  else {
+    GTEST_SKIP();
+  }
+}
+
+TEST_F(TebakoMountTests, test_mount_symlink_readlink)
+{
+  if (!cross_test) {
+    char readbuf[128];
+    const char* pattern = "a-file-outside-of-memfs.txt";
+
+    int ret = tebako_readlink(TEBAKIZE_PATH("m-dir-outside-of-memfs/o-link-outside-of-memfs"), readbuf, sizeof(readbuf) / sizeof(readbuf[0]));
+    EXPECT_LT(0, ret);
+    EXPECT_TRUE(strstr(readbuf, pattern) != 0);
+  }
+  else {
+    GTEST_SKIP();
+  }
+}
+
+TEST_F(TebakoMountTests, test_mount_symlink_lstat)
+{
+  if (!cross_test) {
+    struct STAT_TYPE st;
+    int ret = tebako_lstat(TEBAKIZE_PATH("m-dir-outside-of-memfs/o-link-outside-of-memfs"), &st);
+    EXPECT_EQ(0, ret);
+  }
+  else {
+    GTEST_SKIP();
+  }
+}
+
+#endif
+
+}  // namespace tebako

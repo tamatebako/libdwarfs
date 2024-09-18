@@ -530,5 +530,26 @@ TEST_F(FileIOTests, tebako_readv_errors)
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(errno, EINVAL);
 }
+
+TEST_F(FileIOTests, tebako_readv_invalid_fd)
+{
+  char buf0[10];
+  char buf1[20];
+  char buf2[20];
+  int iovcnt;
+  struct iovec iov[3];
+
+  iov[0].iov_base = buf0;
+  iov[0].iov_len = sizeof(buf0);
+  iov[1].iov_base = buf1;
+  iov[1].iov_len = sizeof(buf1);
+  iov[2].iov_base = buf2;
+  iov[2].iov_len = sizeof(buf2);
+  iovcnt = sizeof(iov) / sizeof(struct iovec);
+
+  int ret = tebako_readv(-2, &iov[0], 3);
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(errno, EBADF);
+ }
 #endif
 }  // namespace

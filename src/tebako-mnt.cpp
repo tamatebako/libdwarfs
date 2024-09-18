@@ -39,12 +39,12 @@ sync_tebako_mount_table& sync_tebako_mount_table::get_tebako_mount_table(void)
   return mount_table;
 }
 
-bool sync_tebako_mount_table::check(std::string& path)
+bool sync_tebako_mount_table::check(const tebako_mount_point& mount_point)
 {
   auto p_mount_table = s_tebako_mount_table.rlock();
-  auto p_mount = p_mount_table->find(path);
+  auto p_mount = p_mount_table->find(mount_point);
   return (p_mount != p_mount_table->end());
-};
+}
 
 void sync_tebako_mount_table::clear(void)
 {
@@ -52,28 +52,26 @@ void sync_tebako_mount_table::clear(void)
   p_mount_table->clear();
 }
 
-void sync_tebako_mount_table::erase(std::string& path)
+void sync_tebako_mount_table::erase(const tebako_mount_point& mount_point)
 {
   auto p_mount_table = s_tebako_mount_table.wlock();
-  p_mount_table->erase(path);
+  p_mount_table->erase(mount_point);
 }
 
-std::optional<std::string> sync_tebako_mount_table::get(std::string& path)
+std::optional<std::string> sync_tebako_mount_table::get(const tebako_mount_point& mount_point)
 {
   auto p_mount_table = s_tebako_mount_table.rlock();
-  auto p_mount = p_mount_table->find(path);
-  std::optional<std::string> ret = std::nullopt;
+  auto p_mount = p_mount_table->find(mount_point);
   if (p_mount != p_mount_table->end()) {
-    ret = p_mount->second;
+    return p_mount->second;
   }
-  return ret;
+  return std::nullopt;
 }
 
-bool sync_tebako_mount_table::insert(std::string& path, std::string& mount)
+bool sync_tebako_mount_table::insert(const tebako_mount_point& mount_point, const std::string& mount_target)
 {
   auto p_mount_table = s_tebako_mount_table.wlock();
-  const auto [it, success] = p_mount_table->insert(std::make_pair(path, mount));
-  return success;
+  return p_mount_table->emplace(mount_point, mount_target).second;
 }
 
 }  // namespace tebako

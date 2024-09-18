@@ -41,94 +41,110 @@ class TebakoMountTableTests : public ::testing::Test {
   void TearDown() override { mount_table.clear(); }
 };
 
-TEST_F(TebakoMountTableTests, CheckPathExists)
+TEST_F(TebakoMountTableTests, check_path_exists)
 {
+  uint32_t ino = 1;
   std::string path = "/path1";
   std::string mount = "mount1";
-  mount_table.insert(path, mount);
+  mount_table.insert(ino, path, mount);
 
-  EXPECT_TRUE(mount_table.check(path));
+  EXPECT_TRUE(mount_table.check(ino, path));
 }
 
-TEST_F(TebakoMountTableTests, CheckPathDoesNotExist)
+TEST_F(TebakoMountTableTests, check_path_does_not_exist)
 {
+  uint32_t ino = 2;
   std::string path = "/path2";
 
-  EXPECT_FALSE(mount_table.check(path));
+  EXPECT_FALSE(mount_table.check(ino, path));
 }
 
-TEST_F(TebakoMountTableTests, ErasePath)
+TEST_F(TebakoMountTableTests, erase_path)
 {
+  uint32_t ino = 3;
   std::string path = "/path3";
   std::string mount = "mount3";
-  mount_table.insert(path, mount);
-  mount_table.erase(path);
+  mount_table.insert(ino, path, mount);
+  mount_table.erase(ino, path);
 
-  EXPECT_FALSE(mount_table.check(path));
+  EXPECT_FALSE(mount_table.check(ino, path));
 }
 
-TEST_F(TebakoMountTableTests, GetExistingPath)
+TEST_F(TebakoMountTableTests, get_existing_path)
 {
+  uint32_t ino = 4;
   std::string path = "/path4";
   std::string mount = "mount4";
-  mount_table.insert(path, mount);
+  mount_table.insert(ino, path, mount);
 
-  std::optional<std::string> result = mount_table.get(path);
+  std::optional<std::string> result = mount_table.get(ino, path);
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(result.value(), mount);
 }
 
-TEST_F(TebakoMountTableTests, GetNonExistingPath)
+TEST_F(TebakoMountTableTests, get_non_existing_path)
 {
+  uint32_t ino = 5;
   std::string path = "/path5";
 
-  std::optional<std::string> result = mount_table.get(path);
+  std::optional<std::string> result = mount_table.get(ino, path);
   EXPECT_FALSE(result.has_value());
 }
 
-TEST_F(TebakoMountTableTests, InsertPath)
+TEST_F(TebakoMountTableTests, insert_path)
 {
+  uint32_t ino = 6;
   std::string path = "/path6";
   std::string mount = "mount6";
 
-  EXPECT_TRUE(mount_table.insert(path, mount));
-  EXPECT_TRUE(mount_table.check(path));
+  EXPECT_TRUE(mount_table.insert(ino, path, mount));
+  EXPECT_TRUE(mount_table.check(ino, path));
 }
 
-TEST_F(TebakoMountTableTests, InsertDuplicatePath)
+TEST_F(TebakoMountTableTests, insert_duplicate_path)
 {
+  uint32_t ino = 7;
   std::string path = "/path7";
   std::string mount1 = "mount7";
   std::string mount2 = "mount8";
+  tebako_mount_point mount_point = std::make_pair(ino, path);
 
-  EXPECT_TRUE(mount_table.insert(path, mount1));
-  EXPECT_FALSE(mount_table.insert(path, mount2));  // Insertion should fail for duplicate path
-  std::optional<std::string> result = mount_table.get(path);
+  EXPECT_TRUE(mount_table.insert(ino, path, mount1));
+  EXPECT_FALSE(mount_table.insert(mount_point, mount2));  // Insertion should fail for duplicate path
+  std::optional<std::string> result = mount_table.get(ino, path);
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(result.value(), mount1);  // Original mount should remain
 }
 
-TEST_F(TebakoMountTableTests, ConcurrentInsertAndCheck)
+TEST_F(TebakoMountTableTests, concurrent_insert_and_check)
 {
+  uint32_t ino = 8;
   const int num_threads = 10;
   const int num_operations = 100;
   std::vector<std::thread> threads;
 
-  auto insert_task = [this](int id) {
+  auto insert_task = [this, ino](int id) {
     for (int i = 0; i < num_operations; ++i) {
       std::string path = "/path" + std::to_string(id) + "_" + std::to_string(i);
       std::string mount = "mount" + std::to_string(id) + "_" + std::to_string(i);
-      mount_table.insert(path, mount);
-      mount_table.check(path);
+      tebako_mount_point mount_point = std::make_pair(ino, path);
+      mount_table.insert(mount_point, mount);
     }
   };
 
-  // Start insert threads
+  auto check_task = [this, ino](int id) {
+    for (int i = 0; i < num_operations; ++i) {
+      std::string path = "/path" + std::to_string(id) + "_" + std::to_string(i);
+      tebako_mount_point mount_point = std::make_pair(ino, path);
+      mount_table.check(mount_point);
+    }
+  };
+
   for (int i = 0; i < num_threads; ++i) {
     threads.emplace_back(insert_task, i);
+    threads.emplace_back(check_task, i);
   }
 
-  // Join all threads
   for (auto& thread : threads) {
     thread.join();
   }
@@ -137,43 +153,57 @@ TEST_F(TebakoMountTableTests, ConcurrentInsertAndCheck)
   for (int i = 0; i < num_threads; ++i) {
     for (int j = 0; j < num_operations; ++j) {
       std::string path = "/path" + std::to_string(i) + "_" + std::to_string(j);
-      EXPECT_TRUE(mount_table.check(path));
+      tebako_mount_point mount_point = std::make_pair(ino, path);
+      EXPECT_TRUE(mount_table.check(mount_point));
     }
   }
 }
 
-TEST_F(TebakoMountTableTests, ConcurrentInsertAndErase)
+TEST_F(TebakoMountTableTests, concurrent_insert_and_erase)
 {
+  uint32_t ino = 9;
   const int num_threads = 10;
   const int num_operations = 100;
-  std::vector<std::thread> threads;
+  std::vector<std::thread> threads_i;
+  std::vector<std::thread> threads_e;
 
-  auto insert_task = [this](int id) {
+  auto insert_task = [this](const int id, const int ino) {
     for (int i = 0; i < num_operations; ++i) {
       std::string path = "/path" + std::to_string(id) + "_" + std::to_string(i);
       std::string mount = "mount" + std::to_string(id) + "_" + std::to_string(i);
-      mount_table.insert(path, mount);
-      mount_table.erase(path);
+      tebako_mount_point mount_point = std::make_pair(ino, path);
+      mount_table.insert(mount_point, mount);
     }
   };
 
-  // Start insert threads
   for (int i = 0; i < num_threads; ++i) {
-    threads.emplace_back(insert_task, i);
+    threads_i.emplace_back(insert_task, i, ino);
   }
 
-  // Join all threads
-  for (auto& thread : threads) {
+  auto erase_task = [this, &threads_i](const int id, const int ino) {
+    threads_i[id].join();
+    for (int i = 0; i < num_operations; ++i) {
+      std::string path = "/path" + std::to_string(id) + "_" + std::to_string(i);
+      tebako_mount_point mount_point = std::make_pair(ino, path);
+      mount_table.erase(mount_point);
+    }
+  };
+
+  for (int i = 0; i < num_threads; ++i) {
+    threads_e.emplace_back(erase_task, i, ino);
+  }
+
+  for (auto& thread : threads_e) {
     thread.join();
   }
 
-  // Verify that all paths were erased
+  // Verify that all entries have been erased
   for (int i = 0; i < num_threads; ++i) {
     for (int j = 0; j < num_operations; ++j) {
       std::string path = "/path" + std::to_string(i) + "_" + std::to_string(j);
-      EXPECT_FALSE(mount_table.check(path));
+      tebako_mount_point mount_point = std::make_pair(ino, path);
+      EXPECT_FALSE(mount_table.check(mount_point));
     }
   }
 }
-
 }  // namespace tebako

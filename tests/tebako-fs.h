@@ -38,6 +38,7 @@ extern "C" {
 #endif
 
 const char* tests_log_level(void);
+const char* tests_outside_dir(void);
 
 #ifdef __cplusplus
 }

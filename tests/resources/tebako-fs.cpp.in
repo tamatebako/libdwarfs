@@ -39,6 +39,10 @@ const char * tests_log_level(void) {
     return "@TESTS_LOG_LEVEL@";
 }
 
+const char * tests_outside_dir(void) {
+    return "@TESTS_OUTSIDE_DIR@";
+}
+
 #ifdef __cplusplus
 }
 #endif
