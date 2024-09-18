@@ -105,12 +105,13 @@ static folly::Synchronized<dwarfs_userdata*> usd{NULL};
 // Drop previously loaded dwarFS image
 void drop_fs(void)
 {
-  auto locked = usd.wlock();
-  if (*locked) {
-    delete *locked;
+  {
+    auto locked = usd.wlock();
+    if (*locked) {
+      delete *locked;
+    }
+    *locked = NULL;
   }
-  *locked = NULL;
-
 #if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
   sync_tebako_dstable::get_tebako_dstable().close_all();
 #endif
