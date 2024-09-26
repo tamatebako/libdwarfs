@@ -95,7 +95,7 @@ int tebako_openat(int nargs, int vfd, const char* path, int flags, ...)
     std::filesystem::path std_path(path);
     if (std_path.is_relative() && vfd != AT_FDCWD) {
       ret = sync_tebako_fdtable::get_tebako_fdtable().openat(vfd, path, flags, r_path);
-      switch(ret) {
+      switch (ret) {
         case DWARFS_INVALID_FD:
           if (nargs == 3) {
             ret = ::openat(vfd, path, flags);
@@ -199,23 +199,23 @@ int tebako_fstat(int vfd, struct STAT_TYPE* buf)
 }
 
 #ifdef TEBAKO_HAS_FSTATAT
-int tebako_fstatat(int vfd, const char* path, struct stat* buf, int flag)
+int tebako_fstatat(int vfd, const char* path, struct stat* st, int flag)
 {
   int ret = -1;
   try {
     std::filesystem::path std_path(path);
     if (std_path.is_absolute() || vfd == AT_FDCWD) {
-      ret = (flag & AT_SYMLINK_NOFOLLOW) ? tebako_lstat(path, buf) : tebako_stat(path, buf);
+      ret = (flag & AT_SYMLINK_NOFOLLOW) ? tebako_lstat(path, st) : tebako_stat(path, st);
     }
     else {
       std::string r_path;
-      ret = sync_tebako_fdtable::get_tebako_fdtable().fstatat(vfd, path, buf, r_path, (flag & AT_SYMLINK_NOFOLLOW) == 0);
-      switch(ret) {
+      ret = sync_tebako_fdtable::get_tebako_fdtable().fstatat(vfd, path, st, r_path, (flag & AT_SYMLINK_NOFOLLOW) == 0);
+      switch (ret) {
         case DWARFS_INVALID_FD:
-          ret = is_valid_system_file_descriptor(vfd) ? ::fstatat(vfd, path, buf, flag) : DWARFS_IO_ERROR;
+          ret = is_valid_system_file_descriptor(vfd) ? ::fstatat(vfd, path, st, flag) : DWARFS_IO_ERROR;
           break;
         case DWARFS_S_LINK_OUTSIDE:
-          ret = TO_RB_W32_I128(fstatat)(vfd, r_path.c_str(), buf, flag);
+          ret = tebako_stat(r_path.c_str(), st);
           break;
         default:
           break;

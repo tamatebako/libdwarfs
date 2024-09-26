@@ -81,7 +81,7 @@ class TebakoMountTests : public ::testing::Test {
 
 bool TebakoMountTests::cross_test = false;
 
-TEST_F(TebakoMountTests, test_mount_directory)
+TEST_F(TebakoMountTests, mount_directory)
 {
   if (!cross_test) {
     DIR* dirp = tebako_opendir(TEBAKIZE_PATH("m-dir-outside-of-memfs"));
@@ -110,10 +110,9 @@ TEST_F(TebakoMountTests, test_mount_directory)
   else {
     GTEST_SKIP();
   }
-
 }
 
-TEST_F(TebakoMountTests, test_mount_file)
+TEST_F(TebakoMountTests, mount_file)
 {
   if (!cross_test) {
     int fh = tebako_open(2, TEBAKIZE_PATH("m-dir-outside-of-memfs/a-file-outside-of-memfs.txt"), O_RDONLY);
@@ -132,7 +131,7 @@ TEST_F(TebakoMountTests, test_mount_file)
 }
 
 #ifdef WITH_LINK_TESTS
-TEST_F(TebakoMountTests, test_mount_symlink)
+TEST_F(TebakoMountTests, mount_symlink)
 {
   if (!cross_test) {
     int fh = tebako_open(2, TEBAKIZE_PATH("m-dir-outside-of-memfs/o-link-outside-of-memfs"), O_RDONLY);
@@ -150,13 +149,14 @@ TEST_F(TebakoMountTests, test_mount_symlink)
   }
 }
 
-TEST_F(TebakoMountTests, test_mount_symlink_readlink)
+TEST_F(TebakoMountTests, mount_symlink_readlink)
 {
   if (!cross_test) {
     char readbuf[128];
     const char* pattern = "a-file-outside-of-memfs.txt";
 
-    int ret = tebako_readlink(TEBAKIZE_PATH("m-dir-outside-of-memfs/o-link-outside-of-memfs"), readbuf, sizeof(readbuf) / sizeof(readbuf[0]));
+    int ret = tebako_readlink(TEBAKIZE_PATH("m-dir-outside-of-memfs/o-link-outside-of-memfs"), readbuf,
+                              sizeof(readbuf) / sizeof(readbuf[0]));
     EXPECT_LT(0, ret);
     EXPECT_TRUE(strstr(readbuf, pattern) != 0);
   }
@@ -165,7 +165,7 @@ TEST_F(TebakoMountTests, test_mount_symlink_readlink)
   }
 }
 
-TEST_F(TebakoMountTests, test_mount_symlink_lstat)
+TEST_F(TebakoMountTests, mount_symlink_lstat)
 {
   if (!cross_test) {
     struct STAT_TYPE st;
@@ -177,6 +177,38 @@ TEST_F(TebakoMountTests, test_mount_symlink_lstat)
   }
 }
 
+#endif
+
+#ifdef TEBAKO_HAS_OPENAT
+TEST_F(TebakoMountTests, mount_and_openat)
+{
+  mount_table.insert(0, "m-bin", __BIN__);
+
+  int fh1 = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY);
+  EXPECT_LT(0, fh1);
+
+  int fh2 = tebako_openat(3, fh1, "m-bin" __S__ __SHELL__, O_RDONLY);
+  EXPECT_LT(0, fh2);
+
+  EXPECT_EQ(0, tebako_close(fh1));
+  EXPECT_EQ(0, tebako_close(fh2));
+}
+#endif
+
+#ifdef TEBAKO_HAS_FSTATAT
+TEST_F(TebakoMountTests, mount_and_fstatat)
+{
+  mount_table.insert(0, "m-bin", __BIN__);
+
+  int fh = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY);
+  EXPECT_LT(0, fh);
+
+  struct STAT_TYPE st;
+  int ret = tebako_fstatat(fh, "m-bin" __S__ __SHELL__, &st, 0);
+  EXPECT_EQ(0, ret);
+
+  EXPECT_EQ(0, tebako_close(fh));
+}
 #endif
 
 }  // namespace tebako

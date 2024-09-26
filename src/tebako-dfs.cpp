@@ -213,7 +213,7 @@ static int dwarfs_process_link(std::string& lnk, stdfs::path::iterator& p_iterat
   lnk = new_path.generic_string();
   int ret = new_path.is_relative() ? DWARFS_S_LINK_RELATIVE : DWARFS_S_LINK_ABSOLUTE;
   if (ret == DWARFS_S_LINK_RELATIVE) {
-    p_path = new_path;
+    p_path = std::move(new_path);
     p_iterator = p_path.begin();
   }
   return ret;
@@ -235,13 +235,17 @@ static int dwarfs_process_link(std::string& lnk, stdfs::path::iterator& p_iterat
 //  DWARFS_IO_ERROR - error [errno is set]
 //  DWARFS_LINK - symlink or mount point  [lnk is set]
 
-static int dwarfs_process_inode(filesystem_v2& fs, inode_view& pi, dwarfs::file_stat* st, bool follow,
-                               std::string& lnk, stdfs::path::iterator& p_iterator, stdfs::path& p_path)
+static int dwarfs_process_inode(filesystem_v2& fs,
+                                inode_view& pi,
+                                dwarfs::file_stat* st,
+                                bool follow,
+                                std::string& lnk,
+                                stdfs::path::iterator& p_iterator,
+                                stdfs::path& p_path)
 {
   int ret = DWARFS_IO_CONTINUE;
   int err = fs.getattr(pi, st);
-  if (err == 0)
-  {
+  if (err == 0) {
     // (1) It is symlink
     // (2a) It is not the last element in the path
     // (2b)   or we should follow the last element  (lstat called)
@@ -254,7 +258,7 @@ static int dwarfs_process_inode(filesystem_v2& fs, inode_view& pi, dwarfs::file_
   }
   // Failed to get inode attributes
   // dwarfs returns (-errno)
-  if (err !=0 ) {
+  if (err != 0) {
     TEBAKO_SET_LAST_ERROR(-err);
     ret = DWARFS_IO_ERROR;
   }
@@ -280,18 +284,21 @@ static int dwarfs_process_inode(filesystem_v2& fs, inode_view& pi, dwarfs::file_
 //  DWARFS_IO_ERROR - error [errno is set]
 //  DWARFS_LINK - symlink or mount point  [lnk is set]
 
-static int dwarfs_find_inode(uint32_t start_from, const stdfs::path& path, bool follow_last, std::string& lnk, struct stat* st) noexcept
+static int dwarfs_find_inode(uint32_t start_from,
+                             const stdfs::path& path,
+                             bool follow_last,
+                             std::string& lnk,
+                             struct stat* st) noexcept
 {
   int ret = DWARFS_IO_CONTINUE;
   dwarfs::file_stat dwarfs_st;
-  stdfs::path p_path{path};             // a copy of the path, mangled if symlink is found
+  stdfs::path p_path{path};  // a copy of the path, mangled if symlink is found
 
   auto locked = usd.rlock();
   auto p = *locked;
 
   try {
     if (p) {
-
       LOG_PROXY(debug_logger_policy, p->lgr);
       LOG_DEBUG << __func__ << " [ @inode:" << start_from << " path:" << path << " ]";
 
@@ -301,7 +308,7 @@ static int dwarfs_find_inode(uint32_t start_from, const stdfs::path& path, bool 
 
       if (pi) {
         ret = dwarfs_process_inode(p->fs, *pi, &dwarfs_st, follow_last, lnk, p_iterator, p_path);
-//(3) other stat calls (lstat, relative etc)
+        //(3) other stat calls (lstat, relative etc)
 
         while (p_iterator != p_path.end() && p_iterator->string() != "" && ret == DWARFS_IO_CONTINUE) {
           auto inode = pi->inode_num();
@@ -387,34 +394,36 @@ static int dwarfs_find_inode(uint32_t start_from, const stdfs::path& path, bool 
 //  DWARFS_IO_ERROR - error [errno is set]
 //  DWARFS_LINK - symlink or mount point  [lnk is set]
 
-static int dwarfs_find_inode_abs(uint32_t start_from, const stdfs::path& path, bool follow, std::string& lnk, struct stat* st) noexcept
+static int dwarfs_find_inode_abs(uint32_t start_from,
+                                 const stdfs::path& path,
+                                 bool follow,
+                                 std::string& lnk,
+                                 struct stat* st) noexcept
 {
   int ret = DWARFS_IO_ERROR;
   try {
     ret = dwarfs_find_inode(start_from, path, follow, lnk, st);
-      // Follow absolute links if necessary
-      // (indirect recursion)
-      if (ret == DWARFS_S_LINK_ABSOLUTE) {
-        if (is_tebako_path(lnk.c_str())) {
-          if (follow) {
+    // Follow absolute links if necessary
+    // (indirect recursion)
+    if (ret == DWARFS_S_LINK_ABSOLUTE) {
+      if (is_tebako_path(lnk.c_str())) {
+        if (follow) {
 #ifdef RB_W32
-            struct STAT_TYPE _st;
-            ret = tebako_stat(lnk.c_str(), &_st);
-            st << _st;
+          struct STAT_TYPE _st;
+          ret = tebako_stat(lnk.c_str(), &_st);
+          st << _st;
 #else
-            ret = tebako_stat(lnk.c_str(), st);
+          ret = tebako_stat(lnk.c_str(), st);
 #endif
-          }
-          else
-          {
-             ret = DWARFS_IO_CONTINUE;
-          }
         }
-        else
-        {
-          ret = DWARFS_S_LINK_OUTSIDE;
+        else {
+          ret = DWARFS_IO_CONTINUE;
         }
       }
+      else {
+        ret = DWARFS_S_LINK_OUTSIDE;
+      }
+    }
   }
   catch (dwarfs::system_error const& e) {
     TEBAKO_SET_LAST_ERROR(e.get_errno());
@@ -425,7 +434,6 @@ static int dwarfs_find_inode_abs(uint32_t start_from, const stdfs::path& path, b
     TEBAKO_SET_LAST_ERROR(ENOMEM);
   }
   return ret;
-
 }
 
 // dwarfs_find_inode_root
@@ -447,8 +455,8 @@ static int dwarfs_find_inode_root(const std::string& path, bool follow, std::str
   // Normally we remove '/__tebako_memfs__/'
   // However, there is also a case when it is memfs root and path isn just
   // '/__tebako_memfs__'
-  auto adjusted_path = path.substr(path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? TEBAKO_MOUNT_POINT_LENGTH
-                                                                           : TEBAKO_MOUNT_POINT_LENGTH + 1);
+  auto adjusted_path =
+      path.substr(path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? TEBAKO_MOUNT_POINT_LENGTH : TEBAKO_MOUNT_POINT_LENGTH + 1);
 
   return dwarfs_find_inode_abs(dwarfs_root, adjusted_path, follow, lnk, st);
 }
@@ -663,7 +671,11 @@ int dwarfs_stat(const std::string& path, struct stat* st, std::string& lnk, bool
   return dwarfs_find_inode_root(path, follow, lnk, st);
 }
 
-int dwarfs_inode_relative_stat(uint32_t inode, const std::string& path, struct stat* st, std::string& lnk, bool follow) noexcept
+int dwarfs_inode_relative_stat(uint32_t inode,
+                               const std::string& path,
+                               struct stat* st,
+                               std::string& lnk,
+                               bool follow) noexcept
 {
   return dwarfs_find_inode_abs(inode, path, follow, lnk, st);
 }

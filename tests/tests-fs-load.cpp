@@ -149,7 +149,6 @@ TEST(LoadTests, tebako_load_valid_filesystem_with_invalid_decompress_ratio)
   drop_fs();
 }
 
-
 TEST(LoadTests, tebako_stat_not_loaded_filesystem)
 {
   struct STAT_TYPE buf;

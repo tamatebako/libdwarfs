@@ -60,13 +60,12 @@ class LnTests : public testing::Test {
             NULL /* decompress_ratio*/, NULL /* image_offset */
     );
 #ifdef WITH_LINK_TESTS
-    std::string tdp_template =
-        (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
+    std::string tdp_template = (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
     size_t l = tdp_template.length();
     char* dir_name = new char[l + 1];
     if (dir_name) {
       strcpy(dir_name, tdp_template.c_str());
-// *** need different approach on Windows
+      // *** need different approach on Windows
       dir_name = mkdtemp(dir_name);
       tmp_path = dir_name;
       fs::create_directories(tmp_path);
@@ -78,7 +77,6 @@ class LnTests : public testing::Test {
     }
 #endif
     cross_test = (std::getenv("TEBAKO_CROSS_TEST") != NULL);
-
   }
 
   static void TearDownTestSuite()
@@ -410,6 +408,7 @@ TEST_F(LnTests, tebako_fstatat_link_nofollow_absolute)
             buf.st_size);  // The link itself
 }
 
+#ifdef O_DIRECTOR
 TEST_F(LnTests, tebako_fstatat_link_follow_relative)
 {
   struct STAT_TYPE buf;
@@ -435,9 +434,10 @@ TEST_F(LnTests, tebako_fstatat_link_nofollow_relative)
   EXPECT_EQ(strlen("directory-1/file-in-directory-1.txt"),
             buf.st_size);  // The link itself
 }
+#endif  // O_DIRECTORY
 #endif
 
-#ifdef TEBAKO_HAS_OPENAT
+#if defined(TEBAKO_HAS_OPENAT) && defined(O_NOFOLLOW)
 TEST_F(LnTests, tebako_openat_link_nofollow_relative)
 {
   int fh1 = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY);
@@ -453,12 +453,5 @@ TEST_F(LnTests, tebako_openat_link_nofollow_relative)
 }
 #endif
 
-/*	TEST_F(LnTests, tebako_open_link_nofollow) {
-                int fh = tebako_open(2, TEBAKIZE_PATH("s-link-to-file-1"),
-   O_RDONLY|O_NOFOLLOW); EXPECT_EQ(-1, fh); EXPECT_EQ(ELOOP, errno);
-
-                EXPECT_EQ(-1, tebako_close(fh));
-        }
-*/
 #endif
 }  // namespace
