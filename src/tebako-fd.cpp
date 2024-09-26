@@ -149,50 +149,54 @@ int sync_tebako_fdtable::openat(int vfd, const char* path, int flags, std::strin
         if (dwarfs_inode_access(stfd.st_ino, X_OK, getuid(), getgid()) == DWARFS_IO_CONTINUE) {
           try {
             auto fd = make_shared<tebako_fd>();
-            if (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st, lnk, (flags & O_NOFOLLOW) == 0) ==
-                DWARFS_IO_CONTINUE) {
-              if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
-                // [ENOTDIR] ... or O_DIRECTORY was specified and the path
-                // argument resolves to a non - directory file.
-                TEBAKO_SET_LAST_ERROR(ENOTDIR);
-              }
-              else if (S_ISLNK(fd->st.st_mode) && (flags & O_NOFOLLOW)) {
-                //    [O_NOFOLLOW] If the trailing component (i.e., basename) of
-                //    pathname is a symbolic link, then the open fails, with
-                //    the error ELOOP.
-                TEBAKO_SET_LAST_ERROR(ELOOP);
-              }
-              else {
-                fd->handle = new int;
-                if (fd->handle == NULL) {
-                  TEBAKO_SET_LAST_ERROR(ENOMEM);
+            switch (dwarfs_inode_relative_stat(stfd.st_ino, path, &fd->st, lnk, (flags & O_NOFOLLOW) == 0)) {
+              case DWARFS_IO_CONTINUE:
+                if (!S_ISDIR(fd->st.st_mode) && (flags & O_DIRECTORY)) {
+                  // [ENOTDIR] ... or O_DIRECTORY was specified and the path
+                  // argument resolves to a non - directory file.
+                  TEBAKO_SET_LAST_ERROR(ENOTDIR);
+                }
+                else if (S_ISLNK(fd->st.st_mode) && (flags & O_NOFOLLOW)) {
+                  //    [O_NOFOLLOW] If the trailing component (i.e., basename) of
+                  //    pathname is a symbolic link, then the open fails, with
+                  //    the error ELOOP.
+                  TEBAKO_SET_LAST_ERROR(ELOOP);
                 }
                 else {
-                  // get a dummy fd from the system
-                  ret = ::dup(0);
-                  if (ret == DWARFS_IO_ERROR) {
-                    // [EMFILE]  All file descriptors available to the process
-                    // are currently open.
-                    TEBAKO_SET_LAST_ERROR(EMFILE);
+                  fd->handle = new int;
+                  if (fd->handle == NULL) {
+                    TEBAKO_SET_LAST_ERROR(ENOMEM);
                   }
                   else {
-                    // construct a handle (mainly) for win32
-                    *fd->handle = ret;
-                    (*s_tebako_fdtable.wlock())[ret] = std::move(fd);
+                    // get a dummy fd from the system
+                    ret = ::dup(0);
+                    if (ret == DWARFS_IO_ERROR) {
+                      // [EMFILE]  All file descriptors available to the process
+                      // are currently open.
+                      TEBAKO_SET_LAST_ERROR(EMFILE);
+                    }
+                    else {
+                      // construct a handle (mainly) for win32
+                      *fd->handle = ret;
+                      (*s_tebako_fdtable.wlock())[ret] = std::move(fd);
+                    }
                   }
                 }
-              }
-            }
-            else {
-              // [ENOENT] O_CREAT is not set and a component of path does
-              // not name an existing file, or O_CREAT is set and a component of
-              // the path prefix of path does not name an existing file, or path
-              // points to an empty string. 	[EROFS] The named file resides
-              // on a read - only file system and either O_WRONLY, O_RDWR,
-              // O_CREAT(if the file does not exist), or O_TRUNC is set in the
-              // oflag argument.
-              if (flags & O_CREAT)
-                TEBAKO_SET_LAST_ERROR(EROFS);
+                break;
+              case DWARFS_S_LINK_OUTSIDE:
+                ret = DWARFS_S_LINK_OUTSIDE;
+                break;
+              default:
+                // [ENOENT] O_CREAT is not set and a component of path does
+                // not name an existing file, or O_CREAT is set and a component of
+                // the path prefix of path does not name an existing file, or path
+                // points to an empty string.
+                // [EROFS] The named file resides
+                // on a read - only file system and either O_WRONLY, O_RDWR,
+                // O_CREAT(if the file does not exist), or O_TRUNC is set in the
+                // oflag argument.
+                TEBAKO_SET_LAST_ERROR((flags & O_CREAT) ? EROFS : ENOENT);
+                break;
             }
           }
           catch (bad_alloc&) {

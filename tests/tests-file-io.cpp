@@ -109,7 +109,7 @@ TEST_F(FileIOTests, tebako_open_no_file)
   EXPECT_EQ(ENOENT, errno);
 }
 
-#ifdef TEBAKO_HAS_O_DIRECTORY
+#ifdef O_DIRECTORY
 TEST_F(FileIOTests, tebako_open_dir)
 {
   int ret = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
@@ -133,7 +133,7 @@ TEST_F(FileIOTests, tebako_close_bad_file)
   EXPECT_EQ(EBADF, errno);
 }
 
-#ifdef TEBAKO_HAS_O_NOFOLLOW
+#ifdef O_NOFOLLOW
 TEST_F(FileIOTests, tebako_open_read_close_absolute_path_with_nofollow)
 {
   int fh = tebako_open(2, TEBAKIZE_PATH("directory-1/file-in-directory-1.txt"), O_RDONLY | O_NOFOLLOW);
@@ -299,6 +299,57 @@ TEST_F(FileIOTests, tebako_openat_rdwr)
   EXPECT_EQ(0, tebako_close(fh1));
 }
 
+#ifdef O_DIRECTORY
+TEST_F(FileIOTests, tebako_openat_dir)
+{
+  int fh1 = tebako_open(2, TEBAKIZE_PATH(""), O_RDONLY);
+  EXPECT_LT(0, fh1);
+
+  int fh2 = tebako_openat(3, fh1, "directory-1", O_RDONLY | O_DIRECTORY);
+  EXPECT_LT(0, fh2);
+
+  EXPECT_EQ(0, tebako_close(fh1));
+  EXPECT_EQ(0, tebako_close(fh2));
+}
+
+TEST_F(FileIOTests, tebako_openat_not_dir)
+{
+  int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-2"), O_RDONLY);
+  EXPECT_LT(0, fh1);
+
+  int fh2 = tebako_openat(3, fh1, "file-in-directory-2.txt", O_RDONLY | O_DIRECTORY);
+  EXPECT_EQ(-1, fh2);
+  EXPECT_EQ(ENOTDIR, errno);
+
+  EXPECT_EQ(0, tebako_close(fh1));
+}
+#endif
+
+TEST_F(FileIOTests, tebako_openat_create_rofs)
+{
+  int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-2"), O_RDONLY);
+  EXPECT_LT(0, fh1);
+
+  int fh2 = tebako_openat(3, fh1, "no-file-in-directory-2.txt", O_RDONLY | O_CREAT);
+  EXPECT_EQ(-1, fh2);
+  EXPECT_EQ(EROFS, errno);
+
+  EXPECT_EQ(0, tebako_close(fh1));
+}
+
+TEST_F(FileIOTests, tebako_openat_no_file)
+{
+  int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-2"), O_RDONLY);
+  EXPECT_LT(0, fh1);
+
+  int fh2 = tebako_openat(3, fh1, "no-file-in-directory-2.txt", O_RDONLY);
+  EXPECT_EQ(-1, fh2);
+  EXPECT_EQ(ENOENT, errno);
+
+  EXPECT_EQ(0, tebako_close(fh1));
+}
+
+#ifdef O_NOFOLLLOW
 TEST_F(FileIOTests, tebako_openat_not_relative_with_nofollow)
 {
   int fh1 = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_NOFOLLOW);
@@ -315,6 +366,7 @@ TEST_F(FileIOTests, tebako_openat_not_relative_with_nofollow)
   EXPECT_EQ(0, tebako_close(fh1));
   EXPECT_EQ(0, tebako_close(fh2));
 }
+#endif
 
 TEST_F(FileIOTests, tebako_openat_relative)
 {
@@ -351,6 +403,28 @@ TEST_F(FileIOTests, tebako_openat_atcwd)
   EXPECT_EQ(0, tebako_close(fh1));
   EXPECT_EQ(0, tebako_close(fh2));
 }
+
+#ifdef O_DIRECTORY
+TEST_F(FileIOTests, tebako_open_openat_pass_through_create)
+{
+  char temp_filename[] = __AT_TMP__("tebako_tempfile_XXXXXX");
+  EXPECT_NE(nullptr, mktemp(temp_filename));
+
+  char* temp_filename_only = strstr(temp_filename, "tebako_tempfile_");
+  EXPECT_NE(nullptr, temp_filename_only);
+
+  int fh1 = ::open(__TMP__, O_RDONLY | O_DIRECTORY);
+  EXPECT_LT(0, fh1);
+
+  int fh2 = tebako_openat(4, fh1, temp_filename_only, O_RDWR | O_CREAT);
+  EXPECT_LT(0, fh2);
+
+  EXPECT_EQ(0, ::close(fh1));
+  EXPECT_EQ(0, tebako_close(fh2));
+
+  EXPECT_EQ(0, unlink(temp_filename));
+}
+#endif  //  O_DIRECTORY
 #endif
 
 TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path_pass_through)
@@ -366,29 +440,6 @@ TEST_F(FileIOTests, tebako_open_lseek_read_close_absolute_path_pass_through)
   ret = tebako_close(fh1);
   EXPECT_EQ(0, ret);
 }
-
-#ifdef TEBAKO_HAS_OPENAT
-TEST_F(FileIOTests, tebako_open_openat_close_interop)
-{
-  int fh1 = ::open("/bin", O_RDONLY | O_DIRECTORY);
-  EXPECT_LT(0, fh1);
-
-  int fh2 = tebako_openat(3, fh1, "bash", O_RDONLY);
-  EXPECT_LT(0, fh2);
-
-  EXPECT_EQ(0, ::close(fh1));
-  EXPECT_EQ(0, tebako_close(fh2));
-
-  fh1 = tebako_open(2, "/bin", O_RDONLY);
-  EXPECT_LT(0, fh1);
-
-  fh2 = tebako_openat(3, fh1, "bash", O_RDONLY);
-  EXPECT_LT(0, fh2);
-
-  EXPECT_EQ(0, close(fh1));
-  EXPECT_EQ(0, tebako_close(fh2));
-}
-#endif
 
 TEST_F(FileIOTests, tebako_open_close_relative_path_pass_through)
 {
@@ -550,6 +601,6 @@ TEST_F(FileIOTests, tebako_readv_invalid_fd)
   int ret = tebako_readv(-2, &iov[0], 3);
   EXPECT_EQ(-1, ret);
   EXPECT_EQ(errno, EBADF);
- }
+}
 #endif
 }  // namespace

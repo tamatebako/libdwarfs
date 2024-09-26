@@ -42,18 +42,12 @@ class sync_tebako_mount_table {
   static sync_tebako_mount_table& get_tebako_mount_table(void);
 
   bool check(const tebako_mount_point& mount_point);
-  bool check(const uint32_t ino, const std::string& mount_path)
-  {
-    return check(std::make_pair(ino, mount_path));
-  };
+  bool check(const uint32_t ino, const std::string& mount_path) { return check(std::make_pair(ino, mount_path)); };
 
   void clear(void);
 
   void erase(const tebako_mount_point& mount_point);
-  void erase(const uint32_t ino, const std::string& mount_path)
-  {
-    erase(std::make_pair(ino, mount_path));
-  };
+  void erase(const uint32_t ino, const std::string& mount_path) { erase(std::make_pair(ino, mount_path)); };
 
   std::optional<std::string> get(const tebako_mount_point& mount_point);
   std::optional<std::string> get(const uint32_t ino, const std::string& mount_path)

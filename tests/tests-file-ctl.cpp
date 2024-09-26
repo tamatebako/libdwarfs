@@ -94,7 +94,6 @@ TEST_F(FileCtlTests, tebako_access_absolute_path_no_file)
   EXPECT_EQ(-1, ret);
 }
 
-
 TEST_F(FileCtlTests, tebako_access_null)
 {
   int ret = tebako_access(NULL, W_OK);
@@ -271,6 +270,7 @@ TEST_F(FileCtlTests, tebako_open_fstat_close_relative_path_pass_through)
 }
 
 #ifdef TEBAKO_HAS_FSTATAT
+#ifdef O_DIRECTORY
 TEST_F(FileCtlTests, tebako_fstatat_relative_path)
 {
   int fd = tebako_open(2, TEBAKIZE_PATH("directory-1"), O_RDONLY | O_DIRECTORY);
@@ -323,6 +323,7 @@ TEST_F(FileCtlTests, tebako_fstatat_absolute_path_pass_through)
     EXPECT_EQ(0, ret);
   }
 }
+#endif  // ifdef O_DIRECTORY
 
 TEST_F(FileCtlTests, tebako_fstatat_at_fdcwd)
 {

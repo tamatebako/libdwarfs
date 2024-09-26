@@ -130,7 +130,6 @@ TEST_F(DirIOTests, tebako_dirfd_invalid_dirp)
 }
 #endif
 
-
 #if defined(TEBAKO_HAS_OPENDIR) || defined(RB_W32)
 TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir)
 {
