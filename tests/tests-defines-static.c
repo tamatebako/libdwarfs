@@ -473,9 +473,14 @@ static int scandir_c_test(void)
   struct dirent** namelist;
   int n, i;
 
+#ifdef  WITH_LINK_TESTS
+  const int N = 7;
+#else
+  const int N = 6;
+#endif
   n = scandir(TEBAKIZE_PATH("directory-1"), &namelist, NULL, alphasort);
-  printf("A call to 'scandir' returned %i (5 expected)\n", n);
-  rOK &= (n == 5);
+  printf("A call to 'scandir' returned %i (%i expected)\n", n, N);
+  rOK &= (n == N);
   if (n > 0) {
     for (i = 0; i < n; i++) {
       printf("Scandir file name #%i: '%s'\n", i, namelist[i]->d_name);

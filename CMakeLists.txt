@@ -934,9 +934,9 @@ if(WITH_TESTS)
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f directory-2/file-in-directory-2.txt h-link-to-file-2
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s directory-1/file-in-directory-1.txt s-link-to-file-1
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s directory-2 s-link-to-dir-1
+      COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR}/directory-1 ln -f -s level-2/file-at-level-2.txt s-link-to-level-2
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/a-file-outside-of-memfs.txt s-link-outside-of-memfs
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files s-dir-outside-of-memfs
-      COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/o-link-outside-of-memfs
       COMMAND ${CMAKE_COMMAND} -E chdir ${DATA_TEST_DIR} ln -f -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/a-file-outside-of-memfs.txt
                                                                   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files/o-link-outside-of-memfs
     )
@@ -954,7 +954,8 @@ if(WITH_TESTS)
       add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
         COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
         COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*-link-to-*
+                                           ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
         BYPRODUCTS ${DATA_BIN_FILE}
       )
     endif(USE_TEMP_FS)
