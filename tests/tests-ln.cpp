@@ -252,6 +252,19 @@ TEST_F(LnTests, tebako_lstat_absolute_path)
   EXPECT_EQ(37, st.st_size);
 }
 
+TEST_F(LnTests, tebako_lstat_level_2)
+{
+  struct STAT_TYPE st;
+  int ret = tebako_lstat(TEBAKIZE_PATH("directory-1/s-link-to-level-2"), &st);
+  EXPECT_EQ(0, ret);
+  EXPECT_EQ(27, st.st_size);
+
+  ret = tebako_stat(TEBAKIZE_PATH("directory-1/s-link-to-level-2"), &st);
+  EXPECT_EQ(0, ret);
+  EXPECT_EQ(25, st.st_size);
+}
+
+
 TEST_F(LnTests, tebako_lstat_absolute_path_no_file)
 {
   struct STAT_TYPE st;
