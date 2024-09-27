@@ -264,7 +264,6 @@ TEST_F(LnTests, tebako_lstat_level_2)
   EXPECT_EQ(25, st.st_size);
 }
 
-
 TEST_F(LnTests, tebako_lstat_absolute_path_no_file)
 {
   struct STAT_TYPE st;

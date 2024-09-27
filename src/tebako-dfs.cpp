@@ -240,6 +240,9 @@ static int dwarfs_process_inode(filesystem_v2& fs,
                                 dwarfs::file_stat* st,
                                 bool follow,
                                 std::string& lnk,
+                                // Using  stdfs::path::iterator& below
+                                // causes std::bad_alloc at ++p_iterator
+                                // at least for gcc 12 headers. May be others as well.
                                 stdfs::path::iterator& p_iterator,
                                 stdfs::path& p_path)
 {
@@ -308,8 +311,6 @@ static int dwarfs_find_inode(uint32_t start_from,
 
       if (pi) {
         ret = dwarfs_process_inode(p->fs, *pi, &dwarfs_st, follow_last, lnk, p_iterator, p_path);
-        //(3) other stat calls (lstat, relative etc)
-
         while (p_iterator != p_path.end() && p_iterator->string() != "" && ret == DWARFS_IO_CONTINUE) {
           auto inode = pi->inode_num();
           auto mount_point = m_table.get(inode, p_iterator->string());
@@ -345,7 +346,9 @@ static int dwarfs_find_inode(uint32_t start_from,
               ret = DWARFS_IO_ERROR;
             }
           }
-          ++p_iterator;
+          if (p_iterator != p_path.end()) {
+            ++p_iterator;
+          }
         }
       }
       // Failed to find the start inode

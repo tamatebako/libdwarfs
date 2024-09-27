@@ -473,7 +473,7 @@ static int scandir_c_test(void)
   struct dirent** namelist;
   int n, i;
 
-#ifdef  WITH_LINK_TESTS
+#ifdef WITH_LINK_TESTS
   const int N = 7;
 #else
   const int N = 6;
