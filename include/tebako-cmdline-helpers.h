@@ -31,4 +31,5 @@
 
 namespace tebako {
 int tebako_extract_cmdline(int* argc, char*** argv, const char* fs_mount_point);
+std::pair<std::vector<std::string>, std::vector<std::string>> tebako_parse_arguments(int argc, const char** argv);
 }  // namespace tebako

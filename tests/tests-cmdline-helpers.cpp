@@ -11,6 +11,7 @@ TEST(ExtractCmdlineTest, no_additional_args)
   char** p;
   char** argv = p = new char*[2];
   char* pp[1];
+
   argv[0] = pp[0] = strdup("program_name");
   argv[1] = nullptr;
 
@@ -24,8 +25,8 @@ TEST(ExtractCmdlineTest, no_additional_args)
   EXPECT_STREQ(argv[1], "-e");
   EXPECT_STREQ(argv[2], "require 'fileutils'; FileUtils.copy_entry '/mnt/point', 'source_filesystem'");
 
-  delete[] pp[0];
-  delete p;
+  free(pp[0]);
+  delete[] p;
 
   delete[] argv[0];
   delete[] argv;
@@ -55,10 +56,10 @@ TEST(ExtractCmdlineTest, custom_destination_arg)
   EXPECT_STREQ(argv[1], "-e");
   EXPECT_STREQ(argv[2], "require 'fileutils'; FileUtils.copy_entry '/mnt/point', 'custom_dest'");
 
-  delete[] pp[0];
-  delete[] pp[1];
-  delete[] pp[2];
-  delete p;
+  free(pp[0]);
+  free(pp[1]);
+  free(pp[2]);
+  delete[] p;
 
   delete[] argv[0];
   delete[] argv;
@@ -88,10 +89,73 @@ TEST(ExtractCmdlineTest, long_fs_mount_point)
       "require 'fileutils'; FileUtils.copy_entry '" + long_fs_mount_point + "', 'source_filesystem'";
   EXPECT_STREQ(argv[2], expected_cmd.c_str());
 
-  delete[] pp[0];
-  delete p;
+  free(pp[0]);
+  delete[] p;
 
   delete[] argv[0];
   delete[] argv;
 }
+
+TEST(ProcessArgumentsTest, handles_mount_rule)
+{
+  const char* argv[] = {"program", "--tebako-mount", "d1:m1", "--tebako-mount", "d2:m2", "other"};
+  int argc = 6;
+
+  auto [tebako_mount_args, other_args] = tebako_parse_arguments(argc, argv);
+
+  // Check that we correctly extracted the tebako-mount rules
+  EXPECT_EQ(tebako_mount_args.size(), 2);
+  EXPECT_EQ(tebako_mount_args[0], "d1:m1");
+  EXPECT_EQ(tebako_mount_args[1], "d2:m2");
+
+  // Check that we correctly placed other arguments
+  EXPECT_EQ(other_args.size(), 2);
+  EXPECT_EQ(other_args[0], "program");
+  EXPECT_EQ(other_args[1], "other");
+}
+
+TEST(ProcessArgumentsTest, throws_error_on_missing_rule)
+{
+  const char* argv[] = {"program", "--tebako-mount"};
+  int argc = 2;
+
+  // Expect an exception due to missing rule
+  EXPECT_THROW(tebako_parse_arguments(argc, argv), std::invalid_argument);
+}
+
+TEST(ProcessArgumentsTest, throws_error_on_option_in_place_of_rule)
+{
+  const char* argv[] = {"program", "--tebako-mount", "--option"};
+  int argc = 3;
+
+  // Expect an exception due to missing rule after "="
+  EXPECT_THROW(tebako_parse_arguments(argc, argv), std::invalid_argument);
+}
+
+TEST(ProcessArgumentsTest, throws_error_on_on_no_rule)
+{
+  const char* argv[] = {"program", "--tebako-mount"};
+  int argc = 2;
+
+  // Expect an exception due to missing rule after "="
+  EXPECT_THROW(tebako_parse_arguments(argc, argv), std::invalid_argument);
+}
+
+TEST(ProcessArgumentsTest, handles_no_tebako_mount_argument)
+{
+  const char* argv[] = {"program", "arg1", "arg2"};
+  int argc = 3;
+
+  auto [tebako_mount_args, other_args] = tebako_parse_arguments(argc, argv);
+
+  // No tebako-mount arguments should be found
+  EXPECT_TRUE(tebako_mount_args.empty());
+
+  // Check that all arguments were placed in other_args
+  EXPECT_EQ(other_args.size(), 3);
+  EXPECT_EQ(other_args[0], "program");
+  EXPECT_EQ(other_args[1], "arg1");
+  EXPECT_EQ(other_args[2], "arg2");
+}
+
 }  // namespace tebako

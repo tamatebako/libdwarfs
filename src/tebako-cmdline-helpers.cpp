@@ -34,6 +34,7 @@
 #include <string>
 #include <cstdint>
 #include <vector>
+#include <stdexcept>
 
 #include <tebako-cmdline-helpers.h>
 
@@ -65,5 +66,43 @@ int tebako_extract_cmdline(int* argc, char*** argv, const char* fs_mount_point)
     ret = 0;
   }
   return ret;
+}
+
+std::pair<std::vector<std::string>, std::vector<std::string>> tebako_parse_arguments(int argc, const char** argv)
+{
+  const std::string error_msg =
+      "Error: --tebako-mount must be followed by a rule (e.g., --tebako-mount <mount point>:<target>)";
+  std::vector<std::string> tebako_mount_args;
+  std::vector<std::string> other_args;
+
+  for (int i = 0; i < argc; i++) {
+    std::string arg = argv[i];
+
+    // Check for "--tebako-mount"
+    if (arg == "--tebako-mount") {
+      // Ensure there is a next argument
+      if (i + 1 < argc) {
+        std::string next_arg = argv[i + 1];
+
+        // Check if the next argument is valid
+        if (next_arg[0] != '-') {  // It's not a flag
+          tebako_mount_args.push_back(next_arg);
+          i += 1;  // Skip the next argument as it is the rule
+          continue;
+        }
+        else {
+          throw std::invalid_argument(error_msg);
+        }
+      }
+
+      // If "--tebako-mount" is at the end of args without a rule, raise an error
+      throw std::invalid_argument(error_msg);
+    }
+
+    // If not a tebako-mount argument, add to other_args
+    other_args.push_back(arg);
+  }
+
+  return std::make_pair(tebako_mount_args, other_args);
 }
 }  // namespace tebako
