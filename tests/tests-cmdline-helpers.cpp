@@ -205,7 +205,7 @@ TEST(BuildArgumentsTest, basic_case)
 
   auto [argc, argv] = build_arguments(new_argv, fs_mount_point, fs_entry_point);
 
-  ASSERT_EQ(argc, 4);
+  EXPECT_EQ(argc, 4);
   EXPECT_STREQ(argv[0], "program");
   EXPECT_STREQ(argv[1], "/mnt/local/entry");
   EXPECT_STREQ(argv[2], "arg1");
@@ -223,7 +223,7 @@ TEST(BuildArgumentsTest, no_arguments)
 
   auto [argc, argv] = build_arguments(new_argv, fs_mount_point, fs_entry_point);
 
-  ASSERT_EQ(argc, 2);
+  EXPECT_EQ(argc, 2);
   EXPECT_STREQ(argv[0], "program");
   EXPECT_STREQ(argv[1], "/mnt/local/entry");
 
@@ -239,7 +239,7 @@ TEST(BuildArgumentsTest, long_strings)
 
   auto [argc, argv] = build_arguments(new_argv, fs_mount_point, fs_entry_point);
 
-  ASSERT_EQ(argc, 4);
+  EXPECT_EQ(argc, 4);
   EXPECT_STREQ(argv[0], "program");
   EXPECT_STREQ(argv[1], "/mnt/local/entry");
   EXPECT_EQ(std::string(argv[2]), std::string(1000, 'a'));
@@ -257,7 +257,7 @@ TEST(BuildArgumentsTest, special_characters)
 
   auto [argc, argv] = build_arguments(new_argv, fs_mount_point, fs_entry_point);
 
-  ASSERT_EQ(argc, 5);
+  EXPECT_EQ(argc, 5);
   EXPECT_STREQ(argv[0], "program");
   EXPECT_STREQ(argv[1], "/mnt/local/entry");
   EXPECT_STREQ(argv[2], "arg 1");

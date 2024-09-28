@@ -134,7 +134,7 @@ int tebako_mkdir(const char* path)
     TEBAKO_SET_LAST_ERROR(ENOENT);
   }
   else {
-    auto p = fs::path(path);
+    auto p = stdfs::path(path);
     if ((is_tebako_cwd() && p.is_relative()) || is_tebako_path(path)) {
       TEBAKO_SET_LAST_ERROR(EROFS);
     }

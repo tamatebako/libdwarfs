@@ -71,6 +71,7 @@ int dwarfs_readlink(const std::string& path, std::string& link, std::string& lnk
 int dwarfs_stat(const std::string& path, struct stat* buf, std::string& lnk, bool follow) noexcept;
 
 int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid) noexcept;
+int dwarfs_relative_stat(const std::string& path, struct stat* st, std::string& lnk, bool follow) noexcept;
 int dwarfs_inode_relative_stat(uint32_t inode,
                                const std::string& path,
                                struct stat* buf,

@@ -58,7 +58,7 @@ class DirCtlTests : public testing::Test {
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
 
-    auto p_tmp_dir = fs::temp_directory_path();
+    auto p_tmp_dir = stdfs::temp_directory_path();
     auto p_tmp_name = p_tmp_dir / TMP_D_NAME;
 
     tmp_dir = p_tmp_dir.generic_string();

@@ -38,8 +38,6 @@
 #include <tebako-mfs.h>
 #include <tebako-mnt.h>
 
-namespace stdfs = std::filesystem;
-
 namespace dwarfs {
 
 template <typename LoggerPolicy>
@@ -458,10 +456,17 @@ static int dwarfs_find_inode_root(const std::string& path, bool follow, std::str
   // Normally we remove '/__tebako_memfs__/'
   // However, there is also a case when it is memfs root and path isn just
   // '/__tebako_memfs__'
-  auto adjusted_path =
-      path.substr(path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? TEBAKO_MOUNT_POINT_LENGTH : TEBAKO_MOUNT_POINT_LENGTH + 1);
+  int ret = DWARFS_IO_ERROR;
+  if (path.length() < TEBAKO_MOUNT_POINT_LENGTH) {
+    TEBAKO_SET_LAST_ERROR(ENOENT);
+  }
+  else {
+    auto adjusted_path = path.substr(path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? TEBAKO_MOUNT_POINT_LENGTH
+                                                                             : TEBAKO_MOUNT_POINT_LENGTH + 1);
 
-  return dwarfs_find_inode_abs(dwarfs_root, adjusted_path, follow, lnk, st);
+    ret = dwarfs_find_inode_abs(dwarfs_root, adjusted_path, follow, lnk, st);
+  }
+  return ret;
 }
 
 template <typename Functor, class... Args>
@@ -681,6 +686,11 @@ int dwarfs_inode_relative_stat(uint32_t inode,
                                bool follow) noexcept
 {
   return dwarfs_find_inode_abs(inode, path, follow, lnk, st);
+}
+
+int dwarfs_relative_stat(const std::string& path, struct stat* st, std::string& lnk, bool follow) noexcept
+{
+  return dwarfs_find_inode_abs(dwarfs_root, path, follow, lnk, st);
 }
 
 #if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32) || defined(_WIN32)
