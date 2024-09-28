@@ -30,6 +30,10 @@
 #pragma once
 
 namespace tebako {
-int tebako_extract_cmdline(int* argc, char*** argv, const char* fs_mount_point);
-std::pair<std::vector<std::string>, std::vector<std::string>> tebako_parse_arguments(int argc, const char** argv);
+int build_arguments_for_extract(int* argc, char*** argv, const char* fs_mount_point);
+std::pair<int, char**> build_arguments(const std::vector<std::string>& new_argv,
+                                              const char* fs_mount_point,
+                                              const char* fs_entry_point);
+std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(int argc, char** argv);
+void process_mountpoints(const std::vector<std::string>& mountpoints);
 }  // namespace tebako
