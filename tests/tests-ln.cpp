@@ -34,7 +34,7 @@ namespace fs = std::filesystem;
 namespace {
 class LnTests : public testing::Test {
  protected:
-  static fs::path tmp_path;
+  static stdfs::path tmp_path;
   static bool cross_test;
   static bool path_initialized;
 
@@ -60,7 +60,7 @@ class LnTests : public testing::Test {
             NULL /* decompress_ratio*/, NULL /* image_offset */
     );
 #ifdef WITH_LINK_TESTS
-    std::string tdp_template = (fs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
+    std::string tdp_template = (stdfs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
     size_t l = tdp_template.length();
     char* dir_name = new char[l + 1];
     if (dir_name) {
@@ -68,10 +68,10 @@ class LnTests : public testing::Test {
       // *** need different approach on Windows
       dir_name = mkdtemp(dir_name);
       tmp_path = dir_name;
-      fs::create_directories(tmp_path);
+      stdfs::create_directories(tmp_path);
       path_initialized = true;
 
-      fs::create_symlink(__AT_BIN__(__SHELL__), tmp_path / "link2shell");
+      stdfs::create_symlink(__AT_BIN__(__SHELL__), tmp_path / "link2shell");
 
       delete[] dir_name;
     }
@@ -83,7 +83,7 @@ class LnTests : public testing::Test {
   {
 #ifdef WITH_LINK_TESTS
     if (path_initialized) {
-      fs::remove_all(tmp_path);
+      stdfs::remove_all(tmp_path);
     }
     path_initialized = false;
 #endif
@@ -92,7 +92,7 @@ class LnTests : public testing::Test {
 };
 bool LnTests::cross_test = false;
 bool LnTests::path_initialized = false;
-fs::path LnTests::tmp_path;
+stdfs::path LnTests::tmp_path;
 
 #ifdef WITH_LINK_TESTS
 TEST_F(LnTests, tebako_softlink)

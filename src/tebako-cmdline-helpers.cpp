@@ -67,8 +67,8 @@ int build_arguments_for_extract(int* argc, char*** argv, const char* fs_mount_po
 }
 
 std::pair<int, char**> build_arguments(const std::vector<std::string>& new_argv,
-                                              const char* fs_mount_point,
-                                              const char* fs_entry_point)
+                                       const char* fs_mount_point,
+                                       const char* fs_entry_point)
 {
   if (fs_mount_point == nullptr || fs_entry_point == nullptr || fs_mount_point[0] == 0 || fs_entry_point[0] == 0) {
     throw std::invalid_argument("Internal error: fs_mount_point and fs_entry_point must be non-null and non-empty");
@@ -146,44 +146,45 @@ std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(in
   return std::make_pair(tebako_mount_args, other_args);
 }
 
-void process_mountpoints(const std::vector<std::string>& mountpoints) {
-    for (const auto& item : mountpoints) {
-        // Split item by the first ':'
-        size_t separator_pos = item.find(':');
-        if (separator_pos == std::string::npos) {
-            throw std::invalid_argument("Invalid input: missing ':' separator in " + item);
-        }
-
-        // Extract the first and second parts
-        std::string mountpoint = item.substr(0, separator_pos);
-        std::string target = item.substr(separator_pos + 1);
-
-        // Split file_path into path and filename using filesystem library
-        fs::path p(mountpoint);
-        std::string path = p.parent_path().string();
-        std::string filename = p.filename().string();
-
-        // Check that both path and filename are not empty
-        if (path.empty() || filename.empty() || target.empty()) {
-            throw std::invalid_argument("Invalid input: path or filename or terget is empty in " + item);
-        }
-
-        path = std::string(TEBAKO_MOUNT_POINT) + path;
-
-        // Call the placeholder function with valid inputs
-        struct stat st;
-        std::string lnk;
-        int res = dwarfs_stat(path, &st, lnk, false);
-        if (res == DWARFS_IO_ERROR)
-        {
-            throw std::invalid_argument("Path " + path + " does not exist or is not accessible");
-        }
-        if (res == DWARFS_S_LINK_OUTSIDE)
-        {
-            throw std::invalid_argument("Path " + path + " is not within tebako memfs");
-        }
-         sync_tebako_mount_table::get_tebako_mount_table().insert(st.st_ino, filename, target);
+void process_mountpoints(const std::vector<std::string>& mountpoints)
+{
+  for (const auto& item : mountpoints) {
+    // Split item by the first ':'
+    size_t separator_pos = item.find(':');
+    if (separator_pos == std::string::npos) {
+      throw std::invalid_argument("Invalid input: missing ':' separator in " + item);
     }
+
+    // Extract the first and second parts
+    std::string mountpoint = item.substr(0, separator_pos);
+    std::string target = item.substr(separator_pos + 1);
+
+    // Split file_path into path and filename using filesystem library
+    stdfs::path p(mountpoint);
+
+    if (p.is_absolute()) {
+      throw std::invalid_argument("Path " + mountpoint + " is not within tebako memfs");
+    }
+
+    std::string path = p.parent_path().string();
+    std::string filename = p.filename().string();
+
+    // Check that both path and filename are not empty
+    if (path.empty() || filename.empty() || target.empty()) {
+      throw std::invalid_argument("Invalid input: path or filename or terget is empty in " + item);
+    }
+
+    struct stat st;
+    std::string lnk;
+    int res = dwarfs_relative_stat(path, &st, lnk, false);
+    if (res == DWARFS_IO_ERROR) {
+      throw std::invalid_argument("Path " + path + " does not exist or is not accessible");
+    }
+    if (res == DWARFS_S_LINK_OUTSIDE) {
+      throw std::invalid_argument("Path " + path + " is not within tebako memfs");
+    }
+    sync_tebako_mount_table::get_tebako_mount_table().insert(st.st_ino, filename, target);
+  }
 }
 
 }  // namespace tebako

@@ -38,7 +38,7 @@ char* tebako_path_assign(tebako_path_t out, const std::string& in)
   return out;
 }
 
-static char* tebako_path_assign(tebako_path_t out, const fs::path& in, bool win_separator = false)
+static char* tebako_path_assign(tebako_path_t out, const stdfs::path& in, bool win_separator = false)
 {
   return tebako_path_assign(out, win_separator ? in.string() : in.generic_string());
 }
@@ -49,7 +49,7 @@ static char* tebako_path_assign(tebako_path_t out, const fs::path& in, bool win_
 
 class tebako_path_s {
  private:
-  fs::path p;
+  stdfs::path p;
 
  public:
   tebako_path_s(void) : p("") {}
@@ -82,7 +82,7 @@ class tebako_path_s {
   {
     const char* ret = NULL;
     if (path != NULL) {
-      fs::path rpath = (p / path).lexically_normal();
+      stdfs::path rpath = (p / path).lexically_normal();
       ret = tebako_path_assign(expanded_path, rpath);
     }
     return ret;
@@ -223,7 +223,7 @@ const char* to_tebako_path(tebako_path_t t_path, const char* path)
 {
   const char* p_path = NULL;
   try {
-    fs::path p = path;
+    stdfs::path p = path;
     p = p.lexically_normal();
     auto locked = tebako_cwd.rlock();
     if ((*locked) && (*locked)->is_in() && p.is_relative()) {

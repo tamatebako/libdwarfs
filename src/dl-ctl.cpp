@@ -52,13 +52,13 @@ typedef map<string, string> tebako_dltable;
 
 class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
  private:
-  fs::path dl_tmpdir;
+  stdfs::path dl_tmpdir;
 
   void create_temporary_directory(void)
   {
     const uint64_t MAX_TRIES = 1024;
-    auto tmp_dir = fs::temp_directory_path();
-    fs::path _dl_tmpdir;
+    auto tmp_dir = stdfs::temp_directory_path();
+    stdfs::path _dl_tmpdir;
     uint64_t i = 1;
     std::random_device dev;
     std::mt19937 prng(dev());
@@ -67,7 +67,7 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
       std::stringstream ss;
       ss << std::hex << rand(prng);
       _dl_tmpdir = tmp_dir / ss.str();
-      if (fs::create_directory(_dl_tmpdir)) {
+      if (stdfs::create_directory(_dl_tmpdir)) {
         dl_tmpdir = _dl_tmpdir;
         break;
       }
@@ -82,8 +82,8 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
   {
     const char* adj = path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? path + TEBAKO_MOUNT_POINT_LENGTH
                                                               : path + TEBAKO_MOUNT_POINT_LENGTH + 1;
-    fs::path _mapped = dl_tmpdir / adj;
-    fs::create_directories(_mapped.parent_path());
+    stdfs::path _mapped = dl_tmpdir / adj;
+    stdfs::create_directories(_mapped.parent_path());
     mapped = _mapped.make_preferred().string();
   }
 
@@ -98,7 +98,7 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
     p_dltable->clear();
     if (!dl_tmpdir.empty()) {
       std::error_code ec;
-      fs::remove_all(dl_tmpdir, ec);
+      stdfs::remove_all(dl_tmpdir, ec);
     }
   }
 

@@ -49,7 +49,7 @@
 #include <vector>
 
 #include <filesystem>
-namespace fs = std::filesystem;
+namespace stdfs = std::filesystem;
 
 #include <folly/Conv.h>
 #include <folly/Synchronized.h>
