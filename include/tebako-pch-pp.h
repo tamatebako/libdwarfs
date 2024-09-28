@@ -45,6 +45,8 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <filesystem>
 namespace fs = std::filesystem;
