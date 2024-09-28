@@ -32,7 +32,7 @@
 
 namespace tebako {
 
-class TebakoKfdTableTests : public ::testing::Test {
+class KfdTableTests : public ::testing::Test {
  protected:
   sync_tebako_kfdtable& kfd_table = sync_tebako_kfdtable::get_tebako_kfdtable();
 
@@ -41,7 +41,7 @@ class TebakoKfdTableTests : public ::testing::Test {
   void TearDown() override { kfd_table.clear(); }
 };
 
-TEST_F(TebakoKfdTableTests, check_key_exists)
+TEST_F(KfdTableTests, check_key_exists)
 {
   uintptr_t key = 12345;
   kfd_table.insert(key);
@@ -49,14 +49,14 @@ TEST_F(TebakoKfdTableTests, check_key_exists)
   EXPECT_TRUE(kfd_table.check(key));
 }
 
-TEST_F(TebakoKfdTableTests, check_key_does_not_exist)
+TEST_F(KfdTableTests, check_key_does_not_exist)
 {
   uintptr_t key = 12345;
 
   EXPECT_FALSE(kfd_table.check(key));
 }
 
-TEST_F(TebakoKfdTableTests, erase_key)
+TEST_F(KfdTableTests, erase_key)
 {
   uintptr_t key = 12345;
   kfd_table.insert(key);
@@ -65,7 +65,7 @@ TEST_F(TebakoKfdTableTests, erase_key)
   EXPECT_FALSE(kfd_table.check(key));
 }
 
-TEST_F(TebakoKfdTableTests, clear_table)
+TEST_F(KfdTableTests, clear_table)
 {
   uintptr_t key1 = 12345;
   uintptr_t key2 = 67890;
@@ -77,7 +77,7 @@ TEST_F(TebakoKfdTableTests, clear_table)
   EXPECT_FALSE(kfd_table.check(key2));
 }
 
-TEST_F(TebakoKfdTableTests, concurrent_insert_and_check)
+TEST_F(KfdTableTests, concurrent_insert_and_check)
 {
   const int num_threads = 10;
   const int num_operations = 100;
@@ -110,7 +110,7 @@ TEST_F(TebakoKfdTableTests, concurrent_insert_and_check)
   }
 }
 
-TEST_F(TebakoKfdTableTests, concurrent_insert_and_erase)
+TEST_F(KfdTableTests, concurrent_insert_and_erase)
 {
   const int num_threads = 10;
   const int num_operations = 100;

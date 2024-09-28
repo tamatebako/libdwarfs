@@ -32,7 +32,7 @@
 
 namespace tebako {
 
-class TebakoMountTests : public ::testing::Test {
+class MountTests : public ::testing::Test {
  protected:
   static bool cross_test;
 
@@ -79,9 +79,9 @@ class TebakoMountTests : public ::testing::Test {
   }
 };
 
-bool TebakoMountTests::cross_test = false;
+bool MountTests::cross_test = false;
 
-TEST_F(TebakoMountTests, mount_directory)
+TEST_F(MountTests, mount_directory)
 {
   if (!cross_test) {
     DIR* dirp = tebako_opendir(TEBAKIZE_PATH("m-dir-outside-of-memfs"));
@@ -112,7 +112,7 @@ TEST_F(TebakoMountTests, mount_directory)
   }
 }
 
-TEST_F(TebakoMountTests, mount_file)
+TEST_F(MountTests, mount_file)
 {
   if (!cross_test) {
     int fh = tebako_open(2, TEBAKIZE_PATH("m-dir-outside-of-memfs/a-file-outside-of-memfs.txt"), O_RDONLY);
@@ -131,7 +131,7 @@ TEST_F(TebakoMountTests, mount_file)
 }
 
 #ifdef WITH_LINK_TESTS
-TEST_F(TebakoMountTests, mount_symlink)
+TEST_F(MountTests, mount_symlink)
 {
   if (!cross_test) {
     int fh = tebako_open(2, TEBAKIZE_PATH("m-dir-outside-of-memfs/o-link-outside-of-memfs"), O_RDONLY);
@@ -149,7 +149,7 @@ TEST_F(TebakoMountTests, mount_symlink)
   }
 }
 
-TEST_F(TebakoMountTests, mount_symlink_readlink)
+TEST_F(MountTests, mount_symlink_readlink)
 {
   if (!cross_test) {
     char readbuf[128];
@@ -165,7 +165,7 @@ TEST_F(TebakoMountTests, mount_symlink_readlink)
   }
 }
 
-TEST_F(TebakoMountTests, mount_symlink_lstat)
+TEST_F(MountTests, mount_symlink_lstat)
 {
   if (!cross_test) {
     struct STAT_TYPE st;
@@ -180,7 +180,7 @@ TEST_F(TebakoMountTests, mount_symlink_lstat)
 #endif
 
 #ifdef TEBAKO_HAS_OPENAT
-TEST_F(TebakoMountTests, mount_and_openat)
+TEST_F(MountTests, mount_and_openat)
 {
   mount_table.insert(0, "m-bin", __BIN__);
 
@@ -196,7 +196,7 @@ TEST_F(TebakoMountTests, mount_and_openat)
 #endif
 
 #ifdef TEBAKO_HAS_FSTATAT
-TEST_F(TebakoMountTests, mount_and_fstatat)
+TEST_F(MountTests, mount_and_fstatat)
 {
   mount_table.insert(0, "m-bin", __BIN__);
 
