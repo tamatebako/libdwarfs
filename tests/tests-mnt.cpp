@@ -32,7 +32,7 @@
 
 namespace tebako {
 
-class TebakoMountTableTests : public ::testing::Test {
+class MountTableTests : public ::testing::Test {
  protected:
   sync_tebako_mount_table& mount_table = sync_tebako_mount_table::get_tebako_mount_table();
 
@@ -41,7 +41,7 @@ class TebakoMountTableTests : public ::testing::Test {
   void TearDown() override { mount_table.clear(); }
 };
 
-TEST_F(TebakoMountTableTests, check_path_exists)
+TEST_F(MountTableTests, check_path_exists)
 {
   uint32_t ino = 1;
   std::string path = "/path1";
@@ -51,7 +51,7 @@ TEST_F(TebakoMountTableTests, check_path_exists)
   EXPECT_TRUE(mount_table.check(ino, path));
 }
 
-TEST_F(TebakoMountTableTests, check_path_does_not_exist)
+TEST_F(MountTableTests, check_path_does_not_exist)
 {
   uint32_t ino = 2;
   std::string path = "/path2";
@@ -59,7 +59,7 @@ TEST_F(TebakoMountTableTests, check_path_does_not_exist)
   EXPECT_FALSE(mount_table.check(ino, path));
 }
 
-TEST_F(TebakoMountTableTests, erase_path)
+TEST_F(MountTableTests, erase_path)
 {
   uint32_t ino = 3;
   std::string path = "/path3";
@@ -70,7 +70,7 @@ TEST_F(TebakoMountTableTests, erase_path)
   EXPECT_FALSE(mount_table.check(ino, path));
 }
 
-TEST_F(TebakoMountTableTests, get_existing_path)
+TEST_F(MountTableTests, get_existing_path)
 {
   uint32_t ino = 4;
   std::string path = "/path4";
@@ -82,7 +82,7 @@ TEST_F(TebakoMountTableTests, get_existing_path)
   EXPECT_EQ(result.value(), mount);
 }
 
-TEST_F(TebakoMountTableTests, get_non_existing_path)
+TEST_F(MountTableTests, get_non_existing_path)
 {
   uint32_t ino = 5;
   std::string path = "/path5";
@@ -91,7 +91,7 @@ TEST_F(TebakoMountTableTests, get_non_existing_path)
   EXPECT_FALSE(result.has_value());
 }
 
-TEST_F(TebakoMountTableTests, insert_path)
+TEST_F(MountTableTests, insert_path)
 {
   uint32_t ino = 6;
   std::string path = "/path6";
@@ -101,7 +101,7 @@ TEST_F(TebakoMountTableTests, insert_path)
   EXPECT_TRUE(mount_table.check(ino, path));
 }
 
-TEST_F(TebakoMountTableTests, insert_duplicate_path)
+TEST_F(MountTableTests, insert_duplicate_path)
 {
   uint32_t ino = 7;
   std::string path = "/path7";
@@ -116,7 +116,7 @@ TEST_F(TebakoMountTableTests, insert_duplicate_path)
   EXPECT_EQ(result.value(), mount1);  // Original mount should remain
 }
 
-TEST_F(TebakoMountTableTests, concurrent_insert_and_check)
+TEST_F(MountTableTests, concurrent_insert_and_check)
 {
   uint32_t ino = 8;
   const int num_threads = 10;
@@ -159,7 +159,7 @@ TEST_F(TebakoMountTableTests, concurrent_insert_and_check)
   }
 }
 
-TEST_F(TebakoMountTableTests, concurrent_insert_and_erase)
+TEST_F(MountTableTests, concurrent_insert_and_erase)
 {
   uint32_t ino = 9;
   const int num_threads = 10;
