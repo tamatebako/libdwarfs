@@ -125,6 +125,8 @@
 
 #define chdir(p) rb_w32_uchdir((p))
 #define mkdir(p, m) rb_w32_umkdir((p), (m))
+#define rmdir(p, m) rb_w32_urmdir((p))
+#define unlink(p, m) rb_w32_uunlink((p))
 #define access(p, m) rb_w32_uaccess((p), (m))
 #define fstat(fd, st) rb_w32_fstati128(fd, st)
 #define stat(path, st) rb_w32_stati128(path, st)

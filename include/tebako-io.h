@@ -110,6 +110,9 @@ int tebako_mkdir(const char* path, mode_t mode);
 int tebako_mkdir(const char* path);
 #endif
 
+int tebako_rmdir(const char* path);
+int tebako_unlink(const char* path);
+
 int tebako_stat(const char* path, struct STAT_TYPE* buf);
 int tebako_fstat(int vfd, struct STAT_TYPE* buf);
 #if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32)

@@ -1752,6 +1752,109 @@ int rb_w32_mkdir(const char* path, int mode)
   return ret;
 }
 
+/* License: Ruby's */
+static int wrmdir(const WCHAR* wpath)
+{
+  int ret = 0;
+  RUBY_CRITICAL
+  {
+    const DWORD attr = GetFileAttributesW(wpath);
+    if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
+      SetFileAttributesW(wpath, attr & ~FILE_ATTRIBUTE_READONLY);
+    }
+    if (RemoveDirectoryW(wpath) == FALSE) {
+      errno = map_errno(GetLastError());
+      ret = -1;
+      if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
+        SetFileAttributesW(wpath, attr);
+      }
+    }
+  }
+  return ret;
+}
+
+/* License: Ruby's */
+int rb_w32_rmdir(const char* path)
+{
+  WCHAR* wpath;
+  int ret;
+
+  if (!(wpath = filecp_to_wstr(path, NULL)))
+    return -1;
+  ret = wrmdir(wpath);
+  free(wpath);
+  return ret;
+}
+
+/* License: Ruby's */
+int rb_w32_urmdir(const char* path)
+{
+  WCHAR* wpath;
+  int ret;
+
+  if (!(wpath = utf8_to_wstr(path, NULL)))
+    return -1;
+  ret = wrmdir(wpath);
+  free(wpath);
+  return ret;
+}
+
+/* License: Ruby's */
+static int wunlink(const WCHAR* path)
+{
+  int ret = 0;
+  const DWORD SYMLINKD = FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY;
+  RUBY_CRITICAL
+  {
+    const DWORD attr = GetFileAttributesW(path);
+    if (attr == (DWORD)-1) {
+    }
+    else if ((attr & SYMLINKD) == SYMLINKD) {
+      ret = RemoveDirectoryW(path);
+    }
+    else {
+      if (attr & FILE_ATTRIBUTE_READONLY) {
+        SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
+      }
+      ret = DeleteFileW(path);
+    }
+    if (!ret) {
+      errno = map_errno(GetLastError());
+      ret = -1;
+      if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
+        SetFileAttributesW(path, attr);
+      }
+    }
+  }
+  return ret;
+}
+
+/* License: Ruby's */
+int rb_w32_uunlink(const char* path)
+{
+  WCHAR* wpath;
+  int ret;
+
+  if (!(wpath = utf8_to_wstr(path, NULL)))
+    return -1;
+  ret = wunlink(wpath);
+  free(wpath);
+  return ret;
+}
+
+/* License: Ruby's */
+int rb_w32_unlink(const char* path)
+{
+  WCHAR* wpath;
+  int ret;
+
+  if (!(wpath = filecp_to_wstr(path, NULL)))
+    return -1;
+  ret = wunlink(wpath);
+  free(wpath);
+  return ret;
+}
+
 // It does not matter for tebako
 int flock(int, int)
 {
