@@ -151,5 +151,4 @@ TEST_F(ProcessMountpointsTest, mount_to_root)
   EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_root_ino, "tmp"));
 }
 
-
 }  // namespace tebako
