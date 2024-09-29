@@ -57,6 +57,8 @@
 
 #ifdef RB_W32
 #define rb_w32_umkdir(...) tebako_mkdir(__VA_ARGS__)
+#define rb_w32_urmdir(...) tebako_rmdir(__VA_ARGS__)
+#define rb_w32_uunlink(...) tebako_unlink(__VA_ARGS__)
 #define rb_w32_ugetcwd(...) tebako_getcwd(__VA_ARGS__)
 #define rb_w32_uchdir(...) tebako_chdir(__VA_ARGS__)
 
@@ -85,6 +87,8 @@
 #define rb_w32_closedir(...) tebako_closedir(__VA_ARGS__)
 #else
 #define mkdir(...) tebako_mkdir(__VA_ARGS__)
+#define rmdir(...) tebako_rmdir(__VA_ARGS__)
+#define unlink(...) tebako_unlink(__VA_ARGS__)
 #define getcwd(...) tebako_getcwd(__VA_ARGS__)
 #define chdir(...) tebako_chdir(__VA_ARGS__)
 #define access(...) tebako_access(__VA_ARGS__)

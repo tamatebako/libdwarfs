@@ -169,6 +169,20 @@ TEST_F(DirCtlTests, tebako_mkdir_absolute_path)
   EXPECT_EQ(EROFS, errno);
 }
 
+TEST_F(DirCtlTests, tebako_rmdir_erofs)
+{
+  int ret = tebako_rmdir(TEBAKIZE_PATH("directory-1"));
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(EROFS, errno);
+}
+
+TEST_F(DirCtlTests, tebako_unlink_erofs)
+{
+  int ret = tebako_unlink(TEBAKIZE_PATH("file-1.txt"));
+  EXPECT_EQ(-1, ret);
+  EXPECT_EQ(EROFS, errno);
+}
+
 TEST_F(DirCtlTests, tebako_mkdir_relative_path)
 {
   int ret = tebako_chdir(TEBAKIZE_PATH(""));
@@ -190,7 +204,7 @@ TEST_F(DirCtlTests, tebako_mkdir_absolute_path_pass_through)
   int ret = tebako_mkdir(tmp_name.c_str());
 #endif
   EXPECT_EQ(0, ret);
-  ret = ::rmdir(tmp_name.c_str());
+  ret = tebako_rmdir(tmp_name.c_str());
   EXPECT_EQ(0, ret);
 }
 
@@ -204,7 +218,7 @@ TEST_F(DirCtlTests, tebako_mkdir_relative_path_pass_through)
   ret = tebako_mkdir(TMP_D_NAME);
 #endif
   EXPECT_EQ(0, ret);
-  ret = ::rmdir(tmp_name.c_str());
+  ret = tebako_rmdir(tmp_name.c_str());
   EXPECT_EQ(0, ret);
 }
 

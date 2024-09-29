@@ -422,7 +422,7 @@ TEST_F(FileIOTests, tebako_open_openat_pass_through_create)
   EXPECT_EQ(0, ::close(fh1));
   EXPECT_EQ(0, tebako_close(fh2));
 
-  EXPECT_EQ(0, unlink(temp_filename));
+  EXPECT_EQ(0, tebako_unlink(temp_filename));
 }
 #endif  //  O_DIRECTORY
 #endif

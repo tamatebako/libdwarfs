@@ -211,4 +211,47 @@ TEST_F(MountTests, mount_and_fstatat)
 }
 #endif
 
+// #define -- for TEBAKIZE_PATH
+#define TMP_D_NAME "tebako-test-dir-for-mount"
+#define TMP_F_NAME "tebako-test-file-for-mount"
+
+TEST_F(MountTests, mount_and_mkdir)
+{
+  mount_table.insert(0, "m-tmp", __TMP__);
+
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+  int ret = tebako_mkdir(TEBAKIZE_PATH("m-tmp" __S__ TMP_D_NAME), S_IRWXU);
+#else
+  int ret = tebako_mkdir(TEBAKIZE_PATH(TMP_D_NAME));
+#endif
+  EXPECT_EQ(0, ret);
+
+  EXPECT_EQ(0, tebako_rmdir(__AT_TMP__(TMP_D_NAME)));
+}
+
+TEST_F(MountTests, mount_and_open_creat)
+{
+  mount_table.insert(0, "m-tmp", __TMP__);
+
+  int fh = tebako_open(3, TEBAKIZE_PATH("m-tmp" __S__ TMP_F_NAME), O_CREAT, S_IRWXU);
+  EXPECT_LT(0, fh);
+  EXPECT_EQ(0, tebako_close(fh));
+
+  EXPECT_EQ(0, tebako_unlink(__AT_TMP__(TMP_F_NAME)));
+}
+
+TEST_F(MountTests, mount_and_openat_creat)
+{
+  mount_table.insert(0, "m-tmp", __TMP__);
+
+  int fh1 = tebako_open(3, TEBAKIZE_PATH("m-tmp"), O_DIRECTORY | O_RDONLY);
+  EXPECT_LT(0, fh1);
+  int fh2 = tebako_openat(4, fh1, TMP_F_NAME, O_CREAT, S_IRWXU);
+  EXPECT_LT(0, fh2);
+  EXPECT_EQ(0, tebako_close(fh1));
+  EXPECT_EQ(0, tebako_close(fh2));
+
+  EXPECT_EQ(0, tebako_unlink(__AT_TMP__(TMP_F_NAME)));
+}
+
 }  // namespace tebako

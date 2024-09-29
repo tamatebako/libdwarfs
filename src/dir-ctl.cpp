@@ -134,9 +134,21 @@ int tebako_mkdir(const char* path)
     TEBAKO_SET_LAST_ERROR(ENOENT);
   }
   else {
-    auto p = stdfs::path(path);
-    if ((is_tebako_cwd() && p.is_relative()) || is_tebako_path(path)) {
-      TEBAKO_SET_LAST_ERROR(EROFS);
+    tebako_path_t t_path;
+    const char* p_path = to_tebako_path(t_path, path);
+    if (p_path) {
+      std::string lnk;
+      struct stat st;
+      if (dwarfs_stat(p_path, &st, lnk, true) == DWARFS_S_LINK_OUTSIDE) {
+#if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
+        ret = TO_RB_W32_U(mkdir)(lnk.c_str(), mode);
+#else
+        ret = ::mkdir(lnk.c_str());
+#endif
+      }
+      else {
+        TEBAKO_SET_LAST_ERROR(EROFS);
+      }
     }
     else {
 #if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
@@ -144,6 +156,58 @@ int tebako_mkdir(const char* path)
 #else
       ret = ::mkdir(path);
 #endif
+    }
+  }
+  return ret;
+}
+
+int tebako_rmdir(const char* path)
+{
+  int ret = DWARFS_IO_ERROR;
+  if (path == NULL) {
+    TEBAKO_SET_LAST_ERROR(ENOENT);
+  }
+  else {
+    tebako_path_t t_path;
+    const char* p_path = to_tebako_path(t_path, path);
+    if (p_path) {
+      std::string lnk;
+      struct stat st;
+      if (dwarfs_stat(p_path, &st, lnk, true) == DWARFS_S_LINK_OUTSIDE) {
+        ret = TO_RB_W32_U(rmdir)(lnk.c_str());
+      }
+      else {
+        TEBAKO_SET_LAST_ERROR(EROFS);
+      }
+    }
+    else {
+      ret = TO_RB_W32_U(rmdir)(path);
+    }
+  }
+  return ret;
+}
+
+int tebako_unlink(const char* path)
+{
+  int ret = DWARFS_IO_ERROR;
+  if (path == NULL) {
+    TEBAKO_SET_LAST_ERROR(ENOENT);
+  }
+  else {
+    tebako_path_t t_path;
+    const char* p_path = to_tebako_path(t_path, path);
+    if (p_path) {
+      std::string lnk;
+      struct stat st;
+      if (dwarfs_stat(p_path, &st, lnk, true) == DWARFS_S_LINK_OUTSIDE) {
+        ret = TO_RB_W32_U(unlink)(lnk.c_str());
+      }
+      else {
+        TEBAKO_SET_LAST_ERROR(EROFS);
+      }
+    }
+    else {
+      ret = TO_RB_W32_U(unlink)(path);
     }
   }
   return ret;
