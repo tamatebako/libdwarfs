@@ -169,8 +169,8 @@ void process_mountpoints(const std::vector<std::string>& mountpoints)
     std::string path = p.parent_path().string();
     std::string filename = p.filename().string();
 
-    // Check that both path and filename are not empty
-    if (path.empty() || filename.empty() || target.empty()) {
+    // Check that both filename and target are not empty
+    if (filename.empty() || target.empty()) {
       throw std::invalid_argument("Invalid input: path or filename or terget is empty in " + item);
     }
 

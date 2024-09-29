@@ -39,6 +39,7 @@ class ProcessMountpointsTest : public ::testing::Test {
  protected:
   struct stat st;
   static uint32_t test_root_ino;
+  static uint32_t test_dir_ino;
 
  protected:
 #ifdef _WIN32
@@ -67,7 +68,12 @@ class ProcessMountpointsTest : public ::testing::Test {
 
     std::string lnk;
     struct stat st;
+
     int res = dwarfs_stat(TEBAKIZE_PATH("directory-1"), &st, lnk, false);
+    EXPECT_EQ(DWARFS_IO_CONTINUE, res);
+    test_dir_ino = st.st_ino;
+
+    res = dwarfs_stat(TEBAKIZE_PATH(""), &st, lnk, false);
     EXPECT_EQ(DWARFS_IO_CONTINUE, res);
     test_root_ino = st.st_ino;
   }
@@ -79,14 +85,14 @@ class ProcessMountpointsTest : public ::testing::Test {
   }
 };
 
-uint32_t ProcessMountpointsTest::test_root_ino;
+uint32_t ProcessMountpointsTest::test_root_ino, ProcessMountpointsTest::test_dir_ino;
 
 // Test: Valid mount point
 TEST_F(ProcessMountpointsTest, valid_mountpoint)
 {
   std::vector<std::string> mountpoints = {"directory-1/mpoint:/tmp/local_target"};
   EXPECT_NO_THROW(process_mountpoints(mountpoints));
-  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_root_ino, "mpoint"));
+  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "mpoint"));
 }
 
 TEST_F(ProcessMountpointsTest, absolute_path)
@@ -131,9 +137,18 @@ TEST_F(ProcessMountpointsTest, MultipleValidMountPoints)
 
   EXPECT_NO_THROW(process_mountpoints(mountpoints));
 
-  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_root_ino, "mpoint1"));
-  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_root_ino, "mpoint2"));
-  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_root_ino, "mpoint3"));
+  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "mpoint1"));
+  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "mpoint2"));
+  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "mpoint3"));
+}
+
+// Test: Mount to root
+TEST_F(ProcessMountpointsTest, mount_to_root)
+{
+  std::vector<std::string> mountpoints = {"tmp:/tmp/tebako"};
+
+  EXPECT_NO_THROW(process_mountpoints(mountpoints));
+  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_root_ino, "tmp"));
 }
 
 }  // namespace tebako

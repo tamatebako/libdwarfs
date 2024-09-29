@@ -1267,7 +1267,7 @@ if (IS_MSYS)
   install(DIRECTORY ${DEPS_INCLUDE_DIR}/fmt DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/fmt)
 elseif(NOT IS_WINDOWS)
   install(FILES ${__LIBFMT} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-  install(DIRECTORY ${DWARFS_BINARY_DIR}/_deps/fmt-src/include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  install(DIRECTORY ${DWARFS_BINARY_DIR}/_deps/fmt-src/include/fmt DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif(IS_MSYS)
 
 if(WITH_GLOG_BUILD)
@@ -1299,6 +1299,7 @@ install(FILES
         "include/tebako-config.h"
         "include/tebako-defines.h"
         "include/tebako-io.h"
+        "include/tebako-cmdline-helpers.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 
