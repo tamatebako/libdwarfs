@@ -1019,10 +1019,9 @@ if(WITH_TESTS)
 # used to locate static libraries on UNIX-like systems.
 #
 
-  find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread system)
-
   if(IS_WINDOWS)
-# For Windwos native build these libraries are installed with vcpkg
+    find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread system)
+  # For Windwos native build these libraries are installed with vcpkg
     find_library(_LIBGLOG "glog" REQUIRED)
     if(CMAKE_BUILD_TYPE STREQUAL Release)
       find_library(_LIBGFLAGS "gflags_static" REQUIRED)
@@ -1053,7 +1052,8 @@ if(WITH_TESTS)
     set(_LIBEH "")
 else(IS_WINDOWS)
     if (IS_MSYS)
-      find_library(__LIBXXHASH "libxxhash.a" REQUIRED)
+    find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread)
+    find_library(__LIBXXHASH "libxxhash.a" REQUIRED)
       if(CMAKE_BUILD_TYPE STREQUAL Release)
         find_library(__LIBFMT "libfmt.a" REQUIRED)
       else(CMAKE_BUILD_TYPE STREQUAL Release)
@@ -1062,6 +1062,7 @@ else(IS_WINDOWS)
       find_library(__LIBZSTD "libzstd.a" REQUIRED)
       set(_LIBEH "")
     else(IS_MSYS)
+      find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread system)
       set(_LIBEH "gcc_eh")
     endif(IS_MSYS)
 
