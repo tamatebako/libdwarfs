@@ -235,6 +235,12 @@ TEST_F(DirCtlTests, tebako_dir_ctl_null_ptr)
   EXPECT_EQ(-1, tebako_mkdir(NULL));
 #endif
   EXPECT_EQ(ENOENT, errno);
+
+  EXPECT_EQ(-1, tebako_rmdir(NULL));
+  EXPECT_EQ(ENOENT, errno);
+
+  EXPECT_EQ(-1, tebako_unlink(NULL));
+  EXPECT_EQ(ENOENT, errno);
 }
 
 TEST_F(DirCtlTests, tebako_dir_ctl_dot_dot)
