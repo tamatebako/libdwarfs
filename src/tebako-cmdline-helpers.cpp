@@ -30,8 +30,8 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
-#include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-io-root.h>
 #include <tebako-mnt.h>
 
 #include <tebako-cmdline-helpers.h>

@@ -130,11 +130,11 @@ int main(int argc, char** argv)
   _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
 
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, NULL /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
+                             NULL /* mlock */, NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
-  printf("A call to load_fs returned %i (0 expected)\n", ret);
+  printf("A call to mount_root_memfs returned %i (0 expected)\n", ret);
 
   if (ret == 0) {
     rOK = true;
@@ -258,7 +258,7 @@ int main(int argc, char** argv)
       printf("failing\n");
 #endif
 
-    drop_fs();
+    unmount_root_memfs();
     printf("Filesystem dropped\n");
 
     ret = rOK ? 0 : -1;

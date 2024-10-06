@@ -55,14 +55,14 @@ class MountTests : public ::testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                     NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
   static void TearDownTestSuite()
   {
-    drop_fs();
+    unmount_root_memfs();
   }
 
   sync_tebako_mount_table& mount_table = sync_tebako_mount_table::get_tebako_mount_table();

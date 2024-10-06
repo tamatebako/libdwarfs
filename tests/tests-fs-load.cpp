@@ -30,7 +30,7 @@
 #include "tests.h"
 
 /**
- *  - Unit tests for 'load_fs/drop_fs' functions
+ *  - Unit tests for 'mount_root_memfs/unmount_root_memfs' functions
  *  - Unit tests for tebako_xxx functions for the case when dwarfs is not loaded
  *    (placed here since all other test units contain fixture that loads dwarfs)
  **/
@@ -70,83 +70,83 @@ TEST(LoadTests, smoke)
 TEST(LoadTests, tebako_load_invalid_filesystem)
 {
   const unsigned char data[] = "This is broken filesystem image";
-  int ret = load_fs(&data[0], sizeof(data) / sizeof(data[0]), tests_log_level(), NULL /* cachesize*/,
-                    NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/, "0" /* image_offset */
+  int ret = mount_root_memfs(&data[0], sizeof(data) / sizeof(data[0]), tests_log_level(), NULL /* cachesize*/,
+                             NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/, "0" /* image_offset */
   );
   EXPECT_EQ(1, ret);
-  drop_fs();
+  unmount_root_memfs();
 }
 //#endif
 
 TEST(LoadTests, tebako_load_invalid_parameter)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, "invalid parameter" /*debuglevel*/, NULL /* cachesize*/, NULL /* workers */,
-                    NULL /* mlock */, NULL /* decompress_ratio*/, NULL /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, "invalid parameter" /*debuglevel*/, NULL /* cachesize*/,
+                             NULL /* workers */, NULL /* mlock */, NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
   EXPECT_EQ(1, ret);
-  drop_fs();
+  unmount_root_memfs();
 }
 
 TEST(LoadTests, tebako_load_valid_filesystem)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, NULL /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
+                             NULL /* mlock */, NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
   EXPECT_EQ(0, ret);
-  drop_fs();
+  unmount_root_memfs();
 }
 
 TEST(LoadTests, tebako_load_valid_filesystem_with_offset_auto)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, "auto" /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
+                             NULL /* mlock */, NULL /* decompress_ratio*/, "auto" /* image_offset */
   );
 
   EXPECT_EQ(0, ret);
-  drop_fs();
+  unmount_root_memfs();
 }
 
 TEST(LoadTests, tebako_load_valid_filesystem_with_offset_wrong)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, "1024" /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
+                             NULL /* mlock */, NULL /* decompress_ratio*/, "1024" /* image_offset */
   );
 
   EXPECT_EQ(1, ret);
-  drop_fs();
+  unmount_root_memfs();
 }
 
 TEST(LoadTests, tebako_load_with_offset_invalid)
 {
-  int ret = load_fs(&gfsData[0],  // &data[0],
-                    gfsSize,      // sizeof(data)/sizeof(data[0]),
-                    tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, "xxx" /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0],  // &data[0],
+                             gfsSize,      // sizeof(data)/sizeof(data[0]),
+                             tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                             NULL /* decompress_ratio*/, "xxx" /* image_offset */
   );
   EXPECT_EQ(1, ret);
-  drop_fs();
+  unmount_root_memfs();
 }
 
 TEST(LoadTests, tebako_load_valid_filesystem_with_decompress_ratio)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    "0.6" /* decompress_ratio*/, "auto" /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
+                             NULL /* mlock */, "0.6" /* decompress_ratio*/, "auto" /* image_offset */
   );
 
   EXPECT_EQ(0, ret);
-  drop_fs();
+  unmount_root_memfs();
 }
 
 TEST(LoadTests, tebako_load_valid_filesystem_with_invalid_decompress_ratio)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    "1.6" /* decompress_ratio*/, "auto" /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
+                             NULL /* mlock */, "1.6" /* decompress_ratio*/, "auto" /* image_offset */
   );
 
   EXPECT_EQ(1, ret);
-  drop_fs();
+  unmount_root_memfs();
 }
 
 TEST(LoadTests, tebako_stat_not_loaded_filesystem)
@@ -175,14 +175,14 @@ TEST(LoadTests, tebako_open_not_loaded_filesystem)
 
 TEST(LoadTests, tebako_close_all_fd)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, NULL /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
+                             NULL /* mlock */, NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
   EXPECT_EQ(0, ret);
   int fh = tebako_open(2, TEBAKIZE_PATH("file.txt"), O_RDONLY);
   EXPECT_LT(0, fh);
-  drop_fs();
+  unmount_root_memfs();
 
 // This test fals on GHA whatever I do although it passes locally
 #ifndef _WIN32
@@ -197,15 +197,15 @@ TEST(LoadTests, tebako_close_all_fd)
 
 TEST(LoadTests, tebako_close_all_dir)
 {
-  int ret = load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-                    NULL /* decompress_ratio*/, NULL /* image_offset */
+  int ret = mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */,
+                             NULL /* mlock */, NULL /* decompress_ratio*/, NULL /* image_offset */
   );
 
 #ifndef _WIN32
   EXPECT_EQ(0, ret);
   DIR* dirp = tebako_opendir(TEBAKIZE_PATH("directory-1"));
   EXPECT_TRUE(dirp != NULL);
-  drop_fs();
+  unmount_root_memfs();
 
   /*
    *	If the end of the directory stream is reached, NULL is returned
