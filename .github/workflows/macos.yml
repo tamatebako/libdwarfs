@@ -143,6 +143,7 @@ jobs:
           path: |
             ${{github.workspace}}/build/wr-bin
             ${{github.workspace}}/build/wr-tests
+            ${{github.workspace}}/build/fs2.bin
 
   test-on-macos-13-and-14:
     # The run on MacOS 14 is the amd64 on arm64 test
@@ -165,6 +166,8 @@ jobs:
         run: |
           chmod +x wr-bin
           chmod +x wr-tests
+          mkdir -p build
+          mv fs2.bin build/fs2.bin
 
       - name: Run statically linked application
         run: ./wr-bin

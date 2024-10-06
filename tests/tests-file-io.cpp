@@ -54,14 +54,23 @@ class FileIOTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                     NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
   static void TearDownTestSuite()
   {
-    drop_fs();
+    unmount_root_memfs();
+  }
+
+  std::string generateRandom6DigitNumber()
+  {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(100000, 999999);
+    int random_number = dis(gen);
+    return std::to_string(random_number);
   }
 };
 
@@ -407,22 +416,19 @@ TEST_F(FileIOTests, tebako_openat_atcwd)
 #ifdef O_DIRECTORY
 TEST_F(FileIOTests, tebako_open_openat_pass_through_create)
 {
-  char temp_filename[] = __AT_TMP__("tebako_tempfile_XXXXXX");
-  EXPECT_NE(nullptr, mktemp(temp_filename));
-
-  char* temp_filename_only = strstr(temp_filename, "tebako_tempfile_");
-  EXPECT_NE(nullptr, temp_filename_only);
+  std::string temp_fname_only = "tebako_tempfile_" + generateRandom6DigitNumber();
+  std::filesystem::path temp_fname = stdfs::path(__TMP__) / temp_fname_only;
 
   int fh1 = ::open(__TMP__, O_RDONLY | O_DIRECTORY);
   EXPECT_LT(0, fh1);
 
-  int fh2 = tebako_openat(4, fh1, temp_filename_only, O_RDWR | O_CREAT);
+  int fh2 = tebako_openat(4, fh1, temp_fname_only.c_str(), O_RDWR | O_CREAT);
   EXPECT_LT(0, fh2);
 
   EXPECT_EQ(0, ::close(fh1));
   EXPECT_EQ(0, tebako_close(fh2));
 
-  EXPECT_EQ(0, tebako_unlink(temp_filename));
+  EXPECT_EQ(0, tebako_unlink(temp_fname.c_str()));
 }
 #endif  //  O_DIRECTORY
 #endif

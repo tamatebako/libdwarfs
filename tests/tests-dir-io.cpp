@@ -51,14 +51,14 @@ class DirIOTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                     NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
   static void TearDownTestSuite()
   {
-    drop_fs();
+    unmount_root_memfs();
   }
 };
 
@@ -127,6 +127,14 @@ TEST_F(DirIOTests, tebako_dirfd_invalid_dirp)
   // IMHO it shall be EINVAL
   // https://man7.org/linux/man-pages/man3/dirfd.3.html
   EXPECT_EQ(EBADF, errno);
+}
+
+TEST_F(DirIOTests, tebako_dirfd_outside)
+{
+  DIR* dirp = tebako_opendir(__TMP__);
+  int fh = tebako_dirfd(dirp);
+  EXPECT_LT(0, fh);
+  EXPECT_EQ(0, tebako_closedir(dirp));
 }
 #endif
 
@@ -217,12 +225,14 @@ TEST_F(DirIOTests, tebako_opendir_seekdir_telldir_readdir_closedir_pass_through)
 
   DIR* dirp = tebako_opendir(shell_folder);
   EXPECT_TRUE(dirp != NULL);
+  EXPECT_EQ(0, tebako_telldir(dirp));
+
   if (dirp != NULL) {
     long loc = -1;
     errno = 0;
     pdirent entry = tebako_readdir_adjusted(dirp);
     while (entry != NULL) {
-      long l = TO_RB_W32(telldir)(dirp);
+      long l = tebako_telldir(dirp);
       entry = tebako_readdir_adjusted(dirp);
       if (entry != NULL && strcmp(entry->d_name, shell_name) == 0) {
         loc = l;

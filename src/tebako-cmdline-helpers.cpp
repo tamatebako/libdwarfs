@@ -30,9 +30,9 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
-#include <tebako-io.h>
 #include <tebako-io-inner.h>
-#include <tebako-mnt.h>
+#include <tebako-io-root.h>
+#include <tebako-mount-table.h>
 
 #include <tebako-cmdline-helpers.h>
 
@@ -118,7 +118,20 @@ std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(in
   for (int i = 0; i < argc; i++) {
     std::string arg = argv[i];
 
-    // Check for "--tebako-mount"
+    // Handle "--tebako-mount=value" case
+    if (arg.rfind("--tebako-mount=", 0) == 0) {  // Check if it starts with "--tebako-mount="
+      std::string value = arg.substr(15);        // Extract the part after "--tebako-mount="
+
+      if (!value.empty()) {
+        tebako_mount_args.push_back(value);  // Add the value part to tebako_mount_args
+        continue;
+      }
+      else {
+        throw std::invalid_argument(error_msg);  // Handle case where value is empty
+      }
+    }
+
+    // Handle "--tebako-mount" without '=' (your original logic)
     if (arg == "--tebako-mount") {
       // Ensure there is a next argument
       if (i + 1 < argc) {
@@ -139,7 +152,7 @@ std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(in
       throw std::invalid_argument(error_msg);
     }
 
-    // If not a tebako-mount argument, add to other_args
+    // Add other arguments as they are
     other_args.push_back(arg);
   }
 

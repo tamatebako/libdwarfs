@@ -32,8 +32,9 @@
 #include <tebako-common.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
+#include <tebako-io-root.h>
 #include <tebako-fd.h>
-#include <tebako-dfs.h>
+#include <tebako-memfs.h>
 
 using namespace std;
 

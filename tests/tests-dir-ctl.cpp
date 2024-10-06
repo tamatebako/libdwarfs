@@ -32,12 +32,15 @@ namespace fs = std::filesystem;
 #include "tests.h"
 
 namespace {
-class DirCtlTests : public testing::Test {
- protected:
-  static std::string tmp_dir;
-  static std::string tmp_name;
+// This is the directory name for mkdir attempts within tebako memefs (those, that will fail)
 // #define -- for TEBAKIZE_PATH
 #define TMP_D_NAME "tebako-test-dir"
+
+class DirCtlTests : public testing::Test {
+ protected:
+  // This is the directory name for mkdir attempts outside of tebako memefs (those, that may succeed)
+  std::string tmp_dir;
+  std::string tmp_name;
 
 #ifdef _WIN32
   static void invalidParameterHandler(const wchar_t* p1,
@@ -57,21 +60,33 @@ class DirCtlTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-
-    auto p_tmp_dir = stdfs::temp_directory_path();
-    auto p_tmp_name = p_tmp_dir / TMP_D_NAME;
-
-    tmp_dir = p_tmp_dir.generic_string();
-    tmp_name = p_tmp_name.generic_string();
-
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                     NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
   static void TearDownTestSuite()
   {
-    drop_fs();
+    unmount_root_memfs();
+  }
+
+  void SetUp() override
+  {
+    auto p_tmp_dir = stdfs::temp_directory_path();
+    // We will assume that this file does not exist ...
+    auto p_tmp_name = p_tmp_dir / (TMP_D_NAME + generateRandom6DigitNumber());
+
+    tmp_dir = p_tmp_dir.generic_string();
+    tmp_name = p_tmp_name.generic_string();
+  }
+
+  std::string generateRandom6DigitNumber()
+  {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(100000, 999999);
+    int random_number = dis(gen);
+    return std::to_string(random_number);
   }
 };
 
@@ -105,7 +120,12 @@ TEST_F(DirCtlTests, tebako_getcwd_small_buffer)
   char* r2;
   int ret = tebako_chdir(TEBAKIZE_PATH("directory-1"));
   EXPECT_EQ(0, ret);
+
   r2 = tebako_getcwd(p2, sizeof(p2) / sizeof(p2[0]));
+  EXPECT_EQ(ERANGE, errno);
+  EXPECT_EQ(NULL, r2);
+
+  r2 = tebako_getcwd(nullptr, sizeof(p2) / sizeof(p2[0]));
   EXPECT_EQ(ERANGE, errno);
   EXPECT_EQ(NULL, r2);
 }
@@ -213,9 +233,9 @@ TEST_F(DirCtlTests, tebako_mkdir_relative_path_pass_through)
   int ret = tebako_chdir(tmp_dir.c_str());
   EXPECT_EQ(0, ret);
 #if defined(TEBAKO_HAS_POSIX_MKDIR) || defined(RB_W32)
-  ret = tebako_mkdir(TMP_D_NAME, S_IRWXU);
+  ret = tebako_mkdir(tmp_name.c_str(), S_IRWXU);
 #else
-  ret = tebako_mkdir(TMP_D_NAME);
+  ret = tebako_mkdir(tmp_name.c_str());
 #endif
   EXPECT_EQ(0, ret);
   ret = tebako_rmdir(tmp_name.c_str());
@@ -288,7 +308,4 @@ TEST_F(DirCtlTests, is_tebako_path_w)
   EXPECT_EQ(0, ret);
 }
 #endif
-
-std::string DirCtlTests::tmp_name;
-std::string DirCtlTests::tmp_dir;
 }  // namespace

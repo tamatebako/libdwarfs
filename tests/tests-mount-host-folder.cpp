@@ -28,11 +28,11 @@
  */
 
 #include "tests.h"
-#include <tebako-mnt.h>
+#include <tebako-mount-table.h>
 
 namespace tebako {
 
-class MountTests : public ::testing::Test {
+class HostFolderMountTests : public ::testing::Test {
  protected:
   static bool cross_test;
 
@@ -55,14 +55,12 @@ class MountTests : public ::testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
-    );
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), nullptr, nullptr, nullptr, nullptr, nullptr);
   }
 
   static void TearDownTestSuite()
   {
-    drop_fs();
+    unmount_root_memfs();
   }
 
   sync_tebako_mount_table& mount_table = sync_tebako_mount_table::get_tebako_mount_table();
@@ -79,9 +77,9 @@ class MountTests : public ::testing::Test {
   }
 };
 
-bool MountTests::cross_test = false;
+bool HostFolderMountTests::cross_test = false;
 
-TEST_F(MountTests, mount_directory)
+TEST_F(HostFolderMountTests, mount_directory)
 {
   if (!cross_test) {
     DIR* dirp = tebako_opendir(TEBAKIZE_PATH("m-dir-outside-of-memfs"));
@@ -112,7 +110,7 @@ TEST_F(MountTests, mount_directory)
   }
 }
 
-TEST_F(MountTests, mount_file)
+TEST_F(HostFolderMountTests, mount_file)
 {
   if (!cross_test) {
     int fh = tebako_open(2, TEBAKIZE_PATH("m-dir-outside-of-memfs/a-file-outside-of-memfs.txt"), O_RDONLY);
@@ -131,7 +129,7 @@ TEST_F(MountTests, mount_file)
 }
 
 #ifdef WITH_LINK_TESTS
-TEST_F(MountTests, mount_symlink)
+TEST_F(HostFolderMountTests, mount_symlink)
 {
   if (!cross_test) {
     int fh = tebako_open(2, TEBAKIZE_PATH("m-dir-outside-of-memfs/o-link-outside-of-memfs"), O_RDONLY);
@@ -149,7 +147,7 @@ TEST_F(MountTests, mount_symlink)
   }
 }
 
-TEST_F(MountTests, mount_symlink_readlink)
+TEST_F(HostFolderMountTests, mount_symlink_readlink)
 {
   if (!cross_test) {
     char readbuf[128];
@@ -165,7 +163,7 @@ TEST_F(MountTests, mount_symlink_readlink)
   }
 }
 
-TEST_F(MountTests, mount_symlink_lstat)
+TEST_F(HostFolderMountTests, mount_symlink_lstat)
 {
   if (!cross_test) {
     struct STAT_TYPE st;
@@ -180,7 +178,7 @@ TEST_F(MountTests, mount_symlink_lstat)
 #endif
 
 #ifdef TEBAKO_HAS_OPENAT
-TEST_F(MountTests, mount_and_openat)
+TEST_F(HostFolderMountTests, mount_and_openat)
 {
   mount_table.insert(0, "m-bin", __BIN__);
 
@@ -196,7 +194,7 @@ TEST_F(MountTests, mount_and_openat)
 #endif
 
 #ifdef TEBAKO_HAS_FSTATAT
-TEST_F(MountTests, mount_and_fstatat)
+TEST_F(HostFolderMountTests, mount_and_fstatat)
 {
   mount_table.insert(0, "m-bin", __BIN__);
 
@@ -219,7 +217,7 @@ TEST_F(MountTests, mount_and_fstatat)
 #define TMP_F_NAME_3 "tebako-test-file-for-mount-3"
 #define TMP_F_NAME_4 "tebako-test-file-for-mount-4"
 
-TEST_F(MountTests, mount_mkdir_rmdir_1)
+TEST_F(HostFolderMountTests, mount_mkdir_rmdir_1)
 {
   mount_table.insert(0, "m-tmp", __TMP__);
 
@@ -233,7 +231,7 @@ TEST_F(MountTests, mount_mkdir_rmdir_1)
   EXPECT_EQ(0, tebako_rmdir(__AT_TMP__(TMP_D_NAME_1)));
 }
 
-TEST_F(MountTests, mount_mkdir_rmdir_2)
+TEST_F(HostFolderMountTests, mount_mkdir_rmdir_2)
 {
   mount_table.insert(0, "m-tmp", __TMP__);
 
@@ -247,7 +245,7 @@ TEST_F(MountTests, mount_mkdir_rmdir_2)
   EXPECT_EQ(0, tebako_rmdir(TEBAKIZE_PATH("m-tmp" __S__ TMP_D_NAME_2)));
 }
 
-TEST_F(MountTests, mount_open_creat_unlink_1)
+TEST_F(HostFolderMountTests, mount_open_creat_unlink_1)
 {
   mount_table.insert(0, "m-tmp", __TMP__);
 
@@ -258,7 +256,7 @@ TEST_F(MountTests, mount_open_creat_unlink_1)
   EXPECT_EQ(0, tebako_unlink(__AT_TMP__(TMP_F_NAME_1)));
 }
 
-TEST_F(MountTests, mount_open_creat_unlink_2)
+TEST_F(HostFolderMountTests, mount_open_creat_unlink_2)
 {
   mount_table.insert(0, "m-tmp", __TMP__);
 
@@ -270,7 +268,7 @@ TEST_F(MountTests, mount_open_creat_unlink_2)
 }
 
 #if defined(TEBAKO_HAS_OPENAT) && defined(O_DIRECTORY)
-TEST_F(MountTests, mount_openat_creat_unlink_1)
+TEST_F(HostFolderMountTests, mount_openat_creat_unlink_1)
 {
   mount_table.insert(0, "m-tmp", __TMP__);
 
@@ -284,7 +282,7 @@ TEST_F(MountTests, mount_openat_creat_unlink_1)
   EXPECT_EQ(0, tebako_unlink(__AT_TMP__(TMP_F_NAME_3)));
 }
 
-TEST_F(MountTests, mount_openat_creat_unlink_2)
+TEST_F(HostFolderMountTests, mount_openat_creat_unlink_2)
 {
   mount_table.insert(0, "m-tmp", __TMP__);
 

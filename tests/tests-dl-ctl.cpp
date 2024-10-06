@@ -54,16 +54,26 @@ class DlTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                     NULL /* decompress_ratio*/, NULL /* image_offset */
     );
   }
 
   static void TearDownTestSuite()
   {
-    drop_fs();
+    unmount_root_memfs();
   }
 };
+
+TEST_F(DlTests, tebako_dlopen_null)
+{
+  errno = 0;
+  void* handle = tebako_dlopen(nullptr, RTLD_LAZY | RTLD_GLOBAL);
+  EXPECT_NE(handle, nullptr);
+  if (handle != nullptr) {
+    EXPECT_EQ(0, dlclose(handle));
+  }
+}
 
 TEST_F(DlTests, tebako_dlopen_no_file)
 {
@@ -93,6 +103,26 @@ TEST_F(DlTests, tebako_dlopen_absolute_path)
   EXPECT_NE(handle, nullptr);
   if (handle != nullptr) {
     EXPECT_EQ(0, dlclose(handle));
+  }
+}
+
+TEST_F(DlTests, tebako_dlopen_twice)
+{
+  void *handle1, *handle2;
+  handle1 = tebako_dlopen(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__), RTLD_LAZY | RTLD_GLOBAL);
+  EXPECT_NE(handle1, nullptr);
+
+  handle2 = tebako_dlopen(TEBAKIZE_PATH("directory-1/" __LIBEMPTY__), RTLD_LAZY | RTLD_GLOBAL);
+  EXPECT_NE(handle2, nullptr);
+
+  EXPECT_EQ(handle1, handle2);
+
+  if (handle1 != nullptr) {
+    EXPECT_EQ(0, dlclose(handle1));
+  }
+
+  if (handle2 != nullptr) {
+    EXPECT_EQ(0, dlclose(handle2));
   }
 }
 
