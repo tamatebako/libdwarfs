@@ -31,9 +31,10 @@
 #include <tebako-pch-pp.h>
 #include <tebako-common.h>
 #include <tebako-io-inner.h>
+#include <tebako-io-root.h>
 #include <tebako-fd.h>
 #include <tebako-dirent.h>
-#include <tebako-dfs.h>
+#include <tebako-memfs.h>
 
 using namespace std;
 
@@ -51,18 +52,13 @@ uintptr_t sync_tebako_dstable::opendir(int vfd, size_t& size) noexcept
   int err = ENOTDIR;
   try {
     auto ds = make_shared<tebako_ds>(vfd);
-    if (ds == NULL) {
-      err = ENOMEM;
+    if (ds->load_cache(0, true) == DWARFS_IO_CONTINUE) {
+      ret = reinterpret_cast<uintptr_t>(ds.get());
+      (*s_tebako_dstable.wlock())[ret] = ds;
+      size = ds->dir_size;
     }
     else {
-      if (ds->load_cache(0, true) == DWARFS_IO_CONTINUE) {
-        ret = reinterpret_cast<uintptr_t>(ds.get());
-        (*s_tebako_dstable.wlock())[ret] = ds;
-        size = ds->dir_size;
-      }
-      else {
-        ret = 0;
-      }
+      ret = 0;
     }
   }
   catch (bad_alloc&) {

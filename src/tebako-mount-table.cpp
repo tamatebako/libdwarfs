@@ -30,7 +30,7 @@
 #include <tebako-pch.h>
 #include <tebako-pch-pp.h>
 
-#include <tebako-mnt.h>
+#include <tebako-mount-table.h>
 
 namespace tebako {
 sync_tebako_mount_table& sync_tebako_mount_table::get_tebako_mount_table(void)
@@ -58,7 +58,7 @@ void sync_tebako_mount_table::erase(const tebako_mount_point& mount_point)
   p_mount_table->erase(mount_point);
 }
 
-std::optional<std::string> sync_tebako_mount_table::get(const tebako_mount_point& mount_point)
+std::optional<tebako_mount_target> sync_tebako_mount_table::get(const tebako_mount_point& mount_point)
 {
   auto p_mount_table = s_tebako_mount_table.rlock();
   auto p_mount = p_mount_table->find(mount_point);
@@ -69,6 +69,12 @@ std::optional<std::string> sync_tebako_mount_table::get(const tebako_mount_point
 }
 
 bool sync_tebako_mount_table::insert(const tebako_mount_point& mount_point, const std::string& mount_target)
+{
+  auto p_mount_table = s_tebako_mount_table.wlock();
+  return p_mount_table->emplace(mount_point, mount_target).second;
+}
+
+bool sync_tebako_mount_table::insert(const tebako_mount_point& mount_point, uint32_t mount_target)
 {
   auto p_mount_table = s_tebako_mount_table.wlock();
   return p_mount_table->emplace(mount_point, mount_target).second;

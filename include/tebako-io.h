@@ -44,16 +44,24 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  // !__cplusplus
-int load_fs(const void* data,
-            const unsigned int size,
-            const char* debuglevel,
-            const char* cachesize,
-            const char* workers,
-            const char* mlock,
-            const char* decompress_ratio,
-            const char* image_offset);
+int mount_root_memfs(const void* data,
+                     const unsigned int size,
+                     const char* debuglevel,
+                     const char* cachesize,
+                     const char* workers,
+                     const char* mlock,
+                     const char* decompress_ratio,
+                     const char* image_offset);
 
-void drop_fs(void);
+int mount_memfs_at_root(const void* data, const unsigned int size, const char* image_offset, const char* path);
+
+int mount_memfs(const void* data,
+                const unsigned int size,
+                const char* image_offset,
+                uint32_t parent_inode,
+                const char* path);
+
+void unmount_root_memfs(void);
 
 char* tebako_getcwd(char* buf, size_t size);
 int tebako_chdir(const char* path);

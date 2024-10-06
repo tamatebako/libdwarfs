@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2024, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -31,35 +31,58 @@
 
 namespace tebako {
 
-typedef std::pair<uint32_t, std::string> tebako_mount_point;
-typedef std::map<tebako_mount_point, std::string> tebako_mount_table;
+typedef std::map<uint32_t, std::shared_ptr<memfs>> tebako_memfs_table;
 
-class sync_tebako_mount_table {
+class sync_tebako_memfs_table {
  private:
-  folly::Synchronized<tebako_mount_table> s_tebako_mount_table;
+  folly::Synchronized<tebako_memfs_table> s_tebako_memfs_table;
 
  public:
-  static sync_tebako_mount_table& get_tebako_mount_table(void);
+  static sync_tebako_memfs_table& get_tebako_memfs_table(void);
 
-  bool check(const tebako_mount_point& mount_point);
-  bool check(const uint32_t ino, const std::string& mount_path) { return check(std::make_pair(ino, mount_path)); };
-
+  bool check(uint32_t index);
   void clear(void);
-
-  void erase(const tebako_mount_point& mount_point);
-  void erase(const uint32_t ino, const std::string& mount_path) { erase(std::make_pair(ino, mount_path)); };
-
-  std::optional<std::string> get(const tebako_mount_point& mount_point);
-  std::optional<std::string> get(const uint32_t ino, const std::string& mount_path)
-  {
-    return get(std::make_pair(ino, mount_path));
-  };
-
-  bool insert(const tebako_mount_point& mount_point, const std::string& mount_target);
-  bool insert(const uint32_t ino, const std::string& mount_path, const std::string& mount_target)
-  {
-    return insert(std::make_pair(ino, mount_path), mount_target);
-  };
+  void erase(uint32_t index);
+  std::shared_ptr<memfs> get(uint32_t index);
+  bool insert(uint32_t index, std::shared_ptr<memfs> fs);
+  uint32_t insert_auto(std::shared_ptr<memfs> fs);
 };
+
+template <typename Functor, class... Args>
+int memfs_call(Functor&& fn, uint32_t fs_index, Args&&... args)
+{
+  int ret = DWARFS_IO_ERROR;
+
+  auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(fs_index);
+  if (fs == nullptr) {
+    TEBAKO_SET_LAST_ERROR(ENOENT);
+  }
+  else {
+    ret = ((*fs).*fn)(std::forward<Args>(args)...);
+  }
+  return ret;
+}
+
+template <typename Functor, class... Args>
+int root_memfs_call(Functor&& fn, Args&&... args)
+{
+  return memfs_call(fn, 0, std::forward<Args>(args)...);
+}
+
+template <typename Functor, class... Args>
+int inode_memfs_call(Functor&& fn, uint32_t inode, Args&&... args)
+{
+  int ret = DWARFS_IO_ERROR;
+  uint32_t fs_index = (inode >> 29) & 0x7;  // Higher three bits is memfs index
+
+  auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(fs_index);
+  if (fs == nullptr) {
+    TEBAKO_SET_LAST_ERROR(ENOENT);
+  }
+  else {
+    ret = ((*fs).*fn)(inode, std::forward<Args>(args)...);
+  }
+  return ret;
+}
 
 }  // namespace tebako

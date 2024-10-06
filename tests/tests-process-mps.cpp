@@ -29,7 +29,8 @@
 
 #include "tests.h"
 #include <tebako-io-inner.h>
-#include <tebako-mnt.h>
+#include <tebako-io-root.h>
+#include <tebako-mount-table.h>
 #include <tebako-cmdline-helpers.h>
 
 namespace tebako {
@@ -62,8 +63,8 @@ class ProcessMountpointsTest : public ::testing::Test {
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 #endif
 
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                     NULL /* decompress_ratio*/, NULL /* image_offset */
     );
 
     std::string lnk;
@@ -76,6 +77,11 @@ class ProcessMountpointsTest : public ::testing::Test {
     res = dwarfs_stat(TEBAKIZE_PATH(""), &st, lnk, false);
     EXPECT_EQ(DWARFS_IO_CONTINUE, res);
     test_root_ino = st.st_ino;
+  }
+
+  static void TearDownTestSuite()
+  {
+    unmount_root_memfs();
   }
 
   void SetUp() override
@@ -130,7 +136,7 @@ TEST_F(ProcessMountpointsTest, invalid_path)
 }
 
 // Test: Multiple valid mount points
-TEST_F(ProcessMountpointsTest, MultipleValidMountPoints)
+TEST_F(ProcessMountpointsTest, mltiple_valid_mountpoints)
 {
   std::vector<std::string> mountpoints = {"directory-1/mpoint1:target1", "directory-1/mpoint2:target2",
                                           "directory-1/mpoint3:target3"};

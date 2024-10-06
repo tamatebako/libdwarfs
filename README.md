@@ -23,7 +23,6 @@ This is libdwarfs-wr  - a wrapper for https://github.com/mhx/dwarfs core library
 * **WITH_COVERAGE**, default: ON   -- If this option is ON, test coverage analysis is performed using Codecov.
 * **RB_W32**, default: OFF         -- If this option is ON, the version integrated with the Ruby library is built.
 * **WITH_LINK_TEST**, default: ON  -- If this option is ON, symbolic/hard link tests are enabled.
-* **USE_TEMP_FS**, default: OFF    -- If this option is ON, the data for the test file system is created under /tmp. Otherwise, an in-source location is used.
 
 ### jemalloc Library Build on macOS
 

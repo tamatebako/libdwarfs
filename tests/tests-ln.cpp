@@ -56,8 +56,8 @@ class LnTests : public testing::Test {
 #ifdef _WIN32
     _set_invalid_parameter_handler(invalidParameterHandler);
 #endif
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                     NULL /* decompress_ratio*/, NULL /* image_offset */
     );
 #ifdef WITH_LINK_TESTS
     std::string tdp_template = (stdfs::temp_directory_path() / "libdwarfs.tests.XXXXXX");
@@ -87,7 +87,7 @@ class LnTests : public testing::Test {
     }
     path_initialized = false;
 #endif
-    drop_fs();
+    unmount_root_memfs();
   }
 };
 bool LnTests::cross_test = false;
@@ -313,6 +313,18 @@ TEST_F(LnTests, tebako_lstat_relative_path_pass_through)
   EXPECT_EQ(0, ret);
   ret = tebako_lstat("link2shell", &st);
   EXPECT_EQ(0, ret);
+}
+
+TEST_F(LnTests, tebako_access_link_outside_of_memfs)
+{
+  if (!cross_test) {
+    struct STAT_TYPE st;
+    int ret = tebako_access(TEBAKIZE_PATH("s-link-outside-of-memfs"), F_OK);
+    EXPECT_EQ(0, ret);
+  }
+  else {
+    GTEST_SKIP();
+  }
 }
 
 TEST_F(LnTests, tebako_stat_link_outside_of_memfs)

@@ -28,7 +28,7 @@
  */
 
 #include "tests.h"
-#include <tebako-mnt.h>
+#include <tebako-mount-table.h>
 
 namespace tebako {
 
@@ -47,6 +47,16 @@ TEST_F(MountTableTests, check_path_exists)
   std::string path = "/path1";
   std::string mount = "mount1";
   mount_table.insert(ino, path, mount);
+
+  EXPECT_TRUE(mount_table.check(ino, path));
+}
+
+TEST_F(MountTableTests, check_path_exists_ino)
+{
+  uint32_t ino = 1;
+  std::string path = "/path1";
+  uint32_t ino_mount = 1;
+  mount_table.insert(ino, path, ino_mount);
 
   EXPECT_TRUE(mount_table.check(ino, path));
 }
@@ -77,9 +87,21 @@ TEST_F(MountTableTests, get_existing_path)
   std::string mount = "mount4";
   mount_table.insert(ino, path, mount);
 
-  std::optional<std::string> result = mount_table.get(ino, path);
+  auto result = mount_table.get(ino, path);
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(result.value(), mount);
+  EXPECT_EQ(std::get<std::string>(result.value()), mount);
+}
+
+TEST_F(MountTableTests, get_existing_ino)
+{
+  uint32_t ino = 4;
+  std::string path = "/path4";
+  uint32_t ino_mount = 2;
+  mount_table.insert(ino, path, ino_mount);
+
+  auto result = mount_table.get(ino, path);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(std::get<uint32_t>(result.value()), ino_mount);
 }
 
 TEST_F(MountTableTests, get_non_existing_path)
@@ -87,18 +109,8 @@ TEST_F(MountTableTests, get_non_existing_path)
   uint32_t ino = 5;
   std::string path = "/path5";
 
-  std::optional<std::string> result = mount_table.get(ino, path);
+  auto result = mount_table.get(ino, path);
   EXPECT_FALSE(result.has_value());
-}
-
-TEST_F(MountTableTests, insert_path)
-{
-  uint32_t ino = 6;
-  std::string path = "/path6";
-  std::string mount = "mount6";
-
-  EXPECT_TRUE(mount_table.insert(ino, path, mount));
-  EXPECT_TRUE(mount_table.check(ino, path));
 }
 
 TEST_F(MountTableTests, insert_duplicate_path)
@@ -111,9 +123,24 @@ TEST_F(MountTableTests, insert_duplicate_path)
 
   EXPECT_TRUE(mount_table.insert(ino, path, mount1));
   EXPECT_FALSE(mount_table.insert(mount_point, mount2));  // Insertion should fail for duplicate path
-  std::optional<std::string> result = mount_table.get(ino, path);
+  auto result = mount_table.get(ino, path);
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(result.value(), mount1);  // Original mount should remain
+  EXPECT_EQ(std::get<std::string>(result.value()), mount1);  // Original mount should remain
+}
+
+TEST_F(MountTableTests, insert_duplicate_path_ino)
+{
+  uint32_t ino = 7;
+  std::string path = "/path7";
+  std::string mount = "mount7";
+  uint32_t ino_mount = 8;
+  tebako_mount_point mount_point = std::make_pair(ino, path);
+
+  EXPECT_TRUE(mount_table.insert(ino, path, mount));
+  EXPECT_FALSE(mount_table.insert(mount_point, ino_mount));  // Insertion should fail for duplicate path
+  auto result = mount_table.get(ino, path);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(std::get<std::string>(result.value()), mount);  // Original mount should remain
 }
 
 TEST_F(MountTableTests, concurrent_insert_and_check)
