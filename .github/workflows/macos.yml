@@ -103,12 +103,14 @@ jobs:
 
       - name: Install zlib
         if: matrix.env.os == 'macos-14'
-        run: brew install zlib
+        run: |
+          brew install zlib bison boost
+          brew reinstall xz
 
       - name: Install packages
         # Already installed: openssl, libevent, libsodium, lz4, xz
         # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
-        run: brew install bison flex gnu-sed bash double-conversion boost jemalloc fmt glog googletest
+        run: brew install flex gnu-sed bash double-conversion jemalloc fmt glog googletest
 
       - name: Configure
         run: |
