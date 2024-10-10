@@ -79,6 +79,11 @@ class ProcessMountpointsTest : public ::testing::Test {
     test_root_ino = st.st_ino;
   }
 
+  static void TearDownTestSuite()
+  {
+    unmount_root_memfs();
+  }
+
   void SetUp() override
   {
     // Clear the mount table before each test

@@ -35,7 +35,6 @@
 #include "dwarfs/fstypes.h"
 #include "dwarfs/metadata_v2.h"
 #include "dwarfs/mmap.h"
-#include "dwarfs/performance_monitor.h"
 #include "dwarfs/options.h"
 #include "dwarfs/util.h"
 
@@ -64,7 +63,7 @@ class memfs {
   dwarfs::filesystem_options fsopts;
   dwarfs::filesystem_v2 fs;
 
-  std::shared_ptr<dwarfs::performance_monitor> perfmon;
+//  std::shared_ptr<dwarfs::performance_monitor> perfmon;
 
  public:
   static void set_cachesize(const char* cachesize);
@@ -76,7 +75,7 @@ class memfs {
   static dwarfs::stream_logger& logger();
   static memfs_options& options();
 
-  memfs(const void* dt, const unsigned int sz);
+  memfs(const void* dt, const unsigned int sz, uint32_t df_root = 0);
 
   int load(const char* image_offset = "auto");
   void set_image_offset_str(const char* image_offset = "auto");

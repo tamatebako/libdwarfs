@@ -407,6 +407,10 @@ if(WITH_TESTS)
     set(DATA_TEST_DIR_MSG "")
   endif(USE_TEMP_FS)
 
+  set(DATA_TEST_DIR_2  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem_2)
+  set(DATA_TEST_DIR_MSG "")
+
+
   if (WITH_LINK_TESTS)
     set(WLT "with link tests")
     add_compile_definitions(WITH_LINK_TESTS)
@@ -414,12 +418,13 @@ if(WITH_TESTS)
     set(WLT "without link tests")
   endif(WITH_LINK_TESTS)
 
-  message(STATUS "Using test data set ${WLT} from '${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem' ${DATA_TEST_DIR_MSG}")
+  message(STATUS "Using test data set ${WLT} from '${CMAKE_CURRENT_SOURCE_DIR}/tests/test_filesystem' ${DATA_TEST_DIR_MSG} and mounted dwarfs from ${DATA_TEST_DIR_2}" )
 
 # DATA_BIN_DIR folder is used to create packaged filesystem
   set(DATA_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 # DATA_BIN_FILE is packaged filesystem itself
   set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
+  set(DATA_BIN_FILE_2 ${DATA_BIN_DIR}/fs2.bin)
 
 endif(WITH_TESTS)
 
@@ -811,6 +816,7 @@ add_library(dwarfs-wr STATIC
     "src/tebako-mnt.cpp"
     "src/tebako-mfs.cpp"
     "src/tebako-dfs.cpp"
+    "src/tebako-dft.cpp"
     "src/tebako-fd.cpp"
     "src/tebako-dirent.cpp"
     "include/tebako-cmdline-helpers.h"
@@ -823,6 +829,8 @@ add_library(dwarfs-wr STATIC
     "include/tebako-io-inner.h"
     "include/tebako-io-root.h"
     "include/tebako-kfd.h"
+    "include/tebako-dfs.h"
+    "include/tebako-dft.h"
     "include/tebako-mnt.h"
     "include/tebako-mfs.h"
     "include/tebako-pch.h"
@@ -924,8 +932,11 @@ if(WITH_TESTS)
 
   add_custom_target(PACKAGED_FILESYSTEM_STEP_1 ALL
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
+    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs2.cpp
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${LIBEMPTY_NAME} ${DATA_TEST_DIR}/directory-1
-  )
+    COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE_2} -i ${DATA_TEST_DIR_2}
+    BYPRODUCTS ${DATA_BIN_FILE_2}
+    )
 
   add_dependencies(PACKAGED_FILESYSTEM_STEP_1 empty)
   add_dependencies(dwarfs-wr PACKAGED_FILESYSTEM_STEP_1)
@@ -990,11 +1001,22 @@ if(WITH_TESTS)
     @ONLY
   )
 
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs2.cpp.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs2.cpp
+    @ONLY
+  )
+
   if(IS_WINDOWS)
     add_custom_command(
       OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs0.c
       COMMAND ${DEPS}/bin/incbin.exe ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp -o ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs0.c
       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp ${DATA_BIN_FILE} ${INCBIN_PRJ}
+    )
+    add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs02.c
+      COMMAND ${DEPS}/bin/incbin.exe ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs2.cpp -o ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs02.c
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs2.cpp ${DATA_BIN_FILE_2} ${INCBIN_PRJ}
     )
   endif(IS_WINDOWS)
 
@@ -1126,12 +1148,15 @@ else(IS_WINDOWS)
     "tests/tebako-fs.h"
     "tests/tests.h"
   )
-
   add_dependencies(wr-tests PACKAGED_FILESYSTEM_STEP_3)
+
+  add_executable(wr-mount "tests/tebako-fs2.cpp")
+  add_dependencies(wr-mount PACKAGED_FILESYSTEM_STEP_1)
 
 if(IS_WINDOWS)
   target_sources(wr-bin PUBLIC  "tests/tebako-fs0.c" )
   target_sources(wr-tests PUBLIC "tests/tebako-fs0.c")
+  target_sources(wr-mount PUBLIC  "tests/tebako-fs02.c")
 endif(IS_WINDOWS)
 
 if(RB_W32)
