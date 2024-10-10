@@ -63,10 +63,10 @@ jobs:
           source: '.'
           extensions: 'h,cpp,c'
           clangFormatVersion: 14
-          inplace: True
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v9
-        with:
-          message: clang-format fixes
-          committer_name: GitHub Actions
-          committer_email: actions@github.com
+#          inplace: True
+#      - name: Commit changes
+#        uses: EndBug/add-and-commit@v9
+#        with:
+#          message: clang-format fixes
+#          committer_name: GitHub Actions
+#          committer_email: actions@github.com

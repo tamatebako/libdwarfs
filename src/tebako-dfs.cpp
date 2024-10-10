@@ -188,18 +188,25 @@ int memfs::find_inode(uint32_t start_from,
 
     if (pi) {
       ret = process_inode(*pi, &dwarfs_st, follow_last, lnk, p_iterator, p_path);
-      while (p_iterator != p_path.end() && p_iterator->string() != "" && ret == DWARFS_IO_CONTINUE) {
+      while (p_iterator != p_path.end() && !p_iterator->empty() && ret == DWARFS_IO_CONTINUE) {
         auto inode = pi->inode_num();
         auto mount_point = m_table.get(inode, p_iterator->string());
         // Hit mount point
         // Convert it to symlink and proceed
         if (mount_point) {
-          lnk = *mount_point;
-          LOG_DEBUG << __func__ << " [ mount point --> \"" << lnk << "\" ]";
-          ret = process_link(lnk, ++p_iterator, p_path);
-          if (ret == DWARFS_S_LINK_RELATIVE) {
-            ret = DWARFS_IO_CONTINUE;
-            continue;
+          if (std::holds_alternative<std::string>(*mount_point)) {
+            lnk = std::get<std::string>(*mount_point);
+            LOG_DEBUG << __func__ << " [ mount point --> \"" << lnk << "\" ]";
+            ret = process_link(lnk, ++p_iterator, p_path);
+            if (ret == DWARFS_S_LINK_RELATIVE) {
+              ret = DWARFS_IO_CONTINUE;
+              continue;
+            }
+          }
+          else {
+            LOG_DEBUG << __func__ << " [ Invalid mount point type ]";
+            TEBAKO_SET_LAST_ERROR(ENOENT);
+            ret = DWARFS_IO_ERROR;
           }
         }
         else {
