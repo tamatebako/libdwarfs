@@ -77,9 +77,9 @@ TEST_F(MountTableTests, get_existing_path)
   std::string mount = "mount4";
   mount_table.insert(ino, path, mount);
 
-  std::optional<std::string> result = mount_table.get(ino, path);
+  auto result = mount_table.get(ino, path);
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(result.value(), mount);
+  EXPECT_EQ(std::get<std::string>(result.value()), mount);
 }
 
 TEST_F(MountTableTests, get_non_existing_path)
@@ -87,7 +87,7 @@ TEST_F(MountTableTests, get_non_existing_path)
   uint32_t ino = 5;
   std::string path = "/path5";
 
-  std::optional<std::string> result = mount_table.get(ino, path);
+  auto result = mount_table.get(ino, path);
   EXPECT_FALSE(result.has_value());
 }
 
@@ -111,9 +111,9 @@ TEST_F(MountTableTests, insert_duplicate_path)
 
   EXPECT_TRUE(mount_table.insert(ino, path, mount1));
   EXPECT_FALSE(mount_table.insert(mount_point, mount2));  // Insertion should fail for duplicate path
-  std::optional<std::string> result = mount_table.get(ino, path);
+  auto result = mount_table.get(ino, path);
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(result.value(), mount1);  // Original mount should remain
+  EXPECT_EQ(std::get<std::string>(result.value()), mount1);  // Original mount should remain
 }
 
 TEST_F(MountTableTests, concurrent_insert_and_check)

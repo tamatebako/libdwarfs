@@ -29,6 +29,7 @@
 
 #include "tests.h"
 #include <tebako-io-inner.h>
+#include <tebako-io-root.h>
 #include <tebako-mnt.h>
 #include <tebako-cmdline-helpers.h>
 
@@ -62,8 +63,8 @@ class ProcessMountpointsTest : public ::testing::Test {
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 #endif
 
-    load_fs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
-            NULL /* decompress_ratio*/, NULL /* image_offset */
+    mount_root_memfs(&gfsData[0], gfsSize, tests_log_level(), NULL /* cachesize*/, NULL /* workers */, NULL /* mlock */,
+                     NULL /* decompress_ratio*/, NULL /* image_offset */
     );
 
     std::string lnk;

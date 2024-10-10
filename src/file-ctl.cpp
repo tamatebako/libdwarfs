@@ -34,6 +34,9 @@
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-io-rb-w32-inner.h>
+#include <tebako-io-root.h>
+
+using namespace tebako;
 
 int tebako_access(const char* path, int amode)
 {
