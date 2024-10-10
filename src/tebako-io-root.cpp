@@ -32,6 +32,7 @@
 #include <tebako-common.h>
 #include <tebako-dirent.h>
 #include <tebako-dfs.h>
+#include <tebako-dft.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-io-root.h>
@@ -43,24 +44,32 @@ using namespace dwarfs;
 
 namespace tebako {
 
-struct memfs_wrapper {
-  memfs* root_memfs{nullptr};
-};
-
-static folly::Synchronized<memfs_wrapper> s_root_memfs;
-
 template <typename Functor, class... Args>
 int root_memfs_call(Functor&& fn, Args&&... args)
 {
   int ret = DWARFS_IO_ERROR;
 
-  auto wrapped_memfs = s_root_memfs.rlock();
-
-  if (wrapped_memfs->root_memfs == nullptr) {
+  auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(0);
+  if (fs == nullptr) {
     TEBAKO_SET_LAST_ERROR(ENOENT);
   }
   else {
-    ret = (wrapped_memfs->root_memfs->*fn)(std::forward<Args>(args)...);
+    ret = (fs->*fn)(std::forward<Args>(args)...);
+  }
+  return ret;
+}
+
+template <typename Functor, class... Args>
+int inode_memfs_call(Functor&& fn, uint32_t inode, Args&&... args)
+{
+  int ret = DWARFS_IO_ERROR;
+
+  auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(0);
+  if (fs == nullptr) {
+    TEBAKO_SET_LAST_ERROR(ENOENT);
+  }
+  else {
+    ret = (fs->*fn)(inode, std::forward<Args>(args)...);
   }
   return ret;
 }
@@ -101,26 +110,20 @@ int mount_root_memfs(const void* data,
       memfs::set_lock_mode(mlock);
       memfs::set_workers(workers);
 
-      auto wrapped_memfs = s_root_memfs.wlock();
-
-      if (wrapped_memfs->root_memfs != nullptr) {
+      auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(0);
+      if (fs != nullptr) {
         release_memfs_resources();
-        delete wrapped_memfs->root_memfs;
+        sync_tebako_memfs_table::get_tebako_memfs_table().erase(0);
       }
 
-      wrapped_memfs->root_memfs = new memfs(data, size);
-      if (wrapped_memfs->root_memfs != nullptr) {
-        ret = wrapped_memfs->root_memfs->load(image_offset);
-        if (ret == 0) {
-          tebako_init_cwd(memfs::logger(), memfs::options().debuglevel >= logger::DEBUG);
-        }
-        else {
-          delete wrapped_memfs->root_memfs;
-          wrapped_memfs->root_memfs = nullptr;
-        }
+      sync_tebako_memfs_table::get_tebako_memfs_table().insert(0, new memfs(data, size));
+      fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(0);
+      ret = fs->load(image_offset);
+      if (ret == 0) {
+        tebako_init_cwd(memfs::logger(), memfs::options().debuglevel >= logger::DEBUG);
       }
       else {
-        LOG_ERROR << "Failed to create memfs in " << __func__;
+        sync_tebako_memfs_table::get_tebako_memfs_table().erase(0);
       }
     }
     catch (std::exception& e) {
@@ -140,11 +143,7 @@ int mount_root_memfs(const void* data,
 void unmount_root_memfs(void)
 {
   release_memfs_resources();
-  auto wrapped_memfs = s_root_memfs.wlock();
-  if (wrapped_memfs->root_memfs != nullptr) {
-    delete wrapped_memfs->root_memfs;
-    wrapped_memfs->root_memfs = nullptr;
-  }
+  sync_tebako_memfs_table::get_tebako_memfs_table().erase(0);
 }
 
 int dwarfs_access(const std::string& path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept
@@ -168,7 +167,7 @@ int dwarfs_stat(const std::string& path, struct stat* buf, std::string& lnk, boo
 
 int dwarfs_inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid) noexcept
 {
-  return root_memfs_call(&tebako::memfs::inode_access, inode, amode, uid, gid);
+  return inode_memfs_call(&tebako::memfs::inode_access, inode, amode, uid, gid);
 }
 
 int dwarfs_relative_stat(const std::string& path, struct stat* st, std::string& lnk, bool follow) noexcept
@@ -182,11 +181,11 @@ int dwarfs_inode_relative_stat(uint32_t inode,
                                std::string& lnk,
                                bool follow) noexcept
 {
-  return root_memfs_call(&tebako::memfs::inode_relative_stat, inode, path, buf, lnk, follow);
+  return inode_memfs_call(&tebako::memfs::inode_relative_stat, inode, path, buf, lnk, follow);
 }
 ssize_t dwarfs_inode_read(uint32_t inode, void* buf, size_t size, off_t offset) noexcept
 {
-  return root_memfs_call(&tebako::memfs::inode_read, inode, buf, size, offset);
+  return inode_memfs_call(&tebako::memfs::inode_read, inode, buf, size, offset);
 }
 int dwarfs_inode_readdir(uint32_t inode,
                          tebako::tebako_dirent* cache,
@@ -195,7 +194,7 @@ int dwarfs_inode_readdir(uint32_t inode,
                          size_t& cache_size,
                          size_t& dir_size) noexcept
 {
-  return root_memfs_call(&tebako::memfs::inode_readdir, inode, cache, cache_start, buffer_size, cache_size, dir_size);
+  return inode_memfs_call(&tebako::memfs::inode_readdir, inode, cache, cache_start, buffer_size, cache_size, dir_size);
 }
 
 }  // namespace tebako

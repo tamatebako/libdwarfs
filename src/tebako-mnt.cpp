@@ -63,8 +63,7 @@ std::optional<tebako_mount_target> sync_tebako_mount_table::get(const tebako_mou
   auto p_mount_table = s_tebako_mount_table.rlock();
   auto p_mount = p_mount_table->find(mount_point);
   if (p_mount != p_mount_table->end()) {
-    const tebako_mount_target & res = p_mount->second;
-    return std::make_optional<tebako_mount_target>(res);
+    return p_mount->second;
   }
   return std::nullopt;
 }
