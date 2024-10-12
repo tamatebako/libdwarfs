@@ -1148,10 +1148,10 @@ else(IS_WINDOWS)
     "tests/tebako-fs.h"
     "tests/tests.h"
   )
-
   add_dependencies(wr-tests PACKAGED_FILESYSTEM_STEP_3)
 
   add_executable(wr-mount "tests/tebako-fs2.cpp")
+  add_dependencies(wr-mount PACKAGED_FILESYSTEM_STEP_1)
 
 if(IS_WINDOWS)
   target_sources(wr-bin PUBLIC  "tests/tebako-fs0.c" )
