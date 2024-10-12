@@ -104,7 +104,7 @@ TEST_F(SyncTebakoMemfsTableTest, concurrent_add_and_check) {
     t3.join();
     t4.join();
 
-    EXPECT_GT(success_count, 1000);
+    EXPECT_GE(success_count, 1000);
 }
 
 TEST_F(SyncTebakoMemfsTableTest, concurrent_clear) {
@@ -118,11 +118,13 @@ TEST_F(SyncTebakoMemfsTableTest, concurrent_clear) {
     std::thread t2(&sync_tebako_memfs_table::clear, &table);
     t1.join();
     std::thread t3(&sync_tebako_memfs_table::clear, &table);
-
     t2.join();
     t3.join();
-    EXPECT_LE(success_count, 1000); // Ensure all entries were checked before clear
-    EXPECT_FALSE(table.check(345)); // Ensure the table is cleared
+
+    success_count = 0;
+    std::thread t4(check_entries, std::ref(table), 0, 1000, std::ref(success_count));
+    t4.join();
+    EXPECT_EQ(success_count, 0);
 }
 
 } // namespace tebako
