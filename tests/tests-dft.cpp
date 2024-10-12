@@ -77,13 +77,13 @@ TEST_F(SyncTebakoMemfsTableTest, clear_table) {
 
 static void add_entries(sync_tebako_memfs_table& table, int start, int end) {
     for (int i = start; i < end; ++i) {
-      table.insert(100+i, new memfs("III", 3));
+      table.insert(100 + i, new memfs("III", 3));
     }
 }
 
 static void check_entries(sync_tebako_memfs_table& table, int start, int end, std::atomic<int>& success_count) {
     for (int i = start; i < end; ++i) {
-        if (table.check(i)) {
+        if (table.check(100 + i)) {
             success_count++;
         }
     }
