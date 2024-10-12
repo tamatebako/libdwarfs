@@ -75,7 +75,7 @@ class memfs {
   static dwarfs::stream_logger& logger();
   static memfs_options& options();
 
-  memfs(const void* dt, const unsigned int sz);
+  memfs(const void* dt, const unsigned int sz, uint32_t df_root = 0);
 
   int load(const char* image_offset = "auto");
   void set_image_offset_str(const char* image_offset = "auto");

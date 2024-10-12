@@ -143,7 +143,7 @@ int mount_root_memfs(const void* data,
 void unmount_root_memfs(void)
 {
   release_memfs_resources();
-  sync_tebako_memfs_table::get_tebako_memfs_table().erase(0);
+  sync_tebako_memfs_table::get_tebako_memfs_table().clear();
 }
 
 int dwarfs_access(const std::string& path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept

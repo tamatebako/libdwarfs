@@ -66,17 +66,9 @@ memfs_options& memfs::options()
   return opts;
 }
 
-memfs::memfs(const void* dt, const unsigned int sz) : data{dt}, size{sz}
+memfs::memfs(const void* dt, const unsigned int sz, uint32_t df_root): data{dt}, size{sz}, dwarfs_root(df_root)
 {
   fsopts << options();
-
-  dwarfs_root =
-#ifdef FUSE_ROOT_ID
-      FUSE_ROOT_ID
-#else
-      0
-#endif
-      ;
 }
 
 int memfs::load(const char* image_offset)
