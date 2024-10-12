@@ -34,5 +34,5 @@ INCBIN(fs, "@DATA_BIN_FILE_2@");
 
 int main(int /* argc */ , char ** /* argv */ )
 {
-    printf ()"Hello, world!\n");
+    printf ("Hello, world!\n");
 }
