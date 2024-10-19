@@ -66,7 +66,6 @@ TEST(LoadTests, smoke)
   EXPECT_EQ(1, i);
 }
 
-//#if __MACH__ || defined(_WIN32)
 TEST(LoadTests, tebako_load_invalid_filesystem)
 {
   const unsigned char data[] = "This is broken filesystem image";
@@ -76,7 +75,6 @@ TEST(LoadTests, tebako_load_invalid_filesystem)
   EXPECT_EQ(1, ret);
   unmount_root_memfs();
 }
-//#endif
 
 TEST(LoadTests, tebako_load_invalid_parameter)
 {

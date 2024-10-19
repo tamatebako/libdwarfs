@@ -31,7 +31,7 @@
 
 namespace tebako {
 
-typedef std::map<uint32_t, memfs*> tebako_memfs_table;
+typedef std::map<uint32_t, std::shared_ptr<memfs>> tebako_memfs_table;
 
 class sync_tebako_memfs_table {
  private:
@@ -43,8 +43,9 @@ class sync_tebako_memfs_table {
   bool check(uint32_t index);
   void clear(void);
   void erase(uint32_t index);
-  memfs* get(uint32_t index);
-  bool insert(uint32_t index, memfs* fs);
+  std::shared_ptr<memfs> get(uint32_t index);
+  bool insert(uint32_t index, std::shared_ptr<memfs> fs);
+  uint32_t insert_auto(std::shared_ptr<memfs> fs);
 };
 
 

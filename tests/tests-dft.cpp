@@ -32,7 +32,7 @@
 struct tebako_dirent;
 
 #include <tebako-dfs.h>
-#include <tebako-dft.h>
+#include <tebako-memfs-table.h>
 
 namespace tebako {
 
@@ -56,7 +56,7 @@ TEST_F(SyncTebakoMemfsTableTest, get_tebako_memfs_table) {
 
 TEST_F(SyncTebakoMemfsTableTest, check_existing_index) {
     auto& table = sync_tebako_memfs_table::get_tebako_memfs_table();
-    table.insert(1, new memfs("AAA", 3));
+    table.insert(1, std::make_shared<memfs>("AAA", 3));
 
     EXPECT_TRUE(table.check(1)); // Check if the entry exists
 }
@@ -68,7 +68,7 @@ TEST_F(SyncTebakoMemfsTableTest, check_non_existing_index) {
 
 TEST_F(SyncTebakoMemfsTableTest, clear_table) {
     auto& table = sync_tebako_memfs_table::get_tebako_memfs_table();
-    table.insert(2, new memfs("BBB", 3));
+    table.insert(2, std::make_shared<memfs>("BBB", 3));
 
     table.clear(); // Clear the table
 
@@ -77,7 +77,7 @@ TEST_F(SyncTebakoMemfsTableTest, clear_table) {
 
 static void add_entries(sync_tebako_memfs_table& table, int start, int end) {
     for (int i = start; i < end; ++i) {
-      table.insert(100 + i, new memfs("III", 3));
+      table.insert(100 + i, std::make_shared<memfs>("III", 3));
     }
 }
 

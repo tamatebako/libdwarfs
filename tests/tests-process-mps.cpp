@@ -30,7 +30,7 @@
 #include "tests.h"
 #include <tebako-io-inner.h>
 #include <tebako-io-root.h>
-#include <tebako-mnt.h>
+#include <tebako-mount-table.h>
 #include <tebako-cmdline-helpers.h>
 
 namespace tebako {

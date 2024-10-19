@@ -32,11 +32,11 @@
 #include <tebako-common.h>
 #include <tebako-dirent.h>
 #include <tebako-dfs.h>
-#include <tebako-dft.h>
+#include <tebako-memfs-table.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-mfs.h>
-#include <tebako-mnt.h>
+#include <tebako-mount-table.h>
 
 using namespace dwarfs;
 
@@ -58,9 +58,6 @@ bool sync_tebako_memfs_table::check(uint32_t index)
 void sync_tebako_memfs_table::clear(void)
 {
   auto p_memfs_table = s_tebako_memfs_table.wlock();
-  for (auto& pair : *p_memfs_table) {
-    delete pair.second;
-  }
   p_memfs_table->clear();
 }
 
@@ -68,12 +65,9 @@ void sync_tebako_memfs_table::erase(uint32_t index)
 {
   auto p_memfs_table = s_tebako_memfs_table.wlock();
   auto p_memfs = p_memfs_table->extract(index);
-  if (p_memfs) {
-    delete p_memfs.mapped();
-  }
 }
 
-memfs* sync_tebako_memfs_table::get(uint32_t index)
+std::shared_ptr<memfs> sync_tebako_memfs_table::get(uint32_t index)
 {
   auto p_memfs_table = s_tebako_memfs_table.rlock();
   auto p_memfs = p_memfs_table->find(index);
@@ -83,10 +77,29 @@ memfs* sync_tebako_memfs_table::get(uint32_t index)
   return nullptr;
 }
 
-bool sync_tebako_memfs_table::insert(uint32_t index, memfs* fs)
+bool sync_tebako_memfs_table::insert(uint32_t index, std::shared_ptr<memfs> fs)
 {
   auto p_memfs_table = s_tebako_memfs_table.wlock();
   return p_memfs_table->emplace(index, fs).second;
 }
+
+uint32_t sync_tebako_memfs_table::insert_auto(std::shared_ptr<memfs> fs) {
+    uint32_t index = 1;
+    auto p_memfs_table = s_tebako_memfs_table.wlock();
+
+    for (const auto& item : *p_memfs_table) {
+        if (item.first != index) {
+            break;
+        }
+        ++index;
+    }
+    if (index > 7) {   // Only three bits to store memfs index
+        return 0;
+    }
+    fs->set_root_inode(index << 29);
+    p_memfs_table->emplace(index, fs);
+    return index;
+}
+
 
 }  // namespace tebako

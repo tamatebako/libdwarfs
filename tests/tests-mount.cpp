@@ -28,7 +28,7 @@
  */
 
 #include "tests.h"
-#include <tebako-mnt.h>
+#include <tebako-mount-table.h>
 
 namespace tebako {
 

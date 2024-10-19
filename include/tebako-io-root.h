@@ -39,6 +39,10 @@ int mount_root_memfs(const void* data,
                      const char* decompress_ratio,
                      const char* image_offset);
 
+int mount_memfs(const void* data,
+                const unsigned int size,
+                const char* image_offset);
+
 void unmount_root_memfs(void);
 
 int dwarfs_access(const std::string&, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept;

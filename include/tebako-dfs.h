@@ -58,7 +58,7 @@ class memfs {
  private:
   const void* data;
   const unsigned int size;
-  uint32_t dwarfs_root;
+  uint32_t dwarfs_root_inode;
 
   dwarfs::filesystem_options fsopts;
   dwarfs::filesystem_v2 fs;
@@ -79,6 +79,7 @@ class memfs {
 
   int load(const char* image_offset = "auto");
   void set_image_offset_str(const char* image_offset = "auto");
+  void set_root_inode(uint32_t df_root_inode) { dwarfs_root_inode = df_root_inode; }
 
   int access(const std::string& path, int amode, uid_t uid, gid_t gid, std::string& lnk) noexcept;
   int inode_access(uint32_t inode, int amode, uid_t uid, gid_t gid) noexcept;
@@ -105,7 +106,7 @@ class memfs {
   }
   int relative_stat(const std::string& path, struct stat* st, std::string& lnk, bool follow) noexcept
   {
-    return find_inode_abs(dwarfs_root, path, follow, lnk, st);
+    return find_inode_abs(dwarfs_root_inode, path, follow, lnk, st);
   }
 
 #if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32) || defined(_WIN32)

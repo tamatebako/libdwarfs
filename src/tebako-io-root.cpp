@@ -32,44 +32,51 @@
 #include <tebako-common.h>
 #include <tebako-dirent.h>
 #include <tebako-dfs.h>
-#include <tebako-dft.h>
+#include <tebako-memfs-table.h>
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-io-root.h>
 #include <tebako-fd.h>
 #include <tebako-mfs.h>
-#include <tebako-mnt.h>
+#include <tebako-mount-table.h>
 
 using namespace dwarfs;
 
 namespace tebako {
 
 template <typename Functor, class... Args>
-int root_memfs_call(Functor&& fn, Args&&... args)
+int memfs_call(Functor&& fn, uint32_t fs_index, Args&&... args)
 {
   int ret = DWARFS_IO_ERROR;
 
-  auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(0);
+  auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(fs_index);
   if (fs == nullptr) {
     TEBAKO_SET_LAST_ERROR(ENOENT);
   }
   else {
-    ret = (fs->*fn)(std::forward<Args>(args)...);
+    ret = ((*fs).*fn)(std::forward<Args>(args)...);
   }
   return ret;
+}
+
+template <typename Functor, class... Args>
+int root_memfs_call(Functor&& fn, Args&&... args)
+{
+  return memfs_call(fn, 0, std::forward<Args>(args)...);
 }
 
 template <typename Functor, class... Args>
 int inode_memfs_call(Functor&& fn, uint32_t inode, Args&&... args)
 {
   int ret = DWARFS_IO_ERROR;
+  uint32_t fs_index = (inode >> 29) & 0x7;   // Higher three bits is memfs index
 
-  auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(0);
+  auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(fs_index);
   if (fs == nullptr) {
     TEBAKO_SET_LAST_ERROR(ENOENT);
   }
   else {
-    ret = (fs->*fn)(inode, std::forward<Args>(args)...);
+    ret = ((*fs).*fn)(inode, std::forward<Args>(args)...);
   }
   return ret;
 }
@@ -82,6 +89,25 @@ static void release_memfs_resources(void)
   sync_tebako_fdtable::get_tebako_fdtable().close_all();
   sync_tebako_mount_table::get_tebako_mount_table().clear();
   tebako_drop_cwd();
+}
+
+int mount_memfs(const void* data,
+                const unsigned int size,
+                const char* image_offset)
+{
+      LOG_PROXY(debug_logger_policy, memfs::logger());
+      LOG_INFO << PRJ_NAME << " mount memfs ";
+
+    int index = sync_tebako_memfs_table::get_tebako_memfs_table().insert_auto(std::make_shared<memfs>(data, size));
+    auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(index);
+    assert(fs != nullptr);
+    if (fs->load(image_offset) != 0)
+    {
+      TEBAKO_SET_LAST_ERROR(ENOMEM);
+      sync_tebako_memfs_table::get_tebako_memfs_table().erase(index);
+      index = 0;
+    }
+    return index;
 }
 
 int mount_root_memfs(const void* data,
@@ -116,7 +142,7 @@ int mount_root_memfs(const void* data,
         sync_tebako_memfs_table::get_tebako_memfs_table().erase(0);
       }
 
-      sync_tebako_memfs_table::get_tebako_memfs_table().insert(0, new memfs(data, size));
+      sync_tebako_memfs_table::get_tebako_memfs_table().insert(0, std::make_shared<memfs>(data, size));
       fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(0);
       ret = fs->load(image_offset);
       if (ret == 0) {
@@ -212,6 +238,13 @@ int mount_root_memfs(const void* data,
                      const char* image_offset)
 {
   return tebako::mount_root_memfs(data, size, debuglevel, cachesize, workers, mlock, decompress_ratio, image_offset);
+}
+
+int mount_memfs(const void* data,
+                const unsigned int size,
+                const char* image_offset)
+{
+  return tebako::mount_memfs(data, size, image_offset);
 }
 
 void unmount_root_memfs(void)

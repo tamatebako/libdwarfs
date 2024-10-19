@@ -35,7 +35,7 @@
 #include <tebako-io.h>
 #include <tebako-io-inner.h>
 #include <tebako-mfs.h>
-#include <tebako-mnt.h>
+#include <tebako-mount-table.h>
 
 using namespace dwarfs;
 
@@ -66,7 +66,7 @@ memfs_options& memfs::options()
   return opts;
 }
 
-memfs::memfs(const void* dt, const unsigned int sz, uint32_t df_root): data{dt}, size{sz}, dwarfs_root(df_root)
+memfs::memfs(const void* dt, const unsigned int sz, uint32_t df_root_inode): data{dt}, size{sz}, dwarfs_root_inode(df_root_inode)
 {
   fsopts << options();
 }
@@ -77,7 +77,7 @@ int memfs::load(const char* image_offset)
 
   try {
     set_image_offset_str(image_offset);
-    fs = filesystem_v2(logger(), std::make_shared<tebako::mfs>(data, size), fsopts, dwarfs_root, nullptr);
+    fs = filesystem_v2(logger(), std::make_shared<tebako::mfs>(data, size), fsopts, dwarfs_root_inode, nullptr);
     LOG_TIMED_INFO << "Filesystem initialized";
   }
 
@@ -336,7 +336,7 @@ int memfs::find_inode_root(const std::string& path, bool follow, std::string& ln
     auto adjusted_path = path.substr(path[TEBAKO_MOUNT_POINT_LENGTH] == '\0' ? TEBAKO_MOUNT_POINT_LENGTH
                                                                              : TEBAKO_MOUNT_POINT_LENGTH + 1);
 
-    ret = find_inode_abs(dwarfs_root, adjusted_path, follow, lnk, st);
+    ret = find_inode_abs(dwarfs_root_inode, adjusted_path, follow, lnk, st);
   }
   return ret;
 }
