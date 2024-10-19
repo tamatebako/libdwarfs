@@ -32,7 +32,8 @@
 namespace tebako {
 
 typedef std::pair<uint32_t, std::string> tebako_mount_point;
-typedef std::map<tebako_mount_point, std::string> tebako_mount_table;
+typedef std::variant<std::string, uint32_t> tebako_mount_target;
+typedef std::map<tebako_mount_point, tebako_mount_target> tebako_mount_table;
 
 class sync_tebako_mount_table {
  private:
@@ -49,8 +50,8 @@ class sync_tebako_mount_table {
   void erase(const tebako_mount_point& mount_point);
   void erase(const uint32_t ino, const std::string& mount_path) { erase(std::make_pair(ino, mount_path)); };
 
-  std::optional<std::string> get(const tebako_mount_point& mount_point);
-  std::optional<std::string> get(const uint32_t ino, const std::string& mount_path)
+  std::optional<tebako_mount_target> get(const tebako_mount_point& mount_point);
+  std::optional<tebako_mount_target> get(const uint32_t ino, const std::string& mount_path)
   {
     return get(std::make_pair(ino, mount_path));
   };
@@ -60,6 +61,13 @@ class sync_tebako_mount_table {
   {
     return insert(std::make_pair(ino, mount_path), mount_target);
   };
+
+  bool insert(const tebako_mount_point& mount_point, uint32_t mount_target);
+  bool insert(const uint32_t ino, const std::string& mount_path, uint32_t mount_target)
+  {
+    return insert(std::make_pair(ino, mount_path), mount_target);
+  };
+
 };
 
 }  // namespace tebako

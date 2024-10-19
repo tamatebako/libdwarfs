@@ -27,26 +27,12 @@
  *
  */
 
+#include <stdio.h>
 #include <incbin.h>
 
-INCBIN(fs, "@DATA_BIN_FILE@");
+INCBIN(fs, "@DATA_BIN_FILE_2@");
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-const char * tests_log_level(void) {
-    return "@TESTS_LOG_LEVEL@";
+int main(int /* argc */ , char ** /* argv */ )
+{
+    printf ("Hello, world!\n");
 }
-
-const char * tests_outside_dir(void) {
-    return "@TESTS_OUTSIDE_DIR@";
-}
-
-const char * tests_the_other_memfs_image(void) {
-    return "@TESTS_THE_OTHER_MEMFS_IMAGE@";
-}
-
-#ifdef __cplusplus
-}
-#endif

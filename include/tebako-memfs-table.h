@@ -1,8 +1,8 @@
 /**
  *
- * Copyright (c) 2024, [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2024 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
- * This file is a part of tebako
+ * This file is a part of tebako (libdwarfs-wr)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,51 +27,26 @@
  *
  */
 
-#include <tebako-pch.h>
-#include <tebako-pch-pp.h>
-
-#include <tebako-mnt.h>
+#pragma once
 
 namespace tebako {
-sync_tebako_mount_table& sync_tebako_mount_table::get_tebako_mount_table(void)
-{
-  static sync_tebako_mount_table mount_table{};
-  return mount_table;
-}
 
-bool sync_tebako_mount_table::check(const tebako_mount_point& mount_point)
-{
-  auto p_mount_table = s_tebako_mount_table.rlock();
-  auto p_mount = p_mount_table->find(mount_point);
-  return (p_mount != p_mount_table->end());
-}
+typedef std::map<uint32_t, std::shared_ptr<memfs>> tebako_memfs_table;
 
-void sync_tebako_mount_table::clear(void)
-{
-  auto p_mount_table = s_tebako_mount_table.wlock();
-  p_mount_table->clear();
-}
+class sync_tebako_memfs_table {
+ private:
+  folly::Synchronized<tebako_memfs_table> s_tebako_memfs_table;
 
-void sync_tebako_mount_table::erase(const tebako_mount_point& mount_point)
-{
-  auto p_mount_table = s_tebako_mount_table.wlock();
-  p_mount_table->erase(mount_point);
-}
+ public:
+  static sync_tebako_memfs_table& get_tebako_memfs_table(void);
 
-std::optional<std::string> sync_tebako_mount_table::get(const tebako_mount_point& mount_point)
-{
-  auto p_mount_table = s_tebako_mount_table.rlock();
-  auto p_mount = p_mount_table->find(mount_point);
-  if (p_mount != p_mount_table->end()) {
-    return p_mount->second;
-  }
-  return std::nullopt;
-}
+  bool check(uint32_t index);
+  void clear(void);
+  void erase(uint32_t index);
+  std::shared_ptr<memfs> get(uint32_t index);
+  bool insert(uint32_t index, std::shared_ptr<memfs> fs);
+  uint32_t insert_auto(std::shared_ptr<memfs> fs);
+};
 
-bool sync_tebako_mount_table::insert(const tebako_mount_point& mount_point, const std::string& mount_target)
-{
-  auto p_mount_table = s_tebako_mount_table.wlock();
-  return p_mount_table->emplace(mount_point, mount_target).second;
-}
 
 }  // namespace tebako

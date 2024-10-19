@@ -53,7 +53,7 @@ class tebako_path_s {
 
  public:
   tebako_path_s(void) : p("") {}
-  // virtual ~tebako_path_s() {}
+  virtual ~tebako_path_s() {}
 
   //	Gets current working directory
   virtual const char* get_cwd(tebako_path_t cwd, bool win_separator = false)
@@ -200,21 +200,6 @@ extern "C" int is_tebako_cwd(void)
   auto locked = tebako_cwd.rlock();
   bool res = (*locked) ? (*locked)->is_in() : false;
   return res ? -1 : 0;
-}
-
-//  Expands a path withing tebako memfs
-const char* tebako_expand_path(tebako_path_t expanded_path, const char* path)
-{
-  const char* p = NULL;
-  try {
-    auto locked = tebako_cwd.rlock();
-    if (*locked) {
-      p = (*locked)->expand_path(expanded_path, path);
-    }
-  }
-  catch (...) {
-  }
-  return p;
 }
 
 //  Returns tebako path is cwd if within tebako memfs
