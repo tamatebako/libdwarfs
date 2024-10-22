@@ -42,7 +42,7 @@ class ProcessMountpointsTest : public ::testing::Test {
   static uint32_t test_root_ino;
   static uint32_t test_dir_ino;
 
- #ifdef _WIN32
+#ifdef _WIN32
   static void invalidParameterHandler(const wchar_t* p1,
                                       const wchar_t* p2,
                                       const wchar_t* p3,
@@ -138,8 +138,8 @@ TEST_F(ProcessMountpointsTest, invalid_path)
 #ifdef WITH_LINK_TESTS
 TEST_F(ProcessMountpointsTest, link_outside)
 {
-  std::vector<std::string> mountpoints = {std::string("s-dir-outside-of-memfs/dfs-link>") + tests_the_other_memfs_image()};
-  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
+  std::vector<std::string> mountpoints = {std::string("s-dir-outside-of-memfs/dfs-link>") +
+tests_the_other_memfs_image()}; EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
 }
 #endif
 */
