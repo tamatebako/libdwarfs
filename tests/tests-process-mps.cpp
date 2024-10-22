@@ -42,8 +42,7 @@ class ProcessMountpointsTest : public ::testing::Test {
   static uint32_t test_root_ino;
   static uint32_t test_dir_ino;
 
- protected:
-#ifdef _WIN32
+ #ifdef _WIN32
   static void invalidParameterHandler(const wchar_t* p1,
                                       const wchar_t* p2,
                                       const wchar_t* p3,
@@ -135,6 +134,15 @@ TEST_F(ProcessMountpointsTest, invalid_path)
   EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
 }
 
+/*
+#ifdef WITH_LINK_TESTS
+TEST_F(ProcessMountpointsTest, link_outside)
+{
+  std::vector<std::string> mountpoints = {std::string("s-dir-outside-of-memfs/dfs-link>") + tests_the_other_memfs_image()};
+  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
+}
+#endif
+*/
 // Test: Multiple valid mount points
 TEST_F(ProcessMountpointsTest, mltiple_valid_mountpoints)
 {
@@ -155,6 +163,19 @@ TEST_F(ProcessMountpointsTest, mount_to_root)
 
   EXPECT_NO_THROW(process_mountpoints(mountpoints));
   EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_root_ino, "tmp"));
+}
+
+TEST_F(ProcessMountpointsTest, valid_dwarfs_mount)
+{
+  std::vector<std::string> mountpoints = {std::string("directory-1/dfs-link>") + tests_the_other_memfs_image()};
+  EXPECT_NO_THROW(process_mountpoints(mountpoints));
+  EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "dfs-link"));
+}
+
+TEST_F(ProcessMountpointsTest, no_file_dwarfs_mount)
+{
+  std::vector<std::string> mountpoints = {"directory-1/dfs-link>/tmp/nofile"};
+  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
 }
 
 }  // namespace tebako

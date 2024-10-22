@@ -32,6 +32,8 @@
 #include <tebako-common.h>
 #include <tebako-io-inner.h>
 #include <tebako-io-root.h>
+#include <tebako-memfs.h>
+#include <tebako-memfs-table.h>
 #include <tebako-mount-table.h>
 
 #include <tebako-cmdline-helpers.h>
@@ -162,42 +164,67 @@ std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(in
 void process_mountpoints(const std::vector<std::string>& mountpoints)
 {
   for (const auto& item : mountpoints) {
-    // Split item by the first ':'
-    size_t separator_pos = item.find(':');
-    if (separator_pos == std::string::npos) {
-      throw std::invalid_argument("Invalid input: missing ':' separator in " + item);
+    // Split item by the first ':' or '>'
+    size_t separator_pos = item.find_first_of(":>");
+    if (separator_pos != std::string::npos) {
+      char separator = item[separator_pos];
+      // Extract the first and second parts
+      std::string mountpoint = item.substr(0, separator_pos);
+      std::string target = item.substr(separator_pos + 1);
+
+      // Split file_path into path and filename
+      stdfs::path p(mountpoint);
+
+      if (p.is_absolute()) {
+        throw std::invalid_argument("Path " + mountpoint + " is not within tebako memfs");
+      }
+
+      std::string path = p.parent_path().string();
+      std::string filename = p.filename().string();
+
+      // Check that both filename and target are not empty
+      if (filename.empty() || target.empty()) {
+        throw std::invalid_argument("Invalid input: path or filename or terget is empty in " + item);
+      }
+
+      struct stat st;
+      std::string lnk;
+      uint32_t root = sync_tebako_memfs_table::get_tebako_memfs_table().get(0)->get_root_inode();
+      int res = dwarfs_inode_relative_stat(root, path, &st, lnk, false);
+      if (res == DWARFS_IO_ERROR) {
+        throw std::invalid_argument("Path " + path + " does not exist or is not accessible");
+      }
+      if (res == DWARFS_S_LINK_OUTSIDE) {
+        throw std::invalid_argument("Path " + path + " is not within tebako memfs");
+      }
+
+      if (separator == ':') {
+        sync_tebako_mount_table::get_tebako_mount_table().insert(st.st_ino, filename, target);
+      }
+      else {  // assume that  (separator == '>')
+        std::ifstream file(target, std::ios::binary | std::ios::ate);
+        if (!file) {
+          throw std::invalid_argument("Path " + target + " does not exist");
+        }
+        size_t size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::vector<char> buffer;
+        buffer.resize(size);
+
+        if (!file.read(buffer.data(), size)) {
+          throw std::invalid_argument("Failed to load filesystem image from " + target);
+        }
+
+        int ret = mount_memfs(buffer.data(), size, "auto", st.st_ino, filename.c_str());
+        if (ret < 1) {
+          throw std::invalid_argument("Failed to mount filesystem image from " + target);
+        }
+      }
     }
-
-    // Extract the first and second parts
-    std::string mountpoint = item.substr(0, separator_pos);
-    std::string target = item.substr(separator_pos + 1);
-
-    // Split file_path into path and filename using filesystem library
-    stdfs::path p(mountpoint);
-
-    if (p.is_absolute()) {
-      throw std::invalid_argument("Path " + mountpoint + " is not within tebako memfs");
+    else {
+      throw std::invalid_argument("Invalid input: missing ':' or '>' separator in " + item);
     }
-
-    std::string path = p.parent_path().string();
-    std::string filename = p.filename().string();
-
-    // Check that both filename and target are not empty
-    if (filename.empty() || target.empty()) {
-      throw std::invalid_argument("Invalid input: path or filename or terget is empty in " + item);
-    }
-
-    struct stat st;
-    std::string lnk;
-    int res = dwarfs_relative_stat(path, &st, lnk, false);
-    if (res == DWARFS_IO_ERROR) {
-      throw std::invalid_argument("Path " + path + " does not exist or is not accessible");
-    }
-    if (res == DWARFS_S_LINK_OUTSIDE) {
-      throw std::invalid_argument("Path " + path + " is not within tebako memfs");
-    }
-    sync_tebako_mount_table::get_tebako_mount_table().insert(st.st_ino, filename, target);
   }
 }
-
 }  // namespace tebako

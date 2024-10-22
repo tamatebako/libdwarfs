@@ -38,7 +38,6 @@
 
 #include <thread>
 #include <vector>
-#include <fstream>
 #endif
 
 #include <tebako-common.h>

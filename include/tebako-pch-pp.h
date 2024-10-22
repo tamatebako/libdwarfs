@@ -49,6 +49,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <fstream>
 
 #include <filesystem>
 namespace stdfs = std::filesystem;
