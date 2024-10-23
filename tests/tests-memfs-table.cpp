@@ -32,6 +32,30 @@
 struct tebako_dirent;
 
 #include <tebako-io-inner.h>
+
+#ifdef _WIN32
+#undef lseek
+#undef close
+#undef read
+#undef pread
+
+#undef chdir
+#undef mkdir
+#undef rmdir
+#undef unlink
+#undef access
+#undef fstat
+#undef stat
+#undef lstat
+#undef getcwd
+#undef opendir
+#undef readdir
+#undef telldir
+#undef seekdir
+#undef rewinddir
+#undef closedir
+#endif
+
 #include <tebako-memfs.h>
 #include <tebako-memfs-table.h>
 
@@ -122,6 +146,13 @@ TEST_F(MemfsTableTests, test_concurrent_access)
 
   EXPECT_TRUE(memfs_table.check(1));
   EXPECT_TRUE(memfs_table.check(2));
+}
+
+TEST_F(MemfsTableTests, fs_ino_and_index)
+{
+  _ino_t t = sync_tebako_memfs_table::fsInoFromFsAndIno(0x1, 0x234);
+  EXPECT_EQ(sync_tebako_memfs_table::getFsIndex(t), 0x1);
+  EXPECT_EQ(sync_tebako_memfs_table::getFsIno(t), 0x234);
 }
 
 }  // namespace tebako

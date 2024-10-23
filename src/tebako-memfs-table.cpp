@@ -100,7 +100,7 @@ uint32_t sync_tebako_memfs_table::insert_auto(std::shared_ptr<memfs> fs)
   if (index > 7) {  // Only three bits to store memfs index
     return 0;
   }
-  fs->set_root_inode(index << 29);
+  fs->set_root_inode(sync_tebako_memfs_table::fsInoFromFsAndIno(index, 0));
   p_memfs_table->emplace(index, fs);
   return index;
 }

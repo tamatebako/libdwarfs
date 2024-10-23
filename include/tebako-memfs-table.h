@@ -31,6 +31,11 @@
 
 namespace tebako {
 
+#ifndef _INO_T_DEFINED
+typedef ino_t _ino_t;
+#define _INO_T_DEFINED
+#endif
+
 typedef std::map<uint32_t, std::shared_ptr<memfs>> tebako_memfs_table;
 
 class sync_tebako_memfs_table {
@@ -39,6 +44,22 @@ class sync_tebako_memfs_table {
 
  public:
   static sync_tebako_memfs_table& get_tebako_memfs_table(void);
+
+  static constexpr int inoBits = std::min(sizeof(_ino_t), sizeof(uint32_t)) * 8;
+  static int getFsIndex(_ino_t ino)
+  {
+    return (ino >> (inoBits - 3)) & 0x7;
+  }
+
+  static _ino_t getFsIno(_ino_t ino)
+  {
+    return ino & ((static_cast<_ino_t>(1) << (inoBits - 3)) - 1);
+  }
+
+  static _ino_t fsInoFromFsAndIno(int index, _ino_t ino)
+  {
+    return (static_cast<_ino_t>(index) << (inoBits - 3)) | getFsIno(ino);
+  }
 
   bool check(uint32_t index);
   void clear(void);
@@ -73,7 +94,7 @@ template <typename Functor, class... Args>
 int inode_memfs_call(Functor&& fn, uint32_t inode, Args&&... args)
 {
   int ret = DWARFS_IO_ERROR;
-  uint32_t fs_index = (inode >> 29) & 0x7;  // Higher three bits is memfs index
+  uint32_t fs_index = sync_tebako_memfs_table::getFsIndex(inode);
 
   auto fs = sync_tebako_memfs_table::get_tebako_memfs_table().get(fs_index);
   if (fs == nullptr) {
