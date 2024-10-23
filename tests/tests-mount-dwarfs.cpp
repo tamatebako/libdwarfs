@@ -28,6 +28,30 @@
  */
 
 #include "tests.h"
+
+#ifdef _WIN32
+#undef lseek
+#undef close
+#undef read
+#undef pread
+
+#undef chdir
+#undef mkdir
+#undef rmdir
+#undef unlink
+#undef access
+#undef fstat
+#undef stat
+#undef lstat
+#undef getcwd
+#undef opendir
+#undef readdir
+#undef telldir
+#undef seekdir
+#undef rewinddir
+#undef closedir
+#endif
+
 #include <tebako-mount-table.h>
 
 namespace tebako {
