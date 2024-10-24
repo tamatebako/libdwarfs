@@ -46,15 +46,9 @@ class sync_tebako_memfs_table {
   static sync_tebako_memfs_table& get_tebako_memfs_table(void);
 
   static constexpr int inoBits = std::min(sizeof(_ino_t), sizeof(uint32_t)) * 8;
-  static int getFsIndex(_ino_t ino)
-  {
-    return (ino >> (inoBits - 3)) & 0x7;
-  }
+  static int getFsIndex(_ino_t ino) { return (ino >> (inoBits - 3)) & 0x7; }
 
-  static _ino_t getFsIno(_ino_t ino)
-  {
-    return ino & ((static_cast<_ino_t>(1) << (inoBits - 3)) - 1);
-  }
+  static _ino_t getFsIno(_ino_t ino) { return ino & ((static_cast<_ino_t>(1) << (inoBits - 3)) - 1); }
 
   static _ino_t fsInoFromFsAndIno(int index, _ino_t ino)
   {
