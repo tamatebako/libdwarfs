@@ -227,7 +227,7 @@ int mount_memfs_at_root(const void* data, const unsigned int size, const char* i
 int mount_memfs(const void* data,
                 const unsigned int size,
                 const char* image_offset,
-                uint32_t parent_inode,
+                unsigned int parent_inode,
                 const char* folder)
 {
   return tebako::mount_memfs(data, size, image_offset, parent_inode, folder);
