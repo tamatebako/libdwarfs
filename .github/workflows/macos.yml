@@ -68,6 +68,7 @@ jobs:
           - { os: 'macos-13', arch: 'x86_64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '14.3.1'                }
           - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.0.1', LG_VADDR: 39  }
           - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.4'                  }
+          - { os: 'macos-15', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '16.1'                  }
 
     env: ${{ matrix.env }}
 
@@ -101,16 +102,12 @@ jobs:
           path: ${{ github.workspace }}/${{ env.DEPS }}
           key: ${{ matrix.env.os }}-${{ matrix.env.xcode }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
-      - name: Install zlib
-        if: matrix.env.os == 'macos-14'
-        run: |
-          brew install zlib bison boost
-          brew reinstall xz
-
       - name: Install packages
         # Already installed: openssl, libevent, libsodium, lz4, xz
         # Not installing [comparing to ubuntu as a baseline] libiberty, libunwind, libdwarf, libelf
-        run: brew install flex gnu-sed bash double-conversion jemalloc fmt glog googletest
+        run: |
+          brew install flex gnu-sed bash double-conversion jemalloc fmt glog googletest boost zlib bison
+          brew reinstall xz
 
       - name: Configure
         run: |
