@@ -89,6 +89,5 @@ class sync_tebako_fdtable {
   int fstatat(int vfd, const char* path, struct stat* buf, std::string& lnk, bool follow) noexcept;
   int flock(int vfd, int operation) noexcept;
   bool is_valid_file_descriptor(int vfd) noexcept;
-  std::optional<std::string> filename(int vfd) noexcept;
 };
 }  // namespace tebako
