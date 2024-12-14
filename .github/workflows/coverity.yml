@@ -95,7 +95,7 @@ jobs:
         libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libutfcpp-dev      \
         libboost-filesystem-dev libboost-program-options-dev libboost-system-dev    \
         libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev         \
-        libboost-regex-dev libboost-thread-dev libbrotli-dev
+        libboost-regex-dev libboost-thread-dev libbrotli-dev libbz2-dev
 
     - name: Configure
       run: cmake -B build -DWITH_TESTS=OFF -DWITH_ASAN=OFF -DWITH_COVERAGE=OFF -DTESTS_LOG_LEVEL=warn

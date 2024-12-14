@@ -133,7 +133,7 @@ std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(in
       }
     }
 
-    // Handle "--tebako-mount" without '=' (your original logic)
+    // Handle "--tebako-mount" without '='
     if (arg == "--tebako-mount") {
       // Ensure there is a next argument
       if (i + 1 < argc) {
