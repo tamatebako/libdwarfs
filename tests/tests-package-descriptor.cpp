@@ -35,21 +35,21 @@ namespace tebako {
 TEST(PackageDescriptorTest, construct_from_buffer)
 {
   // Create a buffer with serialized data in big-endian format
-  std::vector<uint8_t> buffer = {'T', 'A', 'M', 'A', 'T', 'E', 'B', 'A', 'K', 'O',  // signature
+  std::vector<char> buffer = {'T', 'A', 'M', 'A', 'T', 'E', 'B', 'A', 'K', 'O',  // signature
 
-                                 0x01, 0x00,  // ruby_version_major
-                                 0x02, 0x00,  // ruby_version_minor
-                                 0x03, 0x00,  // ruby_version_patch
-                                 0x04, 0x00,  // tebako_version_major
-                                 0x05, 0x00,  // tebako_version_minor
-                                 0x06, 0x00,  // tebako_version_patch
-                                 // mount_point
-                                 0x04, 0x00, 'm', 'n', 't', '/',
-                                 // entry_point
-                                 0x07, 0x00, 'm', 'a', 'i', 'n', '.', 'r', 'b',
-                                 // cwd (optional indicator + value)
-                                 0x01,  // cwd present indicator
-                                 0x0A, 0x00, '/', 'h', 'o', 'm', 'e', '/', 'u', 's', 'e', 'r'};
+                              0x01, 0x00,  // ruby_version_major
+                              0x02, 0x00,  // ruby_version_minor
+                              0x03, 0x00,  // ruby_version_patch
+                              0x04, 0x00,  // tebako_version_major
+                              0x05, 0x00,  // tebako_version_minor
+                              0x06, 0x00,  // tebako_version_patch
+                              // mount_point
+                              0x04, 0x00, 'm', 'n', 't', '/',
+                              // entry_point
+                              0x07, 0x00, 'm', 'a', 'i', 'n', '.', 'r', 'b',
+                              // cwd (optional indicator + value)
+                              0x01,  // cwd present indicator
+                              0x0A, 0x00, '/', 'h', 'o', 'm', 'e', '/', 'u', 's', 'e', 'r'};
 
   // Convert the buffer to little-endian if necessary
   for (size_t i = 0; i < 6; ++i) {
@@ -85,7 +85,7 @@ TEST(PackageDescriptorTest, construct_from_buffer)
 TEST(PackageDescriptorTest, construct_from_buffer_no_cwd)
 {
   // Create a buffer with serialized data in big-endian format
-  std::vector<uint8_t> buffer = {
+  std::vector<char> buffer = {
       'T', 'A', 'M', 'A', 'T', 'E', 'B', 'A', 'K', 'O',  // signature
 
       0x01, 0x00,  // ruby_version_major
@@ -142,11 +142,11 @@ TEST(PackageDescriptorTest, serialize)
   package_descriptor pd(ruby_version, tebako_version, mount_point, entry_point, cwd);
 
   // Serialize the object
-  std::vector<uint8_t> buffer = pd.serialize();
+  std::vector<char> buffer = pd.serialize();
 
   // Verify the serialized data
   size_t expected_size = std::strlen(package_descriptor::signature) + 9 * sizeof(uint16_t) + mount_point.size() +
-                         entry_point.size() + sizeof(uint8_t) + cwd->size();
+                         entry_point.size() + sizeof(char) + cwd->size();
   EXPECT_EQ(buffer.size(), expected_size);
 
   // Verify the signature
@@ -194,11 +194,11 @@ TEST(PackageDescriptorTest, serialize_no_cwd)
   package_descriptor pd(ruby_version, tebako_version, mount_point, entry_point, cwd);
 
   // Serialize the object
-  std::vector<uint8_t> buffer = pd.serialize();
+  std::vector<char> buffer = pd.serialize();
 
   // Verify the serialized data
   size_t expected_size = std::strlen(package_descriptor::signature) + 8 * sizeof(uint16_t) + mount_point.size() +
-                         entry_point.size() + sizeof(uint8_t);
+                         entry_point.size() + sizeof(char);
   EXPECT_EQ(buffer.size(), expected_size);
 
   // Verify the signature
@@ -306,7 +306,7 @@ TEST(PackageDescriptorTest, construct_from_invalid_tebako_version)
 TEST(PackageDescriptorTest, deserialize_small_buffer_fixed_fields)
 {
   // Create a buffer that is too small for fixed-size fields
-  std::vector<uint8_t> buffer = {
+  std::vector<char> buffer = {
       'T',  'A',  'M', 'A', 'T', 'E', 'B', 'A', 'K', 'O',  // signature
 
       0x00, 0x01,  // ruby_version_major
@@ -321,7 +321,7 @@ TEST(PackageDescriptorTest, deserialize_small_buffer_fixed_fields)
 TEST(PackageDescriptorTest, deserialize_small_buffer_mount_point)
 {
   // Create a buffer that is too small for mount_point
-  std::vector<uint8_t> buffer = {
+  std::vector<char> buffer = {
       'T',  'A',  'M', 'A', 'T', 'E', 'B', 'A', 'K', 'O',  // signature
 
       0x00, 0x01,  // ruby_version_major
@@ -341,7 +341,7 @@ TEST(PackageDescriptorTest, deserialize_small_buffer_mount_point)
 TEST(PackageDescriptorTest, deserialize_small_buffer_entry_point)
 {
   // Create a buffer that is too small for entry_point
-  std::vector<uint8_t> buffer = {
+  std::vector<char> buffer = {
       'T',  'A',  'M', 'A', 'T',  'E',  'B', 'A', 'K', 'O',  // signature
 
       0x00, 0x01,                        // ruby_version_major
@@ -362,7 +362,7 @@ TEST(PackageDescriptorTest, deserialize_small_buffer_entry_point)
 TEST(PackageDescriptorTest, deserialize_small_buffer_cwd)
 {
   // Create a buffer that is too small for cwd
-  std::vector<uint8_t> buffer = {
+  std::vector<char> buffer = {
       'T',  'A',  'M', 'A', 'T',  'E',  'B', 'A', 'K', 'O',  // signature
 
       0x00, 0x01,                        // ruby_version_major
@@ -386,7 +386,7 @@ TEST(PackageDescriptorTest, deserialize_small_buffer_cwd)
 TEST(PackageDescriptorTest, construct_from_buffer_wrong_signature)
 {
   // Create a buffer with serialized data in big-endian format
-  std::vector<uint8_t> buffer = {
+  std::vector<char> buffer = {
       'T', 'A', 'M', 'A', 'T', 'E', 'V', 'A', 'K', 'O',  // signature
 
       0x01, 0x00,  // ruby_version_major

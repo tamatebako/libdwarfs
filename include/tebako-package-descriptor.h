@@ -55,7 +55,7 @@ class package_descriptor {
   package_descriptor() = delete;
 
   // Constructor for deserialization
-  explicit package_descriptor(const std::vector<uint8_t>& buffer);
+  explicit package_descriptor(const std::vector<char>& buffer);
   // Constructor from version strings and other parameters
   package_descriptor(const std::string& ruby_version,
                      const std::string& tebako_version,
@@ -63,7 +63,7 @@ class package_descriptor {
                      const std::string& entry_point,
                      const std::optional<std::string>& cwd);
   // Serialize the object to a binary format
-  std::vector<uint8_t> serialize() const;
+  std::vector<char> serialize() const;
 
   uint16_t get_ruby_version_major() const { return ruby_version_major; }
   uint16_t get_ruby_version_minor() const { return ruby_version_minor; }
@@ -75,10 +75,10 @@ class package_descriptor {
   const std::string& get_entry_point() const { return entry_point; }
   const std::optional<std::string>& get_cwd() const { return cwd; }
 
-  static constexpr bool is_little_endian()
+  static bool is_little_endian()
   {
     uint16_t number = 1;
-    return *(reinterpret_cast<uint8_t*>(&number)) == 1;
+    return *(reinterpret_cast<char*>(&number)) == 1;
   }
 
   static uint16_t to_little_endian(uint16_t value)

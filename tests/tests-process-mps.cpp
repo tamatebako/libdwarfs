@@ -31,7 +31,7 @@
 #include <tebako-io-inner.h>
 #include <tebako-io-root.h>
 #include <tebako-mount-table.h>
-#include <tebako-cmdline-helpers.h>
+#include <tebako-cmdline.h>
 
 namespace tebako {
 
@@ -95,43 +95,67 @@ uint32_t ProcessMountpointsTest::test_root_ino, ProcessMountpointsTest::test_dir
 // Test: Valid mount point
 TEST_F(ProcessMountpointsTest, valid_mountpoint)
 {
-  std::vector<std::string> mountpoints = {"directory-1/mpoint:/tmp/local_target"};
-  EXPECT_NO_THROW(process_mountpoints(mountpoints));
+  const int argc = 2;
+  const char* argv[argc] = {"program", "--tebako-mount=directory-1/mpoint:/tmp/local_target"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
+
+  EXPECT_NO_THROW(args.process_mountpoints());
   EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "mpoint"));
 }
 
 TEST_F(ProcessMountpointsTest, absolute_path)
 {
-  std::vector<std::string> mountpoints = {"/directory-1/mpoint:/tmp/local_target"};
-  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
+  const int argc = 2;
+  const char* argv[argc] = {"program", "--tebako-mount=/directory-1/mpoint:/tmp/local_target"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
+
+  EXPECT_THROW(args.process_mountpoints(), std::invalid_argument);
 }
 
 // Test: Missing ':' separator
 TEST_F(ProcessMountpointsTest, missing_separator)
 {
-  std::vector<std::string> mountpoints = {"directory-1/mpoint"};
-  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
+  const int argc = 2;
+  const char* argv[argc] = {"program", "--tebako-mount=directory-1/mpoint"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
+
+  EXPECT_THROW(args.process_mountpoints(), std::invalid_argument);
 }
 
 // Test: Empty path or filename
 TEST_F(ProcessMountpointsTest, empty_path)
 {
-  std::vector<std::string> mountpoints = {":/tmp/local_target"};
-  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
+  const int argc = 2;
+  const char* argv[argc] = {"program", "--tebako-mount=:/tmp/local_target"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
+
+  EXPECT_THROW(args.process_mountpoints(), std::invalid_argument);
 }
 
 // Test: Empty target
 TEST_F(ProcessMountpointsTest, empty_target)
 {
-  std::vector<std::string> mountpoints = {"directory-1/mpoint:"};
-  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
+  const int argc = 2;
+  const char* argv[argc] = {"program", "--tebako-mount=directory-1/mpoint:"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
+
+  EXPECT_THROW(args.process_mountpoints(), std::invalid_argument);
 }
 
 // Test: Invalid path (dwarfs_stat returns error)
 TEST_F(ProcessMountpointsTest, invalid_path)
 {
-  std::vector<std::string> mountpoints = {"invalid/path:local_target"};
-  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
+  const int argc = 2;
+  const char* argv[argc] = {"program", "--tebako-mount=invalid/path:local_target"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
+
+  EXPECT_THROW(args.process_mountpoints(), std::invalid_argument);
 }
 
 /*
@@ -146,10 +170,13 @@ tests_the_other_memfs_image()}; EXPECT_THROW(process_mountpoints(mountpoints), s
 // Test: Multiple valid mount points
 TEST_F(ProcessMountpointsTest, mltiple_valid_mountpoints)
 {
-  std::vector<std::string> mountpoints = {"directory-1/mpoint1:target1", "directory-1/mpoint2:target2",
-                                          "directory-1/mpoint3:target3"};
+  const int argc = 4;
+  const char* argv[argc] = {"program", "--tebako-mount=directory-1/mpoint1:target1",
+                            "--tebako-mount=directory-1/mpoint2:target2", "--tebako-mount=directory-1/mpoint3:target3"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
 
-  EXPECT_NO_THROW(process_mountpoints(mountpoints));
+  EXPECT_NO_THROW(args.process_mountpoints());
 
   EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "mpoint1"));
   EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "mpoint2"));
@@ -159,23 +186,37 @@ TEST_F(ProcessMountpointsTest, mltiple_valid_mountpoints)
 // Test: Mount to root
 TEST_F(ProcessMountpointsTest, mount_to_root)
 {
-  std::vector<std::string> mountpoints = {"tmp:/tmp/tebako"};
+  const int argc = 2;
+  const char* argv[argc] = {"program", "--tebako-mount=tmp:/tmp/tebako"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
 
-  EXPECT_NO_THROW(process_mountpoints(mountpoints));
+  EXPECT_NO_THROW(args.process_mountpoints());
   EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_root_ino, "tmp"));
 }
 
 TEST_F(ProcessMountpointsTest, valid_dwarfs_mount)
 {
-  std::vector<std::string> mountpoints = {std::string("directory-1/dfs-link>") + tests_the_other_memfs_image()};
-  EXPECT_NO_THROW(process_mountpoints(mountpoints));
+  auto mp = std::string("--tebako-mount=directory-1/dfs-link>") + tests_the_other_memfs_image();
+
+  const int argc = 2;
+  const char* argv[argc] = {"program", mp.c_str()};
+
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
+
+  EXPECT_NO_THROW(args.process_mountpoints());
   EXPECT_TRUE(sync_tebako_mount_table::get_tebako_mount_table().check(test_dir_ino, "dfs-link"));
 }
 
 TEST_F(ProcessMountpointsTest, no_file_dwarfs_mount)
 {
-  std::vector<std::string> mountpoints = {"directory-1/dfs-link>/tmp/nofile"};
-  EXPECT_THROW(process_mountpoints(mountpoints), std::invalid_argument);
+  const int argc = 2;
+  const char* argv[argc] = {"program", "--tebako-mount=directory-1/dfs-link>/tmp/nofile"};
+  cmdline_args args(argc, argv);
+  args.parse_arguments();
+
+  EXPECT_THROW(args.process_mountpoints(), std::invalid_argument);
 }
 
 }  // namespace tebako

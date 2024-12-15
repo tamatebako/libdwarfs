@@ -44,7 +44,7 @@ const char * tests_outside_dir(void) {
 }
 
 const char * tests_the_other_memfs_image(void) {
-    return "@TESTS_THE_OTHER_MEMFS_IMAGE@";
+    return "@DATA_BIN_FILE_2@";
 }
 
 #ifdef __cplusplus

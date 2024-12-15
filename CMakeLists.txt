@@ -410,6 +410,8 @@ if(WITH_TESTS)
 # DATA_BIN_FILE is packaged filesystem itself
   set(DATA_BIN_FILE ${DATA_BIN_DIR}/fs.bin)
   set(DATA_BIN_FILE_2 ${DATA_BIN_DIR}/fs2.bin)
+  set(TEST_PACKAGE_DESCRIPTOR "${CMAKE_CURRENT_SOURCE_DIR}/tests/package_descriptor/pd")
+
 
 endif(WITH_TESTS)
 
@@ -794,7 +796,7 @@ add_library(dwarfs-wr STATIC
     "src/dir-io.cpp"
     "src/file-io.cpp"
     "src/dl-ctl.cpp"
-    "src/tebako-cmdline-helpers.cpp"
+    "src/tebako-cmdline.cpp"
     "src/tebako-io-helpers.cpp"
     "src/tebako-io-root.cpp"
     "src/tebako-kfd.cpp"
@@ -805,7 +807,7 @@ add_library(dwarfs-wr STATIC
     "src/tebako-fd.cpp"
     "src/tebako-dirent.cpp"
     "src/tebako-package-descriptor.cpp"
-    "include/tebako-cmdline-helpers.h"
+    "include/tebako-cmdline.h"
     "include/tebako-common.h"
     "include/tebako-config.h"
     "include/tebako-defines.h"
@@ -919,8 +921,6 @@ if(WITH_TESTS)
 
   set(TESTS_OUTSIDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_files")
 
-  set(TESTS_THE_OTHER_MEMFS_IMAGE "${CMAKE_CURRENT_BINARY_DIR}/fs2.bin")
-
   add_custom_target(PACKAGED_FILESYSTEM_STEP_1 ALL
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs.cpp
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs2.cpp
@@ -960,7 +960,7 @@ if(WITH_TESTS)
     add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
       COMMAND ${GNU_BASH} -c "chmod -w ${DATA_TEST_DIR}/directory-2/file-in-directory-2.txt"
       COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-      COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE_2} -i ${DATA_TEST_DIR_2}
+      COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE_2} -i ${DATA_TEST_DIR_2} --header ${TEST_PACKAGE_DESCRIPTOR}
       COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/*-link-to-* ${DATA_TEST_DIR}/directory-1/*-link-to-*
                                           ${DATA_TEST_DIR}/directory-1/*empty.* ${DATA_TEST_DIR}/*-outside-of-memfs
       COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR_2}/*-link-to-* ${DATA_TEST_DIR_2}/directory-1/*-link-to-*
@@ -972,7 +972,7 @@ if(WITH_TESTS)
   else(WITH_LINK_TESTS)
     add_custom_target(PACKAGED_FILESYSTEM_STEP_3 ALL
       COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE} -i ${DATA_TEST_DIR}
-      COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE_2} -i ${DATA_TEST_DIR_2}
+      COMMAND ${MKDWARFS} --force --progress simple -o ${DATA_BIN_FILE_2} -i ${DATA_TEST_DIR_2} --header ${TEST_PACKAGE_DESCRIPTOR}
       COMMAND ${CMAKE_COMMAND} -E rm -rf ${DATA_TEST_DIR}/directory-1/*empty.*
       BYPRODUCTS ${DATA_BIN_FILE} ${DATA_BIN_FILE_2}
     )
@@ -987,7 +987,7 @@ if(WITH_TESTS)
     @ONLY
   )
 
-#  feat: exectable application stub
+#  feat: executable application stub
 #  configure_file(
 #    ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources/tebako-fs2.cpp.in
 #    ${CMAKE_CURRENT_SOURCE_DIR}/tests/tebako-fs2.cpp
@@ -1317,7 +1317,7 @@ install(FILES
         "include/tebako-config.h"
         "include/tebako-defines.h"
         "include/tebako-io.h"
-        "include/tebako-cmdline-helpers.h"
+        "include/tebako-cmdline.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 

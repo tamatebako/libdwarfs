@@ -29,11 +29,62 @@
 
 #pragma once
 
+#include <tebako-package-descriptor.h>
+
 namespace tebako {
-int build_arguments_for_extract(int* argc, char*** argv, const char* fs_mount_point);
-std::pair<int, char**> build_arguments(const std::vector<std::string>& new_argv,
-                                       const char* fs_mount_point,
-                                       const char* fs_entry_point);
-std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(int argc, char** argv);
-void process_mountpoints(const std::vector<std::string>& mountpoints);
+
+class cmdline_args {
+  int argc;
+  const char** argv;
+
+  std::vector<std::string> mountpoints;
+  std::vector<std::string> other_args;
+
+  std::string extract_folder;
+  std::string app_image;
+
+  std::optional<package_descriptor> package;
+
+  int new_argc;
+  char** new_argv;
+  char* new_argv_memory;
+
+  bool extract;
+  bool run;
+
+ public:
+  cmdline_args(int argc, const char** argv)
+      : argc(argc), argv(argv), extract(false), run(false), new_argc(0), new_argv(nullptr), new_argv_memory(nullptr)
+  {
+  }
+  ~cmdline_args()
+  {
+    if (new_argv_memory) {
+      delete[] new_argv_memory;
+    }
+    if (new_argv) {
+      delete[] new_argv;
+    }
+  }
+
+  void parse_arguments(void);
+  void process_mountpoints();
+  void process_package();
+
+  void build_arguments(const char* fs_mount_point, const char* fs_entry_point);
+  void build_arguments_for_extract(const char* fs_mount_point);
+  void build_arguments_for_run(const char* fs_mount_point, const char* fs_entry_point);
+
+  std::vector<std::string> const& get_mountpoints() { return mountpoints; }
+  std::vector<std::string> const& get_args() { return other_args; }
+
+  int get_argc() { return new_argc; }
+  char** get_argv() { return new_argv; }
+
+  bool with_application() { return run; }
+  std::string const& get_application_image() { return app_image; }
+
+  std::optional<package_descriptor> const& get_package() { return package; }
+};
+
 }  // namespace tebako
