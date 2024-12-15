@@ -36,112 +36,185 @@
 #include <tebako-memfs-table.h>
 #include <tebako-mount-table.h>
 
-#include <tebako-cmdline-helpers.h>
+#include <tebako-cmdline.h>
 
 namespace tebako {
 
-// build_arguments_for_extract
-//  Builds command line arguments to process --tebako-extract
-//  ruby -e "require 'fileutils'; FileUtils.copy_entry '<tebako::fs_mount_point>',argv[2] || 'source_filesystem'"
-int build_arguments_for_extract(int* argc, char*** argv, const char* fs_mount_point)
-{
-  int ret = -1;
-  std::string dest = std::string(((*argc) < 3 ? "source_filesystem" : (*argv)[2]));
-  std::string cmd = std::string("require 'fileutils'; FileUtils.copy_entry '") + fs_mount_point + "', '" + dest + "'";
-  printf("Extracting tebako image to '%s' \n", dest.c_str());
-  size_t new_argv_size = 3 + cmd.size() + 1 + strlen((*argv)[0]) + 1;
-  char** new_argv = new char*[3];
-  char* argv_memory = new char[new_argv_size];
-  if (new_argv != NULL && argv_memory != NULL) {
-    strcpy(argv_memory, (*argv)[0]);
-    new_argv[0] = argv_memory;
-    argv_memory += (strlen((*argv)[0]) + 1);
-    strcpy(argv_memory, "-e");
-    new_argv[1] = argv_memory;
-    argv_memory += 3;
-    strcpy(argv_memory, cmd.c_str());
-    new_argv[2] = argv_memory;
-    *argv = new_argv;
-    (*argc) = 3;
-    ret = 0;
-  }
-  return ret;
-}
-
-std::pair<int, char**> build_arguments(const std::vector<std::string>& new_argv,
-                                       const char* fs_mount_point,
-                                       const char* fs_entry_point)
+void cmdline_args::build_arguments(const char* fs_mount_point, const char* fs_entry_point)
 {
   if (fs_mount_point == nullptr || fs_entry_point == nullptr || fs_mount_point[0] == 0 || fs_entry_point[0] == 0) {
     throw std::invalid_argument("Internal error: fs_mount_point and fs_entry_point must be non-null and non-empty");
   }
 
+  if (extract) {
+    build_arguments_for_extract(fs_mount_point);
+  }
+  else {
+    build_arguments_for_run(fs_mount_point, fs_entry_point);
+  }
+}
+
+// build_arguments_for_extract
+//  Builds command line arguments to process --tebako-extract
+//  ruby -e "require 'fileutils'; FileUtils.copy_entry '<tebako::fs_mount_point>',argv[2] || 'source_filesystem'"
+void cmdline_args::build_arguments_for_extract(const char* fs_mount_point)
+{
+  std::string cmd =
+      std::string("require 'fileutils'; FileUtils.copy_entry '") + fs_mount_point + "', '" + extract_folder + "'";
+  printf("Extracting tebako image to '%s' \n", extract_folder.c_str());
+  size_t new_argv_size = 3 + cmd.size() + 1 + strlen(argv[0]) + 1;
+  new_argv = new char*[3];
+  char* argv_memory = new_argv_memory = new char[new_argv_size];
+  if (new_argv != nullptr && argv_memory != nullptr) {
+    strcpy(argv_memory, argv[0]);
+    new_argv[0] = argv_memory;
+    argv_memory += (strlen(argv[0]) + 1);
+    strcpy(argv_memory, "-e");
+    new_argv[1] = argv_memory;
+    argv_memory += 3;
+    strcpy(argv_memory, cmd.c_str());
+    new_argv[2] = argv_memory;
+    new_argc = 3;
+  }
+  else {
+    throw std::bad_alloc();
+  }
+}
+
+void cmdline_args::build_arguments_for_run(const char* fs_mount_point, const char* fs_entry_point)
+{
   size_t new_argv_size = strlen(fs_mount_point) + strlen(fs_entry_point) + 1;
-  for (const auto& arg : new_argv) {
+  for (const auto& arg : other_args) {
     new_argv_size += (arg.length() + 1);
   }
 
-  char* argv_memory = new char[new_argv_size];
-  if (!argv_memory)
+  char* argv_memory = new_argv_memory = new char[new_argv_size];
+  if (!argv_memory) {
     throw std::bad_alloc();
+  }
 
   // Build the new argv array
-  char** new_argv_final = new char*[new_argv.size() + 1];
-  memcpy(argv_memory, new_argv[0].c_str(), new_argv[0].length() + 1);
-  new_argv_final[0] = argv_memory;
-  argv_memory += (new_argv[0].length() + 1);
+  new_argv = new char*[other_args.size() + 1];
+  memcpy(argv_memory, other_args[0].c_str(), other_args[0].length() + 1);
+  new_argv[0] = argv_memory;
+  argv_memory += (other_args[0].length() + 1);
 
   // Add tebako fs_mount_point and fs_entry_point
   memcpy(argv_memory, fs_mount_point, strlen(fs_mount_point));
-  new_argv_final[1] = argv_memory;
+  new_argv[1] = argv_memory;
   argv_memory += strlen(fs_mount_point);
 
   memcpy(argv_memory, fs_entry_point, strlen(fs_entry_point) + 1);
   argv_memory += (strlen(fs_entry_point) + 1);
 
   // Copy remaining arguments
-  for (size_t i = 1; i < new_argv.size(); i++) {
-    memcpy(argv_memory, new_argv[i].c_str(), new_argv[i].length() + 1);
-    new_argv_final[i + 1] = argv_memory;
-    argv_memory += (new_argv[i].length() + 1);
+  for (size_t i = 1; i < other_args.size(); i++) {
+    memcpy(argv_memory, other_args[i].c_str(), other_args[i].length() + 1);
+    new_argv[i + 1] = argv_memory;
+    argv_memory += (other_args[i].length() + 1);
   }
 
-  // Return the new argc and argv
-  return {static_cast<int>(new_argv.size() + 1), new_argv_final};
+  new_argc = other_args.size() + 1;
 }
 
-std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(int argc, char** argv)
+void cmdline_args::parse_arguments(void)
 {
   const std::string error_msg =
-      "Error: --tebako-mount must be followed by a rule (e.g., --tebako-mount <mount point>:<target>)";
-  std::vector<std::string> tebako_mount_args;
-  std::vector<std::string> other_args;
+      "Error: --tebako-mount shall be followed by a rule (e.g., --tebako-mount <mount point>:<target>)";
+
+  const std::string error_msg_run =
+      "Error: --tebako-run shall be followed by the application image file name (e.g., --tebako-run=<image file name>)";
+
+  const std::string error_msg_run_nodup = "Error: --tebako-run option can be provided only once";
+
+  const std::string run_key = "--tebako-run";
+  const std::string run_key_ex = run_key + "=";
+  const std::string mount_key = "--tebako-mount";
+  const std::string mount_key_ex = mount_key + "=";
+  const std::string extract_key = "--tebako-extract";
+  const std::string extract_key_ex = extract_key + "=";
+  const std::string extract_dest = "source_filesystem";
 
   for (int i = 0; i < argc; i++) {
     std::string arg = argv[i];
 
-    // Handle "--tebako-mount=value" case
-    if (arg.rfind("--tebako-mount=", 0) == 0) {  // Check if it starts with "--tebako-mount="
-      std::string value = arg.substr(15);        // Extract the part after "--tebako-mount="
+    // Handle "--tebako-run=value" case
+    if (arg.rfind(run_key_ex, 0) == 0) {
+      std::string value = arg.substr(13);
 
       if (!value.empty()) {
-        tebako_mount_args.push_back(value);  // Add the value part to tebako_mount_args
+        if (run) {
+          throw std::invalid_argument(error_msg_run_nodup);
+        }
+        run = true;
+        app_image = value;
         continue;
       }
       else {
-        throw std::invalid_argument(error_msg);  // Handle case where value is empty
+        throw std::invalid_argument(error_msg_run);
       }
     }
 
-    // Handle "--tebako-mount" without '='
-    if (arg == "--tebako-mount") {
+    // Handle "--tebako-mount=value" case
+    if (arg.rfind(mount_key_ex, 0) == 0) {
+      std::string value = arg.substr(15);
+
+      if (!value.empty()) {
+        mountpoints.push_back(value);
+        continue;
+      }
+      else {
+        throw std::invalid_argument(error_msg);
+      }
+    }
+
+    // Handle "--tebako-extract=value" case
+    if (arg.rfind(extract_key_ex, 0) == 0) {
+      extract = true;
+      std::string value = arg.substr(17);
+
+      if (!value.empty()) {
+        extract_folder = value;
+      }
+      else {
+        extract_folder = extract_dest;
+      }
+      return;
+    }
+
+    // Handle "--tebako-run" without '='
+    if (arg == run_key) {
+      if (run) {
+        throw std::invalid_argument(error_msg_run_nodup);
+      }
+      run = true;
       // Ensure there is a next argument
       if (i + 1 < argc) {
         std::string next_arg = argv[i + 1];
 
         // Check if the next argument is valid
         if (next_arg[0] != '-') {  // It's not a flag
-          tebako_mount_args.push_back(next_arg);
+          app_image = next_arg;
+          i += 1;  // Skip the next argument as it is the rule
+          continue;
+        }
+        else {
+          throw std::invalid_argument(error_msg_run);
+        }
+      }
+      // If "--tebako-mount" is at the end of args without a rule, raise an error
+      throw std::invalid_argument(error_msg_run);
+    }
+
+    // Handle "--tebako-mount" without '='
+    if (arg == mount_key) {
+      // Ensure there is a next argument
+      if (i + 1 < argc) {
+        std::string next_arg = argv[i + 1];
+
+        // Check if the next argument is valid
+        if (next_arg[0] != '-') {  // It's not a flag
+          mountpoints.push_back(next_arg);
           i += 1;  // Skip the next argument as it is the rule
           continue;
         }
@@ -149,19 +222,37 @@ std::pair<std::vector<std::string>, std::vector<std::string>> parse_arguments(in
           throw std::invalid_argument(error_msg);
         }
       }
-
       // If "--tebako-mount" is at the end of args without a rule, raise an error
       throw std::invalid_argument(error_msg);
+    }
+
+    // Handle "--tebako-extract" without '='
+    if (arg.rfind(extract_key, 0) == 0) {
+      extract = true;
+      if (i + 1 < argc) {
+        std::string next_arg = argv[i + 1];
+
+        // Check if the next argument is valid
+        if (next_arg[0] != '-') {  // It's not a flag
+          extract_folder = next_arg;
+          i += 1;
+        }
+        else {
+          extract_folder = extract_dest;
+        }
+      }
+      else {
+        extract_folder = extract_dest;
+      }
+      return;
     }
 
     // Add other arguments as they are
     other_args.push_back(arg);
   }
-
-  return std::make_pair(tebako_mount_args, other_args);
 }
 
-void process_mountpoints(const std::vector<std::string>& mountpoints)
+void cmdline_args::process_mountpoints()
 {
   for (const auto& item : mountpoints) {
     // Split item by the first ':' or '>'
@@ -184,7 +275,7 @@ void process_mountpoints(const std::vector<std::string>& mountpoints)
 
       // Check that both filename and target are not empty
       if (filename.empty() || target.empty()) {
-        throw std::invalid_argument("Invalid input: path or filename or terget is empty in " + item);
+        throw std::invalid_argument("Invalid input: path or filename or target is empty in " + item);
       }
 
       struct stat st;
@@ -227,4 +318,24 @@ void process_mountpoints(const std::vector<std::string>& mountpoints)
     }
   }
 }
+
+void cmdline_args::process_package()
+{
+  std::ifstream file(app_image, std::ios::binary | std::ios::ate);
+  if (!file) {
+    throw std::invalid_argument("Path " + app_image + " does not exist");
+  }
+  size_t size = file.tellg();
+  file.seekg(0, std::ios::beg);
+
+  std::vector<char> buffer;
+  buffer.resize(size);
+
+  if (!file.read(buffer.data(), size)) {
+    throw std::invalid_argument("Failed to load filesystem image from " + app_image);
+  }
+
+  package = package_descriptor(buffer);
+}
+
 }  // namespace tebako

@@ -35,7 +35,7 @@ namespace tebako {
 const char* package_descriptor::signature = "TAMATEBAKO";
 
 // Constructor for deserialization
-package_descriptor::package_descriptor(const std::vector<uint8_t>& buffer)
+package_descriptor::package_descriptor(const std::vector<char>& buffer)
 {
   size_t offset = 0;
 
@@ -81,7 +81,7 @@ package_descriptor::package_descriptor(const std::vector<uint8_t>& buffer)
   read_from_buffer(entry_point.data(), entry_point_size);
 
   // Read cwd presence flag and content if present
-  uint8_t cwd_present;
+  char cwd_present;
   read_from_buffer(&cwd_present, sizeof(cwd_present));
   if (cwd_present) {
     uint16_t cwd_size;
@@ -119,11 +119,11 @@ package_descriptor::package_descriptor(const std::string& ruby_version,
 }
 
 // Serialize the object to a binary format
-std::vector<uint8_t> package_descriptor::serialize() const
+std::vector<char> package_descriptor::serialize() const
 {
-  std::vector<uint8_t> buffer;
+  std::vector<char> buffer;
   auto append_to_buffer = [&buffer](const void* data, size_t size) {
-    const uint8_t* bytes = static_cast<const uint8_t*>(data);
+    const char* bytes = static_cast<const char*>(data);
     buffer.insert(buffer.end(), bytes, bytes + size);
   };
 
@@ -148,7 +148,7 @@ std::vector<uint8_t> package_descriptor::serialize() const
   append_to_buffer(entry_point.data(), entry_point_size);
 
   // Append cwd presence flag and content if present
-  uint8_t cwd_present = cwd.has_value() ? 1 : 0;
+  char cwd_present = cwd.has_value() ? 1 : 0;
   append_to_buffer(&cwd_present, sizeof(cwd_present));
   if (cwd) {
     uint16_t cwd_size = static_cast<uint16_t>(cwd->size());

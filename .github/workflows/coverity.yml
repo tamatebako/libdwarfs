@@ -41,7 +41,6 @@ on:
       - '.github/workflows/*.yml'
       - '!.github/workflows/coverity.yml'
   pull_request:
-    # The branches below must be a subset of the branches above
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
