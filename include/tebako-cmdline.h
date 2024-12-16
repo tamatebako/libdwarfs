@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include <tebako-package-descriptor.h>
+#include "tebako-package-descriptor.h"
 
 namespace tebako {
 

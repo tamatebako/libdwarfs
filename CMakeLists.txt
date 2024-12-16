@@ -1318,6 +1318,7 @@ install(FILES
         "include/tebako-defines.h"
         "include/tebako-io.h"
         "include/tebako-cmdline.h"
+        "include/tebako-package-descriptor.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tebako
 )
 
