@@ -178,7 +178,9 @@ test_install_script() {
                            "$NM_MKDWARFS"                      \
                            "$DIR_INS_I/tebako-config.h"        \
                            "$DIR_INS_I/tebako-defines.h"       \
-                           "$DIR_INS_I/tebako-io.h"
+                           "$DIR_INS_I/tebako-io.h"            \
+                           "$DIR_INS_I/tebako-cmdline.h"       \
+                           "$DIR_INS_I/tebako-package-descriptor.h"
    else
       test_files_installed "$NM_MKDWARFS"                       \
                            "$DIR_INS_L/libdwarfs-wr.a"          \
@@ -194,7 +196,9 @@ test_install_script() {
                            "$NM_LIBARCHIVE"                     \
                            "$DIR_INS_I/tebako-config.h"         \
                            "$DIR_INS_I/tebako-defines.h"        \
-                           "$DIR_INS_I/tebako-io.h"
+                           "$DIR_INS_I/tebako-io.h"             \
+                           "$DIR_INS_I/tebako-cmdline.h"        \
+                           "$DIR_INS_I/tebako-package-descriptor.h"
    fi
 }
 
