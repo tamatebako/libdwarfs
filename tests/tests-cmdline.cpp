@@ -480,18 +480,18 @@ TEST(CmdlineArgsTest, process_package_descriptor)
 
   args.process_package();
 
-  auto package = args.get_package();
+  auto descriptor = args.get_descriptor();
 
-  EXPECT_TRUE(package.has_value());
-  EXPECT_EQ(package->get_ruby_version_major(), 3);
-  EXPECT_EQ(package->get_ruby_version_minor(), 2);
-  EXPECT_EQ(package->get_ruby_version_patch(), 5);
-  EXPECT_EQ(package->get_tebako_version_major(), 0);
-  EXPECT_EQ(package->get_tebako_version_minor(), 10);
-  EXPECT_EQ(package->get_tebako_version_patch(), 1);
-  EXPECT_EQ(package->get_mount_point(), "/__tebako_memfs__");
-  EXPECT_EQ(package->get_entry_point(), "/local/tebako-test-run.rb");
-  EXPECT_FALSE(package->get_cwd().has_value());
+  EXPECT_TRUE(descriptor.has_value());
+  EXPECT_EQ(descriptor->get_ruby_version_major(), 3);
+  EXPECT_EQ(descriptor->get_ruby_version_minor(), 2);
+  EXPECT_EQ(descriptor->get_ruby_version_patch(), 5);
+  EXPECT_EQ(descriptor->get_tebako_version_major(), 0);
+  EXPECT_EQ(descriptor->get_tebako_version_minor(), 10);
+  EXPECT_EQ(descriptor->get_tebako_version_patch(), 1);
+  EXPECT_EQ(descriptor->get_mount_point(), "/__tebako_memfs__");
+  EXPECT_EQ(descriptor->get_entry_point(), "/local/tebako-test-run.rb");
+  EXPECT_FALSE(descriptor->get_cwd().has_value());
 }
 
 }  // namespace tebako

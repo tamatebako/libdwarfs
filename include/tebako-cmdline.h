@@ -43,7 +43,8 @@ class cmdline_args {
   std::string extract_folder;
   std::string app_image;
 
-  std::optional<package_descriptor> package;
+  std::optional<package_descriptor> descriptor;
+  std::vector<char> package;
 
   int new_argc;
   char** new_argv;
@@ -82,9 +83,11 @@ class cmdline_args {
   char** get_argv() { return new_argv; }
 
   bool with_application() { return run; }
+  bool shall_extract() { return extract; }
   std::string const& get_application_image() { return app_image; }
 
-  std::optional<package_descriptor> const& get_package() { return package; }
+  std::optional<package_descriptor> const& get_descriptor() { return descriptor; }
+  std::vector<char> const& get_package() { return package; }
 };
 
 }  // namespace tebako
