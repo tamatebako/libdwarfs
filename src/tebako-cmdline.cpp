@@ -328,14 +328,13 @@ void cmdline_args::process_package()
   size_t size = file.tellg();
   file.seekg(0, std::ios::beg);
 
-  std::vector<char> buffer;
-  buffer.resize(size);
+  package.resize(size);
 
-  if (!file.read(buffer.data(), size)) {
+  if (!file.read(package.data(), size)) {
     throw std::invalid_argument("Failed to load filesystem image from " + app_image);
   }
 
-  package = package_descriptor(buffer);
+  descriptor = package_descriptor(package);
 }
 
 }  // namespace tebako
