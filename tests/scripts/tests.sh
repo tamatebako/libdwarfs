@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2025 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tebako
 #
@@ -43,7 +43,7 @@ check_shared_libs() {
 
    for exp in "${expected[@]}"; do
       for i in "${!actual[@]}"; do
-        if [[ "$OSTYPE" == "win32" || "$OSTYPE" == "msys" ]]; then
+        if [[ "$OSTYPE" == "win32" || "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
             actual_i=${actual[i],,}
          else
             actual_i=${actual[i]}
@@ -82,9 +82,7 @@ test_linkage() {
          readarray -t actual < <(otool -L "$DIR_SRC/wr-bin")
          assertEquals "readarray -t actual < <(otool -L $DIR_SRC/wr-bin) failed" 0 "${PIPESTATUS[0]}"
          check_shared_libs "${expected[@]}"
-      elif [[ "$OSTYPE" == "cygwin" ]]; then
-         echo "... cygwin ... skipping"
-      elif [[ "$OSTYPE" == "msys" ]]; then
+      elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
          expected=("ntdll.dll" "kernel32.dll" "kernelbase.dll" "advapi32.dll" "msvcrt.dll"
                    "sechost.dll" "rpcrt4.dll" "shlwapi.dll" "user32.dll" "win32u.dll" "gdi32.dll"
                    "gdi32full.dll" "msvcp_win.dll" "ucrtbase.dll" "ws2_32.dll" "wsock32.dll"
@@ -152,7 +150,7 @@ test_install_script() {
    assertEquals "cmake --install failed" 0 "${PIPESTATUS[0]}"
 
 
-   if [[ "$OSTYPE" == "msys" ]]; then
+   if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
       NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
       NM_LIBARCHIVE="$DIR_INS_L/libarchive_static.a"
       test_files_installed "$DIR_INS_I/tebako-io-rb-w32.h"
