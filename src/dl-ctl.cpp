@@ -69,7 +69,7 @@ class sync_tebako_dltable : public folly::Synchronized<tebako_dltable*> {
       ss << std::hex << rand(prng);
       _dl_tmpdir = tmp_dir / ss.str();
       if (stdfs::create_directory(_dl_tmpdir)) {
-        dl_tmpdir = _dl_tmpdir;
+        dl_tmpdir = std::move(_dl_tmpdir);
         break;
       }
       if (i == MAX_TRIES) {

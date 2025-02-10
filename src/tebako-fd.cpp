@@ -86,7 +86,7 @@ int sync_tebako_fdtable::open(const char* path, int flags, std::string& lnk) noe
             else {
               // construct a handle (mainly) for win32
               *fd->handle = ret;
-              (*s_tebako_fdtable.wlock())[ret] = fd;
+              (*s_tebako_fdtable.wlock())[ret] = std::move(fd);
             }
           }
         }

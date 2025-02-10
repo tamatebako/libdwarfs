@@ -147,7 +147,7 @@ void cmdline_args::parse_arguments(void)
           throw std::invalid_argument(error_msg_run_nodup);
         }
         run = true;
-        app_image = value;
+        app_image = std::move(value);
         continue;
       }
       else {
@@ -160,7 +160,7 @@ void cmdline_args::parse_arguments(void)
       std::string value = arg.substr(15);
 
       if (!value.empty()) {
-        mountpoints.push_back(value);
+        mountpoints.push_back(std::move(value));
         continue;
       }
       else {
@@ -174,10 +174,10 @@ void cmdline_args::parse_arguments(void)
       std::string value = arg.substr(17);
 
       if (!value.empty()) {
-        extract_folder = value;
+        extract_folder = std::move(value);
       }
       else {
-        extract_folder = extract_dest;
+        extract_folder = std::move(extract_dest);
       }
       return;
     }
@@ -194,7 +194,7 @@ void cmdline_args::parse_arguments(void)
 
         // Check if the next argument is valid
         if (next_arg[0] != '-') {  // It's not a flag
-          app_image = next_arg;
+          app_image = std::move(next_arg);
           i += 1;  // Skip the next argument as it is the rule
           continue;
         }
@@ -214,7 +214,7 @@ void cmdline_args::parse_arguments(void)
 
         // Check if the next argument is valid
         if (next_arg[0] != '-') {  // It's not a flag
-          mountpoints.push_back(next_arg);
+          mountpoints.push_back(std::move(next_arg));
           i += 1;  // Skip the next argument as it is the rule
           continue;
         }
@@ -234,21 +234,21 @@ void cmdline_args::parse_arguments(void)
 
         // Check if the next argument is valid
         if (next_arg[0] != '-') {  // It's not a flag
-          extract_folder = next_arg;
+          extract_folder = std::move(next_arg);
           i += 1;
         }
         else {
-          extract_folder = extract_dest;
+          extract_folder = std::move(extract_dest);
         }
       }
       else {
-        extract_folder = extract_dest;
+        extract_folder = std::move(extract_dest);
       }
       return;
     }
 
     // Add other arguments as they are
-    other_args.push_back(arg);
+    other_args.push_back(std::move(arg));
   }
 }
 
