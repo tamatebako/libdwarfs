@@ -186,6 +186,8 @@ else()
       set(WITH_LZ4_BUILD ON)
       set(WITH_BROTLI_BUILD ON)
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  elseif("${OSTYPE_TXT}" MATCHES "^linux-gnu.*")
+    set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
   elseif("${OSTYPE_TXT}" MATCHES "^darwin.*")
     set(IS_DARWIN ON)
     message(STATUS "Building jemalloc library locally")
@@ -719,6 +721,8 @@ configure_file(
 
 check_symbol_exists(getattrlist "unistd.h" TEBAKO_HAS_GETATTRLIST)
 check_symbol_exists(fgetattrlist "unistd.h" TEBAKO_HAS_FGETATTRLIST)
+
+check_symbol_exists(eaccess "unistd.h" TEBAKO_HAS_EACCESS)
 
 check_symbol_exists(lstat "sys/stat.h" TEBAKO_HAS_LSTAT)
 check_symbol_exists(fstatat "sys/stat.h" TEBAKO_HAS_FSTATAT)

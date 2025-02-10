@@ -61,7 +61,32 @@ int tebako_access(const char* path, int amode)
   return ret;
 }
 
-#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32) || defined(RB_W32)
+#if defined(TEBAKO_HAS_EACCESS)
+int tebako_eaccess(const char* path, int amode)
+{
+  int ret = -1;
+  if (path == NULL) {
+    TEBAKO_SET_LAST_ERROR(ENOENT);
+  }
+  else {
+    std::string lnk;
+    tebako_path_t t_path;
+    const char* p_path = to_tebako_path(t_path, path);
+    if (p_path) {
+      ret = dwarfs_access(p_path, amode, geteuid(), getegid(), lnk);
+      if (ret == DWARFS_S_LINK_OUTSIDE) {
+        ret = TO_RB_W32(eaccess)(lnk.c_str(), amode);
+      }
+    }
+    else {
+      ret = TO_RB_W32(eaccess)(path, amode);
+    }
+  }
+  return ret;
+}
+#endif
+
+#if defined(TEBAKO_HAS_LSTAT) || defined(RB_W32)
 int tebako_lstat(const char* path, struct STAT_TYPE* buf)
 {
   int ret = -1;

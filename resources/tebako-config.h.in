@@ -29,6 +29,8 @@
 
 #pragma once
 
+#cmakedefine TEBAKO_HAS_EACCESS 1
+
 #cmakedefine TEBAKO_HAS_LSTAT 1
 #cmakedefine TEBAKO_HAS_FSTATAT 1
 
