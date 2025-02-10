@@ -92,6 +92,7 @@
 #define getcwd(...) tebako_getcwd(__VA_ARGS__)
 #define chdir(...) tebako_chdir(__VA_ARGS__)
 #define access(...) tebako_access(__VA_ARGS__)
+#define eaccess(...) tebako_eaccess(__VA_ARGS__)
 #define stat(...) tebako_stat(__VA_ARGS__)
 #define fstat(...) tebako_fstat(__VA_ARGS__)
 #define lstat(...) tebako_lstat(__VA_ARGS__)
