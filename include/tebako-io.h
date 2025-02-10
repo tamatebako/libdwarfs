@@ -76,6 +76,7 @@ int tebako_chdir(const char* path);
 */
 
 int tebako_access(const char* path, int amode);
+int tebako_eaccess(const char* path, int amode);
 int tebako_open(int nargs, const char* path, int flags, ...);
 off_t tebako_lseek(int vfd, off_t offset, int whence);
 
