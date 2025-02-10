@@ -144,6 +144,7 @@ TEST_F(FileCtlTests, tebako_access_relative_path_pass_through)
   EXPECT_EQ(0, ret);
 }
 
+#if defined(TEBAKO_HAS_EACCESS)
 TEST_F(FileCtlTests, tebako_eaccess_absolute_path_no_dir)
 {
   int ret = tebako_eaccess(TEBAKIZE_PATH("no-directory/file.txt"), X_OK);
@@ -207,6 +208,7 @@ TEST_F(FileCtlTests, tebako_eaccess_relative_path_pass_through)
   ret = tebako_eaccess(__BIN_NAKED__, R_OK | X_OK);
   EXPECT_EQ(0, ret);
 }
+#endif
 
 TEST_F(FileCtlTests, tebako_stat_absolute_path)
 {
@@ -407,6 +409,7 @@ TEST_F(FileCtlTests, tebako_access_relative_path_dot_dot)
   EXPECT_EQ(0, ret);
 }
 
+#if defined(TEBAKO_HAS_EACCESS)
 TEST_F(FileCtlTests, tebako_eaccess_relative_path_dot_dot)
 {
   int ret = tebako_chdir(TEBAKIZE_PATH("//directory-3/level-1//"));
@@ -414,6 +417,7 @@ TEST_F(FileCtlTests, tebako_eaccess_relative_path_dot_dot)
   ret = tebako_eaccess("level-2/../../../directory-2/file-in-directory-2.txt", R_OK);
   EXPECT_EQ(0, ret);
 }
+#endif
 
 #if defined(TEBAKO_HAS_GETATTRLIST) || defined(TEBAKO_HAS_FGETATTRLIST)
 typedef struct attrlist attrlist_t;
