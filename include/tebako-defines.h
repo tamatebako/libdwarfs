@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
+ * Copyright (c) 2021-2025 [Ribose Inc](https://www.ribose.com).
  * All rights reserved.
  * This file is a part of tebako (libdwarfs-wr)
  *
@@ -85,40 +85,95 @@
 #define rb_w32_seekdir(...) tebako_seekdir(__VA_ARGS__)
 #define rb_w32_rewinddir(...) tebako_seekdir(__VA_ARGS__, 0)
 #define rb_w32_closedir(...) tebako_closedir(__VA_ARGS__)
-#else
+#else  // RB_W32
 #define mkdir(...) tebako_mkdir(__VA_ARGS__)
 #define rmdir(...) tebako_rmdir(__VA_ARGS__)
 #define unlink(...) tebako_unlink(__VA_ARGS__)
 #define getcwd(...) tebako_getcwd(__VA_ARGS__)
 #define chdir(...) tebako_chdir(__VA_ARGS__)
 #define access(...) tebako_access(__VA_ARGS__)
+
+#if defined(TEBAKO_HAS_EACCESS)
 #define eaccess(...) tebako_eaccess(__VA_ARGS__)
+#endif
+
 #define stat(...) tebako_stat(__VA_ARGS__)
+
+#if defined(TEBAKO_HAS_FSTAT)
 #define fstat(...) tebako_fstat(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_LSTAT)
 #define lstat(...) tebako_lstat(__VA_ARGS__)
+#endif
+
 #define open(...) tebako_open(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
 #define read(...) tebako_read(__VA_ARGS__)
+
+#if defined(TEBAKO_HAS_PREAD)
 #define pread(...) tebako_pread(__VA_ARGS__)
+#endif
+
 #define lseek(...) tebako_lseek(__VA_ARGS__)
 #define close(...) tebako_close(__VA_ARGS__)
+
+#if defined(TEBAKO_HAS_OPENDIR)
 #define opendir(...) tebako_opendir(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_FDOPENDIR)
 #define fdopendir(...) tebako_fdopendir(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_CLOSEDIR)
 #define closedir(...) tebako_closedir(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_READDIR)
 #define readdir(...) tebako_readdir(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_TELLDIR)
 #define telldir(...) tebako_telldir(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_SEEKDIR)
 #define seekdir(...) tebako_seekdir(__VA_ARGS__)
 #define rewinddir(...) tebako_seekdir(__VA_ARGS__, 0)
 #endif
+#endif  // RB_W32
 
+#if defined(TEBAKO_HAS_DIRFD)
 #define dirfd(...) tebako_dirfd(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_SCANDIR)
 #define scandir(...) tebako_scandir(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_GETATTRLIST)
 #define getattrlist(...) tebako_getattrlist(__VA_ARGS__)
+#endif
+
+#if defined(TEBAKO_HAS_FGETATTRLIST)
 #define fgetattrlist(...) tebako_fgetattrlist(__VA_ARGS__)
+#endif
+
 #define fstatat(...) tebako_fstatat(__VA_ARGS__)
+
+#if defined(TEBAKO_HAS_OPENAT)
 #define openat(...) tebako_openat(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#endif
+
 #define readlink(...) tebako_readlink(__VA_ARGS__)
+
+#if defined(TEBAKO_HAS_READV)
 #define readv(...) tebako_readv(__VA_ARGS__)
+#endif
+
 #define dlopen(...) tebako_dlopen(__VA_ARGS__)
 #define dlerror tebako_dlerror
 
+#if defined(TEBAKO_HAS_FLOCK) || defined(RB_W32)
 #define flock(...) tebako_flock(__VA_ARGS__)
+#endif

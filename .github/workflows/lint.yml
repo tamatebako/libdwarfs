@@ -27,7 +27,8 @@ name: lint
 
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - '*'
     paths-ignore:
       - 'docs/**'
       - '**.adoc'
@@ -40,15 +41,6 @@ on:
       - .github/workflows/windows-msys.yml
       - 'macos-arm64.env'
       - 'macos-x86_64.env'
-  pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.adoc'
-      - '**.md'
-      - '.cirrus.yml'
-      - '.github/workflows/*.yml'
-      - '!.github/workflows/macos.yml'
-  workflow_dispatch:
 
 jobs:
   shellcheck:
