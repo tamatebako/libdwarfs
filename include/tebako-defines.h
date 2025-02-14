@@ -99,9 +99,7 @@
 
 #define stat(...) tebako_stat(__VA_ARGS__)
 
-#if defined(TEBAKO_HAS_FSTAT)
 #define fstat(...) tebako_fstat(__VA_ARGS__)
-#endif
 
 #if defined(TEBAKO_HAS_LSTAT)
 #define lstat(...) tebako_lstat(__VA_ARGS__)
@@ -159,7 +157,9 @@
 #define fgetattrlist(...) tebako_fgetattrlist(__VA_ARGS__)
 #endif
 
+#if defined(TEBAKO_HAS_FSTATAT)
 #define fstatat(...) tebako_fstatat(__VA_ARGS__)
+#endif
 
 #if defined(TEBAKO_HAS_OPENAT)
 #define openat(...) tebako_openat(_TEBAKO_PP_NARG(__VA_ARGS__), __VA_ARGS__)
