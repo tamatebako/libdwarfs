@@ -128,11 +128,7 @@ jobs:
           key:  alpine-${{ matrix.env.VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-${{ matrix.openssl.name }}-v${{ env.CACHE_VER }}
 
       - name: Configure
-<<<<<<< HEAD
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }} ${{ matrix.openssl.option }}
-=======
-        run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }} ${{ matrix.openssl }}
->>>>>>> alpine openssl 1.1
 
       - name: Build
         run: cmake --build build --parallel "$CORES"
