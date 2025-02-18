@@ -188,6 +188,13 @@ else()
       set(WITH_LZ4_BUILD ON)
       set(WITH_BROTLI_BUILD ON)
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if (OPENSSL_VERSION EQUAL "1.1")
+      include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl-1.1.1.cmake)
+      if (WITH_OPENSSL_BUILD)
+        set(OPENSSL_OPTION "-DOPENSSL_ROOT_DIR=${DEPS}")
+        include_directories("${OPENSSL_ROOT_DIR}/include")
+      endif (WITH_OPENSSL_BUILD)
+    endif (OPENSSL_VERSION EQUAL "1.1")
   elseif("${OSTYPE_TXT}" MATCHES "^linux-gnu.*")
     # Needed for eaccess ( ~> File.readable?)
     set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
@@ -204,8 +211,11 @@ else()
       set(JEMALLOC_LG_PAGE  --with-lg-page=$ENV{LG_PAGE})
       set(JEMALLOC_LG_PAGE_MSG ", lg_page = $ENV{LG_PAGE}")
       message(STATUS "Using LG_PAGE environment variable: ${JEMALLOC_LG_PAGE}")
-  endif(DEFINED ENV{LG_PAGE})
-
+    endif(DEFINED ENV{LG_PAGE})
+    if (OPENSSL_VERSION EQUAL "1.1")
+      set(OPENSSL_OPTION "-DOPENSSL_VERSION=${OPENSSL_VERSION}")
+      include_directories("${OPENSSL_ROOT_DIR}/include")
+    endif(OPENSSL_VERSION EQUAL "1.1")
   endif()
 endif(MSVC)
 
@@ -386,6 +396,9 @@ if(WITH_DLFCN_WIN32_BUILD)
   def_ext_prj_g(DLFCN_WIN32 "v1.4.1")
   message(STATUS "dlfcn-win32 -  @${DLFCN_WIN32_TAG}  at  ${DLFCN_WIN32_SOURCE_DIR}")
 endif(WITH_DLFCN_WIN32_BUILD)
+if(WITH_OPENSSL_BUILD)
+  message(STATUS "openssl     -  @${OPENSSL_TAG}  at  ${OPENSSL_SOURCE_DIR}")
+endif(WITH_OPENSSL_BUILD)
 
 # ...................................................................
 # incbin
@@ -477,6 +490,7 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DDISABLE_CCACHE=ON
              -DWITH_MAN_PAGES=OFF
              -DNIXPKGS_DWARFS_VERSION_OVERRIDE=tebako-${LIBDWARFS_WR_VERSION}
+             ${OPENSSL_OPTION}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBDWARFS}       ${__LIBDWARFS_COMPRESSION} ${__LIBFSST}   ${__LIBFOLLY}
@@ -645,6 +659,9 @@ if(WITH_BROTLI_BUILD)
     BUILD_BYPRODUCTS ${__LIBBROTLICOMMON} ${__LIBBROTLIENC} ${__LIBBROTLIDEC}
   )
   add_dependencies(${DWARFS_PRJ} ${BROTLI_PRJ})
+  if (${WITH_OPENSSL_BUILD})
+    add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
+  endif(${WITH_OPENSSL_BUILD})
 endif(WITH_BROTLI_BUILD)
 
 # ...................................................................
