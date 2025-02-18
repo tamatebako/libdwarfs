@@ -71,8 +71,8 @@ jobs:
           - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  LOG_LEVEL: 'trace', VER: '3.17'  }
           - { CC: clang,  CXX: clang++, ASAN: 'OFF',  LOG_LEVEL: 'warn' , VER: '3.17'  }
         openssl:
-          - { option: '-DOPENSSL_VERSION=1.1', name: '1.1.1' }
-          - { option: '', name: '3.x' }
+          - '-DOPENSSL_VERSION=1.1'
+          - ''
 # Segfaults on GHA but works locally
 # Comment out for now
 #         - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'warn' , VER: '3.17'  }
@@ -128,7 +128,11 @@ jobs:
           key:  alpine-${{ matrix.env.VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-${{ matrix.openssl.name }}-v${{ env.CACHE_VER }}
 
       - name: Configure
+<<<<<<< HEAD
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }} ${{ matrix.openssl.option }}
+=======
+        run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }} ${{ matrix.openssl }}
+>>>>>>> alpine openssl 1.1
 
       - name: Build
         run: cmake --build build --parallel "$CORES"
