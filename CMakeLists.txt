@@ -188,6 +188,13 @@ else()
       set(WITH_LZ4_BUILD ON)
       set(WITH_BROTLI_BUILD ON)
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if ("${OPENSSL_VERSION}" EQUAL "1.1")
+      include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl-1.1.1.cmake)
+      if (DEFINED OPENSSL_ROOT_DIR)
+        set(OPENSSL_OPTION "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}")
+        set(INSTALL_OPENSSL true)
+      endif (DEFINED OPENSSL_ROOT_DIR)
+    endif ("${OPENSSL_VERSION}" EQUAL "1.1")
   elseif("${OSTYPE_TXT}" MATCHES "^linux-gnu.*")
     # Needed for eaccess ( ~> File.readable?)
     set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
@@ -204,8 +211,10 @@ else()
       set(JEMALLOC_LG_PAGE  --with-lg-page=$ENV{LG_PAGE})
       set(JEMALLOC_LG_PAGE_MSG ", lg_page = $ENV{LG_PAGE}")
       message(STATUS "Using LG_PAGE environment variable: ${JEMALLOC_LG_PAGE}")
-  endif(DEFINED ENV{LG_PAGE})
-
+    endif(DEFINED ENV{LG_PAGE})
+    if ("${OPENSSL_VERSION}" EQUAL "1.1")
+      set(OPENSSL_OPTION "-DOPENSSL_VERSION=${OPENSSL_VERSION}")
+    endif("${OPENSSL_VERSION}" EQUAL "1.1")
   endif()
 endif(MSVC)
 
@@ -290,7 +299,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.8.4")
+def_ext_prj_g(DWARFS "tebako-v0.8.6.rc2")
 def_ext_prj_g(INCBIN "348e36b")
 
 if(NOT IS_WINDOWS)
@@ -386,6 +395,9 @@ if(WITH_DLFCN_WIN32_BUILD)
   def_ext_prj_g(DLFCN_WIN32 "v1.4.1")
   message(STATUS "dlfcn-win32 -  @${DLFCN_WIN32_TAG}  at  ${DLFCN_WIN32_SOURCE_DIR}")
 endif(WITH_DLFCN_WIN32_BUILD)
+if(WITH_OPENSSL_BUILD)
+  message(STATUS "openssl     -  @${OPENSSL_TAG}  at  ${OPENSSL_SOURCE_DIR}")
+endif(WITH_OPENSSL_BUILD)
 
 # ...................................................................
 # incbin
@@ -477,12 +489,17 @@ ExternalProject_Add(${DWARFS_PRJ}
              -DDISABLE_CCACHE=ON
              -DWITH_MAN_PAGES=OFF
              -DNIXPKGS_DWARFS_VERSION_OVERRIDE=tebako-${LIBDWARFS_WR_VERSION}
+             ${OPENSSL_OPTION}
   SOURCE_DIR ${DWARFS_SOURCE_DIR}
   BINARY_DIR ${DWARFS_BINARY_DIR}
   BUILD_BYPRODUCTS ${__LIBDWARFS}       ${__LIBDWARFS_COMPRESSION} ${__LIBFSST}   ${__LIBFOLLY}
                    ${__LIBT_METADATA}   ${__LIBT_LIGHT}            ${__LIBXXHASH} ${__LIBZSTD}
                    ${__LIBFMT}          ${__LIBARCHIVE}
 )
+
+if (WITH_OPENSSL_BUILD)
+  add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
+endif(WITH_OPENSSL_BUILD)
 
 # ...................................................................
 # incbin
@@ -1096,9 +1113,13 @@ else(IS_WINDOWS)
 
     find_library(_LIBZ "libz.a" REQUIRED HINTS ${DEPS}/lib ${CMAKE_PREFIX_PATH}/opt/zlib/lib)
 
-    find_library(_LIBSSL "libssl.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
-    find_library(_LIBCRYPTO "libcrypto.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
-
+    if(DEFINED OPENSSL_ROOT_DIR)
+      set(_LIBSSL "${OPENSSL_ROOT_DIR}/lib/libssl.a")
+      set(_LIBCRYPTO "${OPENSSL_ROOT_DIR}/lib/libcrypto.a")
+    else(DEFINED OPENSSL_ROOT_DIR)
+      find_library(_LIBSSL "libssl.a" REQUIRED HINTS ${OPENSSL_ROOT_DIR}/lib)
+      find_library(_LIBCRYPTO "libcrypto.a" REQUIRED HINTS ${OPENSSL_ROOT_DIR}/lib)
+    endif(DEFINED OPENSSL_ROOT_DIR)
     if(NOT IS_MSYS)
       find_library(_LIBACL "libacl.a")
     endif()
@@ -1222,7 +1243,7 @@ endif(RB_W32)
     add_dwarfs_library(_LIBBROTLIDEC ${BROTLI_PRJ} wr-bin)
     add_dwarfs_library(_LIBBROTLICOMMON ${BROTLI_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBBROTLIENC _LIBBROTLIDEC _LIBBROTLICOMMON)
-    elseif(NOT IS_MSYS)
+  elseif(NOT IS_MSYS)
     list(APPEND _LIBRARIES ${_LIBBROTLIENC} ${_LIBBROTLIDEC} ${_LIBBROTLICOMMON})
   endif(WITH_BROTLI_BUILD)
 
@@ -1257,7 +1278,6 @@ endif(RB_W32)
       list(APPEND _LIBRARIES dl)
     endif(IS_MSYS)
   endif(IS_DARWIN)
-
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests ${GTestMain} ${_LIBRARIES})
 
@@ -1320,6 +1340,14 @@ if(WITH_JEMALLOC_BUILD)
   install(FILES ${__LIBJEMALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
   install(DIRECTORY ${DEPS_INCLUDE_DIR}/jemalloc DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif(WITH_JEMALLOC_BUILD)
+
+if(INSTALL_OPENSSL)
+  install(FILES ${DEPS_BIN_DIR}/openssl DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES ${__LIBSSL} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(FILES ${__LIBCRYPTO} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(DIRECTORY ${DEPS_INCLUDE_DIR}/openssl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif(INSTALL_OPENSSL)
+
 
 install(FILES
         "include/tebako-config.h"
