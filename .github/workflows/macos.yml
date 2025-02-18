@@ -59,7 +59,7 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.env.os }} [XCode ${{ matrix.env.xcode }}, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }} ]
+    name: ${{ matrix.env.os }} [XCode ${{ matrix.env.xcode }}, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }}, OpenSSL ${{ matrix.openssl.name }}]
     runs-on: ${{ matrix.env.os }}
     strategy:
       fail-fast: false
@@ -69,6 +69,9 @@ jobs:
           - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.0.1', LG_VADDR: 39  }
           - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.4'                  }
           - { os: 'macos-15', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '16.1'                  }
+        openssl:
+          - { option: '-DOPENSSL_VERSION=1.1', name: '1.1.1' }
+          - { option: '', name: '3.x' }
 
     env: ${{ matrix.env }}
 
@@ -100,7 +103,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/${{ env.DEPS }}
-          key: ${{ matrix.env.os }}-${{ matrix.env.xcode }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
+          key: ${{ matrix.env.os }}-${{ matrix.env.xcode }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-${{ matrix.openssl.name }}-v${{ env.CACHE_VER }}
 
       - name: Install packages
         # Already installed: openssl, libevent, libsodium, lz4, xz
@@ -111,7 +114,7 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build -DPREFER_SYSTEM_GTEST=ON -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+          cmake -B build -DPREFER_SYSTEM_GTEST=ON -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}  ${{ matrix.openssl.option }}
 
       - name: Build
         run: cmake --build build --parallel "$CORES"
@@ -132,7 +135,7 @@ jobs:
         run:  ${{ env.BREW_HOME }}/bin/bash ${{ github.workspace }}/tests/scripts/tests.sh
 
       - name: Upload tests
-        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' && env.os == 'macos-13' }}
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' && env.os == 'macos-13' && matrix.openssl.name == '3.x' }}
         uses: actions/upload-artifact@v4
         with:
           name: tests
