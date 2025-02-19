@@ -188,13 +188,12 @@ else()
       set(WITH_LZ4_BUILD ON)
       set(WITH_BROTLI_BUILD ON)
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if (OPENSSL_VERSION EQUAL "1.1")
+    if (${OPENSSL_VERSION} EQUAL "1.1")
       include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl-1.1.1.cmake)
-      if (WITH_OPENSSL_BUILD)
+      if (DEFINED OPENSSL_ROOT_DIR)
         set(OPENSSL_OPTION "-DOPENSSL_ROOT_DIR=${DEPS}")
-        include_directories("${OPENSSL_ROOT_DIR}/include")
-      endif (WITH_OPENSSL_BUILD)
-    endif (OPENSSL_VERSION EQUAL "1.1")
+      endif (DEFINED OPENSSL_ROOT_DIR)
+    endif (${OPENSSL_VERSION} EQUAL "1.1")
   elseif("${OSTYPE_TXT}" MATCHES "^linux-gnu.*")
     # Needed for eaccess ( ~> File.readable?)
     set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
@@ -212,10 +211,9 @@ else()
       set(JEMALLOC_LG_PAGE_MSG ", lg_page = $ENV{LG_PAGE}")
       message(STATUS "Using LG_PAGE environment variable: ${JEMALLOC_LG_PAGE}")
     endif(DEFINED ENV{LG_PAGE})
-    if (OPENSSL_VERSION EQUAL "1.1")
+    if (${OPENSSL_VERSION} EQUAL "1.1")
       set(OPENSSL_OPTION "-DOPENSSL_VERSION=${OPENSSL_VERSION}")
-      include_directories("${OPENSSL_ROOT_DIR}/include")
-    endif(OPENSSL_VERSION EQUAL "1.1")
+    endif(${OPENSSL_VERSION} EQUAL "1.1")
   endif()
 endif(MSVC)
 
@@ -498,6 +496,10 @@ ExternalProject_Add(${DWARFS_PRJ}
                    ${__LIBFMT}          ${__LIBARCHIVE}
 )
 
+if (WITH_OPENSSL_BUILD)
+  add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
+endif(WITH_OPENSSL_BUILD)
+
 # ...................................................................
 # incbin
 
@@ -659,9 +661,6 @@ if(WITH_BROTLI_BUILD)
     BUILD_BYPRODUCTS ${__LIBBROTLICOMMON} ${__LIBBROTLIENC} ${__LIBBROTLIDEC}
   )
   add_dependencies(${DWARFS_PRJ} ${BROTLI_PRJ})
-  if (${WITH_OPENSSL_BUILD})
-    add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
-  endif(${WITH_OPENSSL_BUILD})
 endif(WITH_BROTLI_BUILD)
 
 # ...................................................................
@@ -1113,9 +1112,13 @@ else(IS_WINDOWS)
 
     find_library(_LIBZ "libz.a" REQUIRED HINTS ${DEPS}/lib ${CMAKE_PREFIX_PATH}/opt/zlib/lib)
 
-    find_library(_LIBSSL "libssl.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
-    find_library(_LIBCRYPTO "libcrypto.a" REQUIRED HINTS ${DEPS}/lib ${OPENSSL_ROOT_DIR}/lib)
-
+    if(DEFINED OPENSSL_ROOT_DIR)
+      set(_LIBSSL "${OPENSSL_ROOT_DIR}/lib/libssl.a")
+      set(_LIBCRYPTO "${OPENSSL_ROOT_DIR}/lib/libcrypto.a")
+    else(DEFINED OPENSSL_ROOT_DIR)
+      find_library(_LIBSSL "libssl.a" REQUIRED HINTS ${OPENSSL_ROOT_DIR}/lib)
+      find_library(_LIBCRYPTO "libcrypto.a" REQUIRED HINTS ${OPENSSL_ROOT_DIR}/lib)
+    endif(DEFINED OPENSSL_ROOT_DIR)
     if(NOT IS_MSYS)
       find_library(_LIBACL "libacl.a")
     endif()
@@ -1239,7 +1242,7 @@ endif(RB_W32)
     add_dwarfs_library(_LIBBROTLIDEC ${BROTLI_PRJ} wr-bin)
     add_dwarfs_library(_LIBBROTLICOMMON ${BROTLI_PRJ} wr-bin)
     target_link_libraries(wr-tests _LIBBROTLIENC _LIBBROTLIDEC _LIBBROTLICOMMON)
-    elseif(NOT IS_MSYS)
+  elseif(NOT IS_MSYS)
     list(APPEND _LIBRARIES ${_LIBBROTLIENC} ${_LIBBROTLIDEC} ${_LIBBROTLICOMMON})
   endif(WITH_BROTLI_BUILD)
 
@@ -1274,7 +1277,6 @@ endif(RB_W32)
       list(APPEND _LIBRARIES dl)
     endif(IS_MSYS)
   endif(IS_DARWIN)
-
   target_link_libraries(wr-bin ${_LIBRARIES})
   target_link_libraries(wr-tests ${GTestMain} ${_LIBRARIES})
 
