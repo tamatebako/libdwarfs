@@ -191,7 +191,8 @@ else()
     if ("${OPENSSL_VERSION}" EQUAL "1.1")
       include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl-1.1.1.cmake)
       if (DEFINED OPENSSL_ROOT_DIR)
-        set(OPENSSL_OPTION "-DOPENSSL_ROOT_DIR=${DEPS}")
+        set(OPENSSL_OPTION "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}")
+        set(INSTALL_OPENSSL true)
       endif (DEFINED OPENSSL_ROOT_DIR)
     endif ("${OPENSSL_VERSION}" EQUAL "1.1")
   elseif("${OSTYPE_TXT}" MATCHES "^linux-gnu.*")
@@ -298,7 +299,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.8.6.rc1")
+def_ext_prj_g(DWARFS "tebako-v0.8.6.rc2")
 def_ext_prj_g(INCBIN "348e36b")
 
 if(NOT IS_WINDOWS)
@@ -1339,6 +1340,14 @@ if(WITH_JEMALLOC_BUILD)
   install(FILES ${__LIBJEMALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR})
   install(DIRECTORY ${DEPS_INCLUDE_DIR}/jemalloc DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif(WITH_JEMALLOC_BUILD)
+
+if(INSTALL_OPENSSL)
+  install(FILES ${DEPS_BIN_DIR}/openssl DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES ${__LIBSSL} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(FILES ${__LIBCRYPTO} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(DIRECTORY ${DEPS_INCLUDE_DIR}/openssl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif(INSTALL_OPENSSL)
+
 
 install(FILES
         "include/tebako-config.h"
