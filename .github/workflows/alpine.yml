@@ -60,7 +60,7 @@ env:
 
 jobs:
   build:
-    name: alpine-${{ matrix.env.VER }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
+    name: alpine-${{ matrix.env.VER }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }}, OpenSSL ${{ matrix.openssl.name }}]
     runs-on: ubuntu-latest
     container:
       image: alpine:${{ matrix.env.VER }}
@@ -70,6 +70,9 @@ jobs:
         env:
           - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  LOG_LEVEL: 'trace', VER: '3.17'  }
           - { CC: clang,  CXX: clang++, ASAN: 'OFF',  LOG_LEVEL: 'warn' , VER: '3.17'  }
+        openssl:
+          - { option: '-DOPENSSL_VERSION=1.1', name: '1.1.1' }
+          - { option: '', name: '3.x' }
 # Segfaults on GHA but works locally
 # Comment out for now
 #         - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'warn' , VER: '3.17'  }
@@ -122,10 +125,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{env.DEPS}}
-          key:  alpine-${{ matrix.env.VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
+          key:  alpine-${{ matrix.env.VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-${{ matrix.openssl.name }}-v${{ env.CACHE_VER }}
 
       - name: Configure
-        run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
+        run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }} ${{ matrix.openssl.option }}
 
       - name: Build
         run: cmake --build build --parallel "$CORES"
