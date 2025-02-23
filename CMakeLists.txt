@@ -73,8 +73,6 @@ set(GNU_BASH "bash")
 include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/macos-environment.cmake)
 include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/def-external-project.cmake)
 
-include_directories(${DEPS_INCLUDE_DIR})
-link_directories(${DEPS_LIB_DIR})
 if(MSVC)
   include_directories(${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include)
   link_directories(${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib)
@@ -299,7 +297,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.8.6")
+def_ext_prj_g(DWARFS "tebako-v0.8.7")
 def_ext_prj_g(INCBIN "348e36b")
 
 if(NOT IS_WINDOWS)
@@ -808,12 +806,14 @@ elseif(IS_WINDOWS)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${DEPS}/include
                     ${DWARFS_SOURCE_DIR}/folly ${DWARFS_BINARY_DIR}/folly ${DWARFS_SOURCE_DIR}/fbthrift
-                    ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include ${BREW_PREFIX}/include
+                    ${DWARFS_BINARY_DIR}/thrift ${DWARFS_BINARY_DIR} ${DWARFS_SOURCE_DIR}/include
                     ${DWARFS_BINARY_DIR}/_deps/fmt-src/include
 )
+
+link_directories(${DEPS_LIB_DIR})
 
 add_library(dwarfs-wr STATIC
     "src/file-ctl.cpp"
