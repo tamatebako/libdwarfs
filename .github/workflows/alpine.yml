@@ -60,42 +60,31 @@ env:
 
 jobs:
   build:
-    name: alpine-${{ matrix.env.VER }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }}, OpenSSL ${{ matrix.openssl.name }}]
-    runs-on: ubuntu-latest
+    name: ${{ matrix.env.os }}-${{ matrix.architecture.name }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }}, OpenSSL ${{ matrix.openssl.name }}]
+    runs-on: ${{ matrix.architecture.host }}
     container:
-      image: alpine:${{ matrix.env.VER }}
+      image: 'ghcr.io/${{ github.repository_owner }}/tebako-${{ matrix.env.os }}-dev'
     strategy:
       fail-fast: false
       matrix:
+        architecture:
+          - { host: 'ubuntu-22.04', name: x86_64 }
         env:
-          - { CC: gcc,    CXX: g++,     ASAN: 'OFF',  LOG_LEVEL: 'trace', VER: '3.17'  }
-          - { CC: clang,  CXX: clang++, ASAN: 'OFF',  LOG_LEVEL: 'warn' , VER: '3.17'  }
+          - { os: alpine-3.17, CC: gcc,    CXX: g++,     ASAN: 'OFF',  LOG_LEVEL: 'trace'  }
+          - { os: alpine-3.17, CC: clang,  CXX: clang++, ASAN: 'OFF',  LOG_LEVEL: 'warn'   }
+# Segfaults on GHA but works locally
+# Comment out for now
+#         - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'warn'   }
         openssl:
           - { option: '-DOPENSSL_VERSION=1.1', name: '1.1.1' }
           - { option: '', name: '3.x' }
-# Segfaults on GHA but works locally
-# Comment out for now
-#         - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'warn' , VER: '3.17'  }
+        include:
+          # Very limited Alpine test since Node.js actions are not supported on Alpine arm containers
+          - architecture: { host: 'ubuntu-22.04-arm', name: arm64 }
+            env:          { os: alpine-3.17, CC: clang,  CXX: clang++, ASAN: 'OFF',  LOG_LEVEL: 'warn' }
+            openssl:      { option: '', name: '3.x' }
     env: ${{ matrix.env }}
     steps:
-      - name: Install packages
-# glog and double-conversion do not provide static versions so we build them locally
-# fmt (10.x.x) is built by dwarfs script
-# lz4-static apk installs a lbrary that requires lto plugin (binutil-gold) so we build it locally as well
-        run: |
-          apk --no-cache --upgrade add build-base cmake git bash   \
-            autoconf boost-static boost-dev flex-dev bison         \
-            binutils-dev libevent-dev acl-dev xz-static            \
-            lz4-dev openssl-dev zlib-dev gflags-dev jemalloc-dev   \
-            libunwind-dev libdwarf-dev elfutils-dev fmt-dev        \
-            libevent-static openssl-libs-static xz-dev             \
-            zlib-static libunwind-static acl-static tar brotli-dev \
-            brotli-static
-
-      - name: Install clang
-        if: ${{ matrix.env.CC == 'clang' }}
-        run: apk --no-cache --upgrade add clang
-
       - name: Install lz4-static
         if: ${{ matrix.env.CC == 'gcc' }}
         run: apk --no-cache --upgrade add lz4-static
@@ -107,7 +96,14 @@ jobs:
       - name: Declare directory safe
         run: git config --global --add safe.directory "$(pwd)"
 
-      - name: Checkout
+      - name: Checkout arm64
+        if: ${{ matrix.architecture.name == 'arm64'}}
+        uses: actions/checkout@v1
+        with:
+          submodules: true
+
+      - name: Checkout x86_64
+        if: ${{ matrix.architecture.name == 'x86_64'}}
         uses: actions/checkout@v4
         with:
           submodules: true
@@ -122,10 +118,11 @@ jobs:
         run: mkdir ${{env.DEPS}}
 
       - name: Process cache
+        if: ${{ matrix.architecture.name == 'x86_64'}}
         uses: actions/cache@v4
         with:
           path: ${{env.DEPS}}
-          key:  alpine-${{ matrix.env.VER }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-${{ matrix.openssl.name }}-v${{ env.CACHE_VER }}
+          key:  ${{ matrix.env.os }}-${{ matrix.architecture.name }}-${{ matrix.env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.LOG_LEVEL }}-${{ matrix.openssl.name }}-v${{ env.CACHE_VER }}
 
       - name: Configure
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }} ${{ matrix.openssl.option }}
@@ -137,7 +134,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure --parallel "$CORES"
 
       - name: Checkout shell test framework
-        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' && matrix.architecture.name == 'x86_64'}}
         uses: actions/checkout@v4
         with:
           repository: kward/shunit2
@@ -145,5 +142,5 @@ jobs:
           fetch-depth: 1
 
       - name: Run additional tests
-        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
+        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON'  && matrix.architecture.name == 'x86_64'}}
         run:  tests/scripts/tests.sh
