@@ -81,7 +81,6 @@ jobs:
 #         - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'warn' , VER: '3.17'  }
     env: ${{ matrix.env }}
     steps:
-      - name: Install packages
 # glog and double-conversion do not provide static versions so we build them locally
 # fmt (10.x.x) is built by dwarfs script
 # lz4-static apk installs a lbrary that requires lto plugin (binutil-gold) so we build it locally as well
