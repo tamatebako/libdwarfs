@@ -61,21 +61,33 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.env.os }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }} ]
-    runs-on: ${{ matrix.env.os }}
+    name: ${{ matrix.env.os }}-${{ matrix.architecture.name }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, COVERAGE ${{ matrix.env.COVERAGE }}, ${{ matrix.env.LOG_LEVEL }} ]
+    runs-on: ${{ matrix.architecture.host }}
+    container:
+      image: 'ghcr.io/${{ github.repository_owner }}/tebako-${{ matrix.env.os }}-dev'
     strategy:
       fail-fast: false
       matrix:
+        architecture:
+          - { host: 'ubuntu-22.04', name: x86_64 }
+          - { host: 'ubuntu-22.04-arm', name: arm64 }
         env:
           - { os: ubuntu-20.04, CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'trace' }
           - { os: ubuntu-20.04, CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'trace'  }
           - { os: ubuntu-20.04, CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'warn'  }
           - { os: ubuntu-20.04, CC: clang-12,  CXX: clang++-12, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
           - { os: ubuntu-20.04, CC: clang-12,  CXX: clang++-12, ASAN: 'ON',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+# Tebako will stay with Ubuntu 20.04 for now
 # https://github.com/llvm/llvm-project/issues/56357
 # On Ubuntu 22  affects clang 14 (file entry.cpp)
-          - { os: ubuntu-22.04, CC: clang-15,  CXX: clang++-15, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
-          - { os: ubuntu-22.04, CC: gcc-11,    CXX: g++-11,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+#          - { os: ubuntu-22.04, CC: clang-15,  CXX: clang++-15, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+#          - { os: ubuntu-22.04, CC: gcc-11,    CXX: g++-11,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
+        include:
+          - env:          { os:   'ubuntu-20.04', CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'trace'  }
+            architecture: { host: 'ubuntu-22.04', name: x86_64 }
+          - env:          { os:   'ubuntu-20.04', CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'warn'  }
+            architecture: { host: 'ubuntu-22.04', name: x86_64 }
+
 
     env: ${{ matrix.env }}
     steps:
@@ -92,26 +104,26 @@ jobs:
 
 
       - name: Create deps folder
-        run: mkdir ${{github.workspace}}/${{env.DEPS}}
+        run: mkdir ${{env.DEPS}}
 
       - name: Process cache
         uses: actions/cache@v4
         with:
-          path: ${{github.workspace}}/${{env.DEPS}}
-          key:  ${{ matrix.env.os }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
+          path: ${{env.DEPS}}
+          key:  ${{ matrix.env.os }}-${{ matrix.architecture.name }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
 # Already installed: bison flex pkg-config
-
-      - name: Install packages
-        run: |
-          sudo apt-get -y update
-          sudo apt-get -y install \
-          binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev                \
-          libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev    \
-          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libutfcpp-dev      \
-          libboost-filesystem-dev libboost-program-options-dev libboost-system-dev    \
-          libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev         \
-          libboost-regex-dev libboost-thread-dev libbrotli-dev
+#
+#      - name: Install packages
+#        run: |
+#          sudo apt-get -y update
+#          sudo apt-get -y install \
+#          binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev                \
+#          libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev    \
+#          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libutfcpp-dev      \
+#          libboost-filesystem-dev libboost-program-options-dev libboost-system-dev    \
+#          libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev         \
+#          libboost-regex-dev libboost-thread-dev libbrotli-dev
 
       - name: Configure
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
@@ -123,20 +135,21 @@ jobs:
         run: ctest --test-dir build --output-on-failure --parallel "$CORES"
 
       - name: Checkout shell test framework
-        if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
+        if: ${{ env.COVERAGE != 'ON'  && env.ASAN != 'ON' }}
         uses: actions/checkout@v4
         with:
           repository: kward/shunit2
-          path: ${{github.workspace}}/tests/shunit2
+          path: tests/shunit2
           fetch-depth: 1
 
       - name: Run additional tests
         if: ${{ env.COVERAGE != 'ON' && env.ASAN != 'ON' }}
-        run:  ${{github.workspace}}/tests/scripts/tests.sh
+        run:  tests/scripts/tests.sh
 
       - name: Upload to codecov.io
-        if: ${{ env.COVERAGE == 'ON' }}
+        if: ${{ env.COVERAGE == 'ON' && env.ASAN != 'ON' && matrix.architecture.name == 'x86_64' }}
         run: |
+          sudo apt-get -y install curl gpg gcovr
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           curl https://uploader.codecov.io/verification.gpg | gpg --no-default-keyring --keyring trustedkeys.gpg --import
           curl -Os https://uploader.codecov.io/latest/linux/codecov
