@@ -63,7 +63,7 @@ jobs:
     name: alpine-${{ matrix.env.VER }}-${{ matrix.architecture.name }} [CC ${{ matrix.env.CC }}, ASAN ${{ matrix.env.ASAN }}, ${{ matrix.env.LOG_LEVEL }} ]
     runs-on:  ${{ matrix.architecture.host }}
     container:
-      image: 'ghcr.io/${{ github.repository_owner }}/tebako-alpine:${{ matrix.env.VER }}-dev'
+      image: 'ghcr.io/${{ github.repository_owner }}/tebako-alpine-${{ matrix.env.VER }}-dev'
     strategy:
       fail-fast: false
       matrix:
