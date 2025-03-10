@@ -112,19 +112,6 @@ jobs:
           path: ${{env.DEPS}}
           key:  ${{ matrix.env.os }}-${{ matrix.architecture.name }}-${{ env.CC }}-${{ hashFiles('**/common.env') }}-${{ env.ASAN }}-${{ env.COVERAGE }}-${{ env.LOG_LEVEL }}-v${{ env.CACHE_VER }}
 
-# Already installed: bison flex pkg-config
-#
-#      - name: Install packages
-#        run: |
-#          sudo apt-get -y update
-#          sudo apt-get -y install \
-#          binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev                \
-#          libdouble-conversion-dev libiberty-dev liblz4-dev libssl-dev liblzma-dev    \
-#          libunwind-dev libdwarf-dev libelf-dev libgoogle-glog-dev libutfcpp-dev      \
-#          libboost-filesystem-dev libboost-program-options-dev libboost-system-dev    \
-#          libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev         \
-#          libboost-regex-dev libboost-thread-dev libbrotli-dev
-
       - name: Configure
         run: cmake -B build -DWITH_TESTS=ON -DWITH_ASAN=${{ env.ASAN }} -DWITH_COVERAGE=${{ env.COVERAGE }} -DTESTS_LOG_LEVEL=${{ env.LOG_LEVEL }}
 
@@ -149,7 +136,6 @@ jobs:
       - name: Upload to codecov.io
         if: ${{ env.COVERAGE == 'ON' && env.ASAN != 'ON' && matrix.architecture.name == 'x86_64' }}
         run: |
-          sudo apt-get -y install curl gpg gcovr
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           curl https://uploader.codecov.io/verification.gpg | gpg --no-default-keyring --keyring trustedkeys.gpg --import
           curl -Os https://uploader.codecov.io/latest/linux/codecov
