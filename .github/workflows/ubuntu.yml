@@ -73,8 +73,6 @@ jobs:
           - { host: 'ubuntu-22.04-arm', name: arm64 }
         env:
           - { os: ubuntu-20.04, CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'trace' }
-          - { os: ubuntu-20.04, CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'trace'  }
-          - { os: ubuntu-20.04, CC: gcc-10,    CXX: g++-10,     ASAN: 'OFF',  COVERAGE: 'ON',  LOG_LEVEL: 'warn'  }
           - { os: ubuntu-20.04, CC: clang-12,  CXX: clang++-12, ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
           - { os: ubuntu-20.04, CC: clang-12,  CXX: clang++-12, ASAN: 'ON',   COVERAGE: 'OFF', LOG_LEVEL: 'warn'  }
 # Tebako will stay with Ubuntu 20.04 for now
