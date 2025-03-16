@@ -1,6 +1,6 @@
-# Copyright (c) 2021-2024 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2021-2025 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
-# This file is a part of tamatebako
+# This file is a part of the Tebako project.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -72,7 +72,7 @@ jobs:
       matrix:
         os:
           - { version: windows-2019, vsversion: 2019 }
-        #  - { version: windows-2022, vsversion: 2022 }
+        #  - { version: windows-2025, vsversion: 2022 }
         env:
           - { CC: cl,  CXX: cl, ASAN: 'OFF', LOG_LEVEL: 'trace', BUILD_TYPE: 'Release' }
 
