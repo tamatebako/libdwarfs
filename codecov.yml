@@ -2,3 +2,4 @@ ignore:
   - "tests"   # libdwarfs tets
   - "tools"   # tebako tools
   - "deps"    # external dependencies
+  - "build"   # build artifacts
