@@ -283,6 +283,8 @@ set(CMAKE_CXX_EXTENSIONS   OFF)
 # Adopted 'as is' from Dwarfs CMake script
 add_compile_definitions(FOLLY_CFG_NO_COROUTINES)
 add_compile_definitions(GLOG_NO_ABBREVIATED_SEVERITIES NOMINMAX NOGDI)
+add_compile_definitions(GLOG_USE_GLOG_EXPORT)
+
 set(CXX_STD "gnu++20" CACHE STRING "The C++ standard argument to pass to the compiler.")
 set(MSVC_LANGUAGE_VERSION "c++20" CACHE STRING "The C++ standard argument to pass to the compiler.")
 
@@ -304,13 +306,39 @@ if(NOT IS_WINDOWS)
   find_library(_LIBGLOG "libglog.a")
   if(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
     message(STATUS "glog static library was not found, building locally")
+    set(GLOG_VERSION "0.7.1")
     set(WITH_GLOG_BUILD ON)
-    if(IS_DARWIN)
-      message(STATUS "building brotli and gflags locally")
-      set(WITH_GFLAGS_BUILD ON)
-      set(WITH_BROTLI_BUILD ON)
-    endif(IS_DARWIN)
-  endif()
+
+    # Try to find shared library
+    find_library(_LIBGLOG_SHARED "glog")
+    if(NOT ${_LIBGLOG_SHARED} STREQUAL "_LIBGLOG_SHARED-NOTFOUND")
+      message(STATUS "glog shared library found, determining version")
+      # Try to determine installed glog version
+      find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config)
+      if(PKG_CONFIG_EXECUTABLE)
+        execute_process(
+          COMMAND ${PKG_CONFIG_EXECUTABLE} --modversion libglog
+          OUTPUT_VARIABLE GLOG_VERSION
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+          ERROR_QUIET
+          RESULT_VARIABLE PKG_CONFIG_RESULT
+        )
+        if(PKG_CONFIG_RESULT EQUAL 0 AND GLOG_VERSION)
+          message(STATUS "Using system glog version: ${GLOG_VERSION}")
+        else(PKG_CONFIG_RESULT EQUAL 0 AND GLOG_VERSION)
+          message(STATUS "Could not determine system glog version, using default version")
+        endif(PKG_CONFIG_RESULT EQUAL 0 AND GLOG_VERSION)
+      else(PKG_CONFIG_EXECUTABLE)
+        message(FATAL_ERROR "pkg-config not found")
+      endif(PKG_CONFIG_EXECUTABLE)
+    endif(NOT ${_LIBGLOG_SHARED} STREQUAL "_LIBGLOG_SHARED-NOTFOUND")
+  endif(${_LIBGLOG} STREQUAL "_LIBGLOG-NOTFOUND")
+
+  if(IS_DARWIN)
+    message(STATUS "building brotli and gflags locally")
+    set(WITH_GFLAGS_BUILD ON)
+    set(WITH_BROTLI_BUILD ON)
+  endif(IS_DARWIN)
 
   if (NOT WITH_GFLAGS_BUILD)
     find_library(_LIBGFLAGS "libgflags.a")
@@ -367,7 +395,7 @@ if(WITH_FMT_BUILD)
   message(STATUS "fmt         -  @${FMT_TAG}  at  ${FMT_SOURCE_DIR}")
 endif(WITH_FMT_BUILD)
 if(WITH_GLOG_BUILD)
-  def_ext_prj_g(GLOG "v0.6.0")
+  def_ext_prj_g(GLOG "v${GLOG_VERSION}")
   message(STATUS "glog        -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
 endif(WITH_GLOG_BUILD)
 if(WITH_GFLAGS_BUILD)
@@ -1259,17 +1287,14 @@ endif(RB_W32)
   else(IS_DARWIN)
   # libgcc_eh shall precede libunwind to aboid duplicate symbols during linking
   # liblzma shall follow libunwind because it is libunwind dependency
-    list(APPEND _LIBRARIES ${_LIBIBERTY}  ${_LIBACL}    ${_LIBZ}
-                           ${_LIBEH}      ${_LIBUNWIND} ${_LIBLZMA}
-    )
+    list(APPEND _LIBRARIES ${_LIBIBERTY} ${_LIBACL} ${_LIBZ} ${_LIBEH} )
     if(IS_MSYS)
       find_library(_LIBDL "libdl.a" REQUIRED)
-      list(APPEND _LIBRARIES ${_LIBDL})
+      list(APPEND _LIBRARIES ${_LIBLZMA} ${_LIBDL})
       target_link_options(wr-bin PUBLIC -static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive)
       target_link_options(wr-tests PUBLIC -static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive)
     elseif(NOT IS_WINDOWS)
-      list(APPEND _LIBRARIES pthread)
-      list(APPEND _LIBRARIES dl)
+      list(APPEND _LIBRARIES ${_LIBUNWIND} ${_LIBLZMA} pthread dl)
     else()
       list(APPEND _LIBRARIES dl)
     endif(IS_MSYS)
