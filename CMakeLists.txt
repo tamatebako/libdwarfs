@@ -450,11 +450,7 @@ set(__LIBT_METADATA "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}metadata
 set(__LIBT_LIGHT "${DWARFS_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}thrift_light${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
 if(NOT IS_WINDOWS)
-  if(IS_MSYS)
-    set(__LIBARCHIVE "${DEPS}/lib/libarchive_static.a")
-  else(IS_MSYS)
-    set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
-  endif(IS_MSYS)
+  set(__LIBARCHIVE "${DEPS}/lib/libarchive.a")
 endif(NOT IS_WINDOWS)
 
 if(NOT IS_WINDOWS AND NOT IS_MSYS)
@@ -813,7 +809,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${DWARFS_BINARY_DIR}/_deps/fmt-src/include
 )
 
-link_directories(${DEPS_LIB_DIR})
+link_directories(BEFORE ${DEPS_LIB_DIR})
 
 add_library(dwarfs-wr STATIC
     "src/file-ctl.cpp"

@@ -152,7 +152,7 @@ test_install_script() {
 
    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
       NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
-      NM_LIBARCHIVE="$DIR_INS_L/libarchive_static.a"
+      NM_LIBARCHIVE="$DIR_INS_L/libarchive.a"
       test_files_installed "$DIR_INS_I/tebako-io-rb-w32.h"
    elif [[ "$OSTYPE" == "win32" ]]; then
       NM_MKDWARFS="$DIR_INS_B/mkdwarfs.exe"
