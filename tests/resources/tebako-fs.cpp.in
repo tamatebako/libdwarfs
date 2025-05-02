@@ -27,6 +27,7 @@
  *
  */
 
+#define INCBIN_SILENCE_BITCODE_WARNING
 #include <incbin.h>
 
 INCBIN(fs, "@DATA_BIN_FILE@");

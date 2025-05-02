@@ -29,6 +29,7 @@
 
 #pragma once
 
+#define INCBIN_SILENCE_BITCODE_WARNING
 #include <incbin.h>
 
 INCBIN_EXTERN(fs);
