@@ -37,7 +37,9 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
   cmake_policy(SET CMP0167 OLD)
 endif(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
 
-include(tools/cmake-scripts/version.cmake)
+set(TOOLS ${CMAKE_CURRENT_SOURCE_DIR}/tools CACHE STRING "Tools' folder'")
+
+include(${TOOLS}/cmake-scripts/version.cmake)
 determine_version("${CMAKE_CURRENT_SOURCE_DIR}" LIBDWARFS_WR)
 
 # Various locations for external projects
@@ -70,8 +72,8 @@ include(CheckCXXSourceCompiles)
 # This is the default that will be overwritten for MacOS
 set(GNU_BASH "bash")
 
-include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/macos-environment.cmake)
-include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/def-external-project.cmake)
+include(${TOOLS}/cmake-scripts/macos-environment.cmake)
+include(${TOOLS}/cmake-scripts/def-external-project.cmake)
 
 if(MSVC)
   include_directories(${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include)
@@ -187,7 +189,7 @@ else()
       set(WITH_BROTLI_BUILD ON)
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if ("${OPENSSL_VERSION}" EQUAL "1.1")
-      include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl-1.1.1.cmake)
+      include(${TOOLS}/cmake-scripts/setup-openssl-1.1.1.cmake)
       if (DEFINED OPENSSL_ROOT_DIR)
         set(OPENSSL_OPTION "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}")
         set(INSTALL_OPENSSL true)
@@ -299,8 +301,8 @@ endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.8.10")
-def_ext_prj_g(INCBIN "348e36b")
+def_ext_prj_g(DWARFS "tebako-v0.8.11")
+def_ext_prj_g(INCBIN "6e576cae5ab5810f25e2631f2e0b80cbe7dc8cbf")
 
 if(NOT IS_WINDOWS)
   find_library(_LIBGLOG "libglog.a")
@@ -399,7 +401,7 @@ if(WITH_GLOG_BUILD)
   message(STATUS "glog        -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
 endif(WITH_GLOG_BUILD)
 if(WITH_GFLAGS_BUILD)
-  def_ext_prj_g(GFLAGS "v2.2.2")
+  def_ext_prj_g(GFLAGS "52e94563eba1968783864942fedf6e87e3c611f4")
   message(STATUS "gflags      -  @${GFLAGS_TAG}  at  ${GFLAGS_SOURCE_DIR}")
 endif(WITH_GFLAGS_BUILD)
 if(WITH_DC_BUILD)
@@ -552,6 +554,7 @@ if(WITH_ZSTD_BUILD)
     GIT_REPOSITORY "https://github.com/facebook/zstd.git"
     GIT_TAG ${ZSTD_TAG}
     UPDATE_COMMAND ""
+    PATCH_COMMAND ${GNU_BASH} -c "${TOOLS}/ci-scripts/patch-zstd.sh ${ZSTD_SOURCE_DIR}"
     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DBUILD_SHARED_LIBS:BOOL=OFF
@@ -601,6 +604,7 @@ if(WITH_GLOG_BUILD)
     GIT_REPOSITORY "https://github.com/google/glog.git"
     GIT_TAG ${GLOG_TAG}
     UPDATE_COMMAND ""
+    PATCH_COMMAND ${GNU_BASH} -c "${TOOLS}/ci-scripts/patch-glog.sh ${GLOG_SOURCE_DIR}"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DBUILD_SHARED_LIBS:BOOL=OFF
                -DBUILD_TESTING=OFF
