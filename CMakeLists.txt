@@ -301,7 +301,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.8.11")
+def_ext_prj_g(DWARFS "tebako-v0.8.12")
 def_ext_prj_g(INCBIN "6e576cae5ab5810f25e2631f2e0b80cbe7dc8cbf")
 
 if(NOT IS_WINDOWS)
