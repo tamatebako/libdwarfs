@@ -76,7 +76,6 @@ jobs:
 # Comment out for now
 #         - { CC: clang,  CXX: clang++, ASAN: 'ON',   LOG_LEVEL: 'warn'   }
         openssl:
-          - { option: '-DOPENSSL_VERSION=1.1', name: '1.1.1' }
           - { option: '', name: '3.x' }
         include:
           # Very limited Alpine test since Node.js actions are not supported on Alpine arm containers

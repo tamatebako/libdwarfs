@@ -70,7 +70,6 @@ jobs:
           - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.4'                  }
           - { os: 'macos-15', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '16.1'                  }
         openssl:
-          - { option: '-DOPENSSL_VERSION=1.1', name: '1.1.1' }
           - { option: '', name: '3.x' }
 
     env: ${{ matrix.env }}
