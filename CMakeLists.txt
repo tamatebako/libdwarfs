@@ -32,7 +32,11 @@ cmake_policy(SET CMP0091 NEW)
 # DOWNLOAD_EXTRACT_TIMESTAMP option default = true
 cmake_policy(SET CMP0135 NEW)
 # FindBoost moudule
-# Pls refer to the comment re 'set(Boost_NO_BOOST_CMAKE ON)' below
+# Use Boost’s CMake package
+if (POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
   cmake_policy(SET CMP0167 OLD)
 endif(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
@@ -273,7 +277,7 @@ set(Boost_LINK_STATIC       ON)
 # a package configuration file for use with find_package's config mode.
 # This configuration  file enforces -lz -lbz2 -llzma and it is an issue for us on Alpine/clang
 # See https://cmake.org/cmake/help/latest/module/FindBoost.html#boost-cmake for details
-set(Boost_NO_BOOST_CMAKE    ON)
+#set(Boost_NO_BOOST_CMAKE    ON)
 
 set(USE_STATIC_DEPS_ON_UNIX ON)
 set(GFLAGS_SHARED          OFF)
@@ -1086,7 +1090,7 @@ if(WITH_TESTS)
 #
 
   if(IS_WINDOWS)
-    find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread system)
+    find_package(Boost 1.67 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread)
   # For Windwos native build these libraries are installed with vcpkg
     find_library(_LIBGLOG "glog" REQUIRED)
     if(CMAKE_BUILD_TYPE STREQUAL Release)
