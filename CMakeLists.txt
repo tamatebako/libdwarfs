@@ -529,7 +529,6 @@ if (WITH_JEMALLOC_BUILD)
   add_dependencies(${DWARFS_PRJ} ${JEMALLOC_PRJ})
 endif(WITH_JEMALLOC_BUILD)
 
-
 # ...................................................................
 # incbin
 
@@ -734,7 +733,6 @@ if(WITH_JEMALLOC_BUILD)
                       --disable-shared
                       --datarootdir=${DEPS}/share.dummy
                       --disable-syscall
-                      --with-jemalloc-prefix=
                       ${JEMALLOC_LG_VADDR} ${JEMALLOC_LG_PAGE}
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
