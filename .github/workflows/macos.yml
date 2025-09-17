@@ -55,7 +55,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VER: 6
+  CACHE_VER: 7
 
 jobs:
   build:
