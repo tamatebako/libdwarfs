@@ -34,12 +34,8 @@ cmake_policy(SET CMP0135 NEW)
 # FindBoost moudule
 # Use Boost’s CMake package
 if (POLICY CMP0167)
-  cmake_policy(SET CMP0167 NEW)
-endif()
-
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
   cmake_policy(SET CMP0167 OLD)
-endif(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
+endif()
 
 set(TOOLS ${CMAKE_CURRENT_SOURCE_DIR}/tools CACHE STRING "Tools' folder'")
 
@@ -277,7 +273,7 @@ set(Boost_LINK_STATIC       ON)
 # a package configuration file for use with find_package's config mode.
 # This configuration  file enforces -lz -lbz2 -llzma and it is an issue for us on Alpine/clang
 # See https://cmake.org/cmake/help/latest/module/FindBoost.html#boost-cmake for details
-#set(Boost_NO_BOOST_CMAKE    ON)
+set(Boost_NO_BOOST_CMAKE    ON)
 
 set(USE_STATIC_DEPS_ON_UNIX ON)
 set(GFLAGS_SHARED          OFF)
@@ -380,7 +376,7 @@ if(NOT IS_WINDOWS)
     endif()
   endif(NOT WITH_LZ4_BUILD)
   if(WITH_JEMALLOC_BUILD)
-    def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
+    def_ext_prj_t(JEMALLOC "5.3.0" "2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa")
   elseif(WITH_JEMALLOC_BUILD)
     find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
   endif(WITH_JEMALLOC_BUILD)
@@ -528,6 +524,11 @@ ExternalProject_Add(${DWARFS_PRJ}
 if (WITH_OPENSSL_BUILD)
   add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
 endif(WITH_OPENSSL_BUILD)
+
+if (WITH_JEMALLOC_BUILD)
+  add_dependencies(${DWARFS_PRJ} ${JEMALLOC_PRJ})
+endif(WITH_JEMALLOC_BUILD)
+
 
 # ...................................................................
 # incbin
@@ -733,6 +734,7 @@ if(WITH_JEMALLOC_BUILD)
                       --disable-shared
                       --datarootdir=${DEPS}/share.dummy
                       --disable-syscall
+                      --with-jemalloc-prefix=
                       ${JEMALLOC_LG_VADDR} ${JEMALLOC_LG_PAGE}
     SOURCE_DIR ${JEMALLOC_SOURCE_DIR}
     BINARY_DIR ${JEMALLOC_BINARY_DIR}
