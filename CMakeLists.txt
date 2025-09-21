@@ -32,12 +32,14 @@ cmake_policy(SET CMP0091 NEW)
 # DOWNLOAD_EXTRACT_TIMESTAMP option default = true
 cmake_policy(SET CMP0135 NEW)
 # FindBoost moudule
-# Pls refer to the comment re 'set(Boost_NO_BOOST_CMAKE ON)' below
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
+# Use Boost’s CMake package
+if (POLICY CMP0167)
   cmake_policy(SET CMP0167 OLD)
-endif(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
+endif()
 
-include(tools/cmake-scripts/version.cmake)
+set(TOOLS ${CMAKE_CURRENT_SOURCE_DIR}/tools CACHE STRING "Tools' folder'")
+
+include(${TOOLS}/cmake-scripts/version.cmake)
 determine_version("${CMAKE_CURRENT_SOURCE_DIR}" LIBDWARFS_WR)
 
 # Various locations for external projects
@@ -70,8 +72,8 @@ include(CheckCXXSourceCompiles)
 # This is the default that will be overwritten for MacOS
 set(GNU_BASH "bash")
 
-include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/macos-environment.cmake)
-include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/def-external-project.cmake)
+include(${TOOLS}/cmake-scripts/macos-environment.cmake)
+include(${TOOLS}/cmake-scripts/def-external-project.cmake)
 
 if(MSVC)
   include_directories(${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include)
@@ -187,7 +189,7 @@ else()
       set(WITH_BROTLI_BUILD ON)
     endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if ("${OPENSSL_VERSION}" EQUAL "1.1")
-      include(${CMAKE_SOURCE_DIR}/tools/cmake-scripts/setup-openssl-1.1.1.cmake)
+      include(${TOOLS}/cmake-scripts/setup-openssl-1.1.1.cmake)
       if (DEFINED OPENSSL_ROOT_DIR)
         set(OPENSSL_OPTION "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}")
         set(INSTALL_OPENSSL true)
@@ -299,8 +301,8 @@ endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 # ...................................................................
 # External projects
 
-def_ext_prj_g(DWARFS "tebako-v0.8.10")
-def_ext_prj_g(INCBIN "348e36b")
+def_ext_prj_g(DWARFS "tebako-v0.9.0")
+def_ext_prj_g(INCBIN "6e576cae5ab5810f25e2631f2e0b80cbe7dc8cbf")
 
 if(NOT IS_WINDOWS)
   find_library(_LIBGLOG "libglog.a")
@@ -374,7 +376,7 @@ if(NOT IS_WINDOWS)
     endif()
   endif(NOT WITH_LZ4_BUILD)
   if(WITH_JEMALLOC_BUILD)
-    def_ext_prj_t(JEMALLOC "5.2.1" "34330e5ce276099e2e8950d9335db5a875689a4c6a56751ef3b1d8c537f887f6")
+    def_ext_prj_t(JEMALLOC "5.3.0" "2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa")
   elseif(WITH_JEMALLOC_BUILD)
     find_library(_LIBJEMALLOC "libjemalloc.a" REQUIRED)
   endif(WITH_JEMALLOC_BUILD)
@@ -399,7 +401,7 @@ if(WITH_GLOG_BUILD)
   message(STATUS "glog        -  @${GLOG_TAG}  at  ${GLOG_SOURCE_DIR}")
 endif(WITH_GLOG_BUILD)
 if(WITH_GFLAGS_BUILD)
-  def_ext_prj_g(GFLAGS "v2.2.2")
+  def_ext_prj_g(GFLAGS "52e94563eba1968783864942fedf6e87e3c611f4")
   message(STATUS "gflags      -  @${GFLAGS_TAG}  at  ${GFLAGS_SOURCE_DIR}")
 endif(WITH_GFLAGS_BUILD)
 if(WITH_DC_BUILD)
@@ -523,6 +525,10 @@ if (WITH_OPENSSL_BUILD)
   add_dependencies(${DWARFS_PRJ} ${OPENSSL_PRJ})
 endif(WITH_OPENSSL_BUILD)
 
+if (WITH_JEMALLOC_BUILD)
+  add_dependencies(${DWARFS_PRJ} ${JEMALLOC_PRJ})
+endif(WITH_JEMALLOC_BUILD)
+
 # ...................................................................
 # incbin
 
@@ -552,6 +558,7 @@ if(WITH_ZSTD_BUILD)
     GIT_REPOSITORY "https://github.com/facebook/zstd.git"
     GIT_TAG ${ZSTD_TAG}
     UPDATE_COMMAND ""
+    PATCH_COMMAND ${GNU_BASH} -c "${TOOLS}/ci-scripts/patch-zstd.sh ${ZSTD_SOURCE_DIR}"
     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DBUILD_SHARED_LIBS:BOOL=OFF
@@ -601,6 +608,7 @@ if(WITH_GLOG_BUILD)
     GIT_REPOSITORY "https://github.com/google/glog.git"
     GIT_TAG ${GLOG_TAG}
     UPDATE_COMMAND ""
+    PATCH_COMMAND ${GNU_BASH} -c "${TOOLS}/ci-scripts/patch-glog.sh ${GLOG_SOURCE_DIR}"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPS}
                -DBUILD_SHARED_LIBS:BOOL=OFF
                -DBUILD_TESTING=OFF
@@ -1082,7 +1090,7 @@ if(WITH_TESTS)
 #
 
   if(IS_WINDOWS)
-    find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread system)
+    find_package(Boost 1.67 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread)
   # For Windwos native build these libraries are installed with vcpkg
     find_library(_LIBGLOG "glog" REQUIRED)
     if(CMAKE_BUILD_TYPE STREQUAL Release)
@@ -1114,8 +1122,8 @@ if(WITH_TESTS)
     set(_LIBEH "")
 else(IS_WINDOWS)
     if (IS_MSYS)
-    find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread)
-    find_library(__LIBXXHASH "libxxhash.a" REQUIRED)
+      find_package(Boost 1.67 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread)
+      find_library(__LIBXXHASH "libxxhash.a" REQUIRED)
       if(CMAKE_BUILD_TYPE STREQUAL Release)
         find_library(__LIBFMT "libfmt.a" REQUIRED)
       else(CMAKE_BUILD_TYPE STREQUAL Release)
@@ -1123,8 +1131,9 @@ else(IS_WINDOWS)
       endif(CMAKE_BUILD_TYPE STREQUAL Release)
       find_library(__LIBZSTD "libzstd.a" REQUIRED)
       set(_LIBEH "")
+      add_compile_definitions(GFLAGS_IS_A_DLL=0)
     else(IS_MSYS)
-      find_package(Boost 1.65 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread system)
+      find_package(Boost 1.67 REQUIRED COMPONENTS chrono date_time iostreams filesystem program_options thread)
       set(_LIBEH "gcc_eh")
     endif(IS_MSYS)
 
