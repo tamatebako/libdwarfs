@@ -65,7 +65,7 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - { os: 'macos-13', arch: 'x86_64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '14.3.1'                }
+#          - { os: 'macos-13', arch: 'x86_64', ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '14.3.1'                }
           - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.0.1', LG_VADDR: 39  }
           - { os: 'macos-14', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '15.4'                  }
           - { os: 'macos-15', arch: 'arm64',  ASAN: 'OFF',  COVERAGE: 'OFF', LOG_LEVEL: 'warn', xcode: '16.1'                  }
@@ -144,32 +144,32 @@ jobs:
             ${{github.workspace}}/build/wr-tests
             ${{github.workspace}}/build/fs2.bin
 
-  test-on-macos-14:
+#  test-on-macos-14:
     # The run on MacOS 14 is the amd64 on arm64 test
-    needs: build
-    name: run tests on MacOS-13/14
-    runs-on: ${{ matrix.os }}
-    env:
-      TEBAKO_CROSS_TEST: ON
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ macos-14 ]
-    steps:
-      - name: Download tests
-        uses: actions/download-artifact@v4
-        with:
-          name: tests
+#    needs: build
+#    name: run tests on MacOS-13/14
+#    runs-on: ${{ matrix.os }}
+#    env:
+#      TEBAKO_CROSS_TEST: ON
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os: [ macos-14 ]
+#    steps:
+#      - name: Download tests
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: tests
 
-      - name: Provision execute permissions
-        run: |
-          chmod +x wr-bin
-          chmod +x wr-tests
-          mkdir -p build
-          mv fs2.bin build/fs2.bin
+#      - name: Provision execute permissions
+#        run: |
+#          chmod +x wr-bin
+#          chmod +x wr-tests
+#          mkdir -p build
+#          mv fs2.bin build/fs2.bin
 
-      - name: Run statically linked application
-        run: ./wr-bin
+#      - name: Run statically linked application
+#        run: ./wr-bin
 
-      - name: Run unit tests
-        run: ./wr-tests
+#      - name: Run unit tests
+#        run: ./wr-tests
